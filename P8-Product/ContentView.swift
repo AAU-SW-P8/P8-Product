@@ -83,34 +83,23 @@ struct ContentView: View {
         originalImage = uiImage
 
         do {
-            let segmented = try await runSegmentation(on: cgImage)
+            let segmented = try await runSegmentation(on: cgImage, and: uiImage)
             segmentedImage = segmented
         } catch {
             errorMessage = "Segmentation failed: \(error.localizedDescription)"
         }
     }
 
-    private func runSegmentation(on cgImage: CGImage) async throws -> UIImage {
-        // Resize the input image to the model's expected 256x256 BGRA
+    private func runSegmentation(on cgImage: CGImage, and uiImage: UIImage) async throws -> UIImage {
+        
+        let segmentor = try await MoleSegmentor(modelname: "unet_model")
         let modelSize = 256
         let ciContext = CIContext()
         let originalCI = CIImage(cgImage: cgImage)
-        let scaleX = CGFloat(modelSize) / originalCI.extent.width
-        let scaleY = CGFloat(modelSize) / originalCI.extent.height
-        let resizedCI = originalCI.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
-
-        var pixelBuffer: CVPixelBuffer?
-        CVPixelBufferCreate(kCFAllocatorDefault, modelSize, modelSize, kCVPixelFormatType_32BGRA, nil, &pixelBuffer)
-        guard let inputBuffer = pixelBuffer else {
-            throw SegmentationError.renderFailed
-        }
-        ciContext.render(resizedCI, to: inputBuffer)
-
-        // Run the UNet model
-        let model = try unet_mole(configuration: MLModelConfiguration())
-        let input = unet_moleInput(x: inputBuffer)
-        let output = try await model.prediction(input: input)
-        let maskArray = output.Identity // [1, 256, 256, 1] Float32
+        
+        let output = try! await segmentor.segment(cropped: uiImage)
+        
+        let maskArray = output
 
         // Convert the MLMultiArray mask to a grayscale CGImage
         let maskCGImage = try createGrayscaleImage(from: maskArray, width: modelSize, height: modelSize)
