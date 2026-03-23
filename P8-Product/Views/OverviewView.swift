@@ -160,7 +160,7 @@ public struct OverviewView: View {
                         ))
                     }
                 }
-                
+                Spacer()
                 // NEW SCAN button
                 Button(action: {
                     if let person = selectedPerson {

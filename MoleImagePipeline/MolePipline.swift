@@ -2,7 +2,6 @@
 //  MoleDetector.swift
 //  P8-Product
 //
-//  Created by Simon Thordal on 3/16/26.
 //
 import CoreML
 import UIKit
@@ -27,8 +26,8 @@ enum PipelineError: Error, LocalizedError {
     }
 }
 
-/// Pipnline Manager
-class MolePipline {
+/// Pipeline Manager
+class MolePipeline {
     private let detector: MoleDetecor
     private let segmentor: MoleSegmentor
     

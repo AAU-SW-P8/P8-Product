@@ -44,9 +44,9 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		97C2DAEC2F6AAFA600454255 /* MoleImagePipline */ = {
+		97C2DAEC2F6AAFA600454255 /* MoleImagePipeline */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = MoleImagePipline;
+			path = MoleImagePipeline;
 			sourceTree = "<group>";
 		};
 		97C2DB232F6AB48B00454255 /* Tests */ = {
@@ -88,7 +88,7 @@
 			children = (
 				97C2DB142F6AB39500454255 /* Unittests.xctestplan */,
 				97C2DB232F6AB48B00454255 /* Tests */,
-				97C2DAEC2F6AAFA600454255 /* MoleImagePipline */,
+				97C2DAEC2F6AAFA600454255 /* MoleImagePipeline */,
 				F1845EF02F59945F00E27D2B /* P8-Product */,
 				F1845EEF2F59945F00E27D2B /* Products */,
 			);
@@ -139,7 +139,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				97C2DAEC2F6AAFA600454255 /* MoleImagePipline */,
+				97C2DAEC2F6AAFA600454255 /* MoleImagePipeline */,
 				97C2DB232F6AB48B00454255 /* Tests */,
 				F1845EF02F59945F00E27D2B /* P8-Product */,
 			);
@@ -416,6 +416,7 @@
 				DEVELOPMENT_TEAM = JE5R9S88TC;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = SPOT;
 				INFOPLIST_KEY_NSCameraUsageDescription = CAMERA_USAGE_DESCRIPTION;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -450,6 +451,7 @@
 				DEVELOPMENT_TEAM = JE5R9S88TC;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = SPOT;
 				INFOPLIST_KEY_NSCameraUsageDescription = CAMERA_USAGE_DESCRIPTION;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

@@ -77,9 +77,6 @@ class MoleSegmentor {
         let input = unet_moleInput(x: inputBuffer)
         let output = try await model.prediction(input: input)
 
-        // '?.' is optional chaining — if featureValue returns nil, the whole expression is nil
-        // and the guard triggers. MLMultiArray is CoreML's n-dimensional array type (like numpy ndarray).
-
         return output.Identity
     }
 }
