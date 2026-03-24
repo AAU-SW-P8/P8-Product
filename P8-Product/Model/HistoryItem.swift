@@ -1,7 +1,7 @@
 //
 // Person.swift
 // P8-Product
-//
+// Added to test CI pipeline
 
 import Foundation
 import SwiftData
