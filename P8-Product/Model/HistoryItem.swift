@@ -12,8 +12,7 @@ import UIKit
 final class HistoryItem {
     var name: String
     var timestamp: Date
-    @Attribute(.externalStorage)
-    var imageData: Data? = nil
+    @Attribute(.externalStorage) var imageData: Data?
     var isFlagged: Bool = false
     var person: Person?
 
