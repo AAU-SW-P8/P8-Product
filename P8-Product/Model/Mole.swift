@@ -7,38 +7,41 @@
 
 import Foundation
 import SwiftData
-import SwiftUI
-import UIKit
 
-enum Frequency: String {
+enum Frequency: String, Codable {
     case monthly, quarterly, yearly
 }
 
 @Model
 final class Mole {
-    @Attribute(.unique) var id: UUID
-    var person: Person?
+    @Attribute(.unique) var id: UUID = UUID()
+    
     var name: String
     var bodyPart: String
-    var isReminderActive: Bool = false
+    var isReminderActive: Bool
     var reminderFrequency: Frequency?
     var nextDueDate: Date?
     
+    // The inverse relationships back to the parents
+    var person: Person?
+    
+    // If this Mole is deleted, all its instances are deleted
+    @Relationship(deleteRule: .cascade, inverse: \MoleInstance.mole)
+    var instances: [MoleInstance] = []
+    
     init(
-        id: UUID = UUID(),
-        person: Person? = nil,
         name: String,
         bodyPart: String,
-        isReminderActive: Bool = false,
-        reminderFrequency: Frequency,
-        nextDueDate: Date = Date()
+        isReminderActive: Bool,
+        reminderFrequency: Frequency?,
+        nextDueDate: Date?,
+        person: Person? = nil,
     ) {
-        self.id = id
-        self.person = person
         self.name = name
         self.bodyPart = bodyPart
         self.isReminderActive = isReminderActive
         self.reminderFrequency = reminderFrequency
         self.nextDueDate = nextDueDate
+        self.person = person
     }
 }

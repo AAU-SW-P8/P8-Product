@@ -8,15 +8,18 @@ import SwiftData
 
 @Model
 final class Person {
-    @Attribute(.unique) var id: UUID
+    @Attribute(.unique) var id: UUID = UUID()
     var name: String
-    @Relationship(deleteRule: .cascade, inverse: \HistoryItem.person) var historyItems: [HistoryItem] = []
-    @Relationship(deleteRule: .cascade, inverse: \Mole.person) var moles: [Mole] = []
+    var createdAt: Date
+
+    @Relationship(deleteRule: .cascade, inverse: \Mole.person)
+    var moles: [Mole] = []
+
     init(
-        id: UUID = UUID(),
-        name: String
+        name: String,
+        createdAt: Date = Date()
     ) {
-        self.id = id
         self.name = name
+        self.createdAt = createdAt
     }
 }
