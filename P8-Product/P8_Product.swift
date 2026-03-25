@@ -1,7 +1,11 @@
 //
-//  P8_Product_TestApp.swift
+//  P8_Product.swift
 //  P8-Product
 //
+
+import SwiftUI
+import SwiftData
+import UIKit
 
 @main
 struct P8_Product: App {
