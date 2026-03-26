@@ -1,6 +1,11 @@
+//
+//  MockData.swift
+//  P8-Product
+//  Created by Nicolaj Skjødt on 25/03/2026.
+//
 import Foundation
 import SwiftData
-import UIKit
+import SwiftUI
 
 @MainActor
 struct MockData {

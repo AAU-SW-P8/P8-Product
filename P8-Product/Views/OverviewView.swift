@@ -200,7 +200,7 @@ public struct OverviewView: View {
             if let person = selectedPerson {
                 List {
                     ForEach(person.moles) { mole in
-                        NavigationLink(destination: Text("Details for \(mole.name)")) {
+                        NavigationLink(destination: MoleDetailView(mole: mole)) {
                             moleRow(for: mole)
                         }
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -251,7 +251,7 @@ public struct OverviewView: View {
                     Text(mole.name)
                         .font(.system(size: 20, weight: .semibold))
                     if mole.isReminderActive {
-                        Image(systemName: "flag.fill")
+                        Image(systemName: "bell.fill")
                             .foregroundColor(.orange)
                     }
                 }

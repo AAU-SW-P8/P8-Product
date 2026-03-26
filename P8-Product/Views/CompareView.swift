@@ -7,10 +7,19 @@ import SwiftUI
 import SwiftData
 
 struct CompareView: View {
-    @Query(sort: \HistoryItem.timestamp) private var items: [HistoryItem]
+    @Query(sort: \Person.createdAt) private var people: [Person]
+
+    @State private var selectedPerson: Person?
+    @State private var selectedMole: Mole?
     @State private var selectedIndexTop = 0
     @State private var selectedIndexBottom = 0
-    
+
+    private var scans: [MoleScan] {
+        guard let mole = selectedMole else { return [] }
+        return mole.instances
+            .compactMap(\.moleScan)
+            .sorted { $0.captureDate < $1.captureDate }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -21,87 +30,108 @@ struct CompareView: View {
                 .padding(.horizontal)
                 .padding(.top)
 
-            if items.isEmpty {
+            if people.isEmpty {
                 Spacer()
                 Image(systemName: "photo.on.rectangle.angled")
                     .font(.system(size: 48))
                     .foregroundColor(.secondary)
-                Text("No images yet")
+                Text("No data yet")
                     .font(.headline)
                     .foregroundColor(.secondary)
                     .padding(.top, 8)
-                Text("Capture some moles to compare them here.")
+                Text("Add a person and capture some moles to compare them here.")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
                 Spacer()
             } else {
-                imageCarousel(selectedIndex: $selectedIndexTop)
-                Divider()
-                    .padding(.vertical, 4)
-                imageCarousel(selectedIndex: $selectedIndexBottom)
-            }
-        }
-        .onChange(of: items.count) {
-            if selectedIndexTop >= items.count {
-                selectedIndexTop = max(0, items.count - 1)
-            }
-            if selectedIndexBottom >= items.count {
-                selectedIndexBottom = max(0, items.count - 1)
-            }
-        }
-    }
+                selectorBar
+                    .padding(.top, 8)
 
-    @ViewBuilder
-    private func imageCarousel(selectedIndex: Binding<Int>) -> some View {
-        TabView(selection: selectedIndex) {
-            ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                if let uiImage = item.image {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFit()
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                        .shadow(radius: 5)
-                        .padding(.horizontal, 24)
-                        .tag(index)
-                } else {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.gray.opacity(0.2))
-                        Image(systemName: "photo")
-                            .font(.system(size: 48))
-                            .foregroundColor(.gray.opacity(0.5))
+                if scans.isEmpty {
+                    Spacer()
+                    Image(systemName: "photo")
+                        .font(.system(size: 36))
+                        .foregroundColor(.gray.opacity(0.4))
+                    if selectedPerson == nil {
+                        Text("Select a person")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    } else if selectedMole == nil {
+                        Text("Select a mole")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("No scans for \(selectedMole!.name)")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
                     }
-                    .padding(.horizontal, 24)
-                    .tag(index)
+                    Spacer()
+                } else {
+                    ImageCarousel(scans: scans, selectedIndex: $selectedIndexTop)
+
+                    Divider()
+                        .padding(.vertical, 4)
+
+                    ImageCarousel(scans: scans, selectedIndex: $selectedIndexBottom)
                 }
             }
         }
-        .tabViewStyle(.page(indexDisplayMode: .never))
-        .frame(height: 250)
+        .onChange(of: selectedPerson) {
+            selectedMole = nil
+            selectedIndexTop = 0
+            selectedIndexBottom = 0
+        }
+        .onChange(of: selectedMole) {
+            selectedIndexTop = 0
+            selectedIndexBottom = 0
+        }
+    }
 
-        HStack(spacing: 8) {
-            ForEach(items.indices, id: \.self) { index in
-                Circle()
-                    .fill(index == selectedIndex.wrappedValue ? Color.primary : Color.gray.opacity(0.4))
-                    .frame(width: 8, height: 8)
+    private var selectorBar: some View {
+        HStack {
+            Picker("Person", selection: $selectedPerson) {
+                Text("Select Person").tag(nil as Person?)
+                ForEach(people) { person in
+                    Text(person.name).tag(person as Person?)
+                }
+            }
+            .pickerStyle(.menu)
+
+            if let person = selectedPerson, !person.moles.isEmpty {
+                Menu {
+                    let grouped = Dictionary(grouping: person.moles, by: \.bodyPart)
+                    ForEach(grouped.keys.sorted(), id: \.self) { bodyPart in
+                        Section(bodyPart) {
+                            ForEach(grouped[bodyPart]!) { mole in
+                                Button {
+                                    selectedMole = mole
+                                } label: {
+                                    if selectedMole == mole {
+                                        Label(mole.name, systemImage: "checkmark")
+                                    } else {
+                                        Text(mole.name)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(selectedMole?.name ?? "Select Mole")
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.caption2)
+                    }
+                    .foregroundColor(selectedMole != nil ? .primary : .secondary)
+                }
             }
         }
-        .padding(.top, 8)
-
-        Text(items[selectedIndex.wrappedValue].timestamp, format: .dateTime.year().month().day().hour().minute())
-            .font(.headline)
-            .padding(.top, 4)
-
-        if let person = items[selectedIndex.wrappedValue].person {
-            Text(person.name)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .padding(.top, 2)
-        }
+        .padding(.horizontal)
     }
 }
 
 #Preview {
-    ContentView()
-        .modelContainer(for: [HistoryItem.self, Person.self], inMemory: true)
+    CompareView()
+        .modelContainer(DataController.shared.container)
 }
