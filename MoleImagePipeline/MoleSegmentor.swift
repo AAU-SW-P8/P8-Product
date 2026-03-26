@@ -8,119 +8,134 @@ import CoreML
 import UIKit
 
 class MoleSegmentor {
-    // Edge-SAM uses two models: encoder processes the image, decoder generates masks from prompts
+    // SAM 2 uses three models: Image Encoder, Prompt Encoder, and Mask Decoder
+    private let imageEncoder: SAM2_1TinyImageEncoderFLOAT16
+    private let promptEncoder: SAM2_1TinyPromptEncoderFLOAT16
+    private let maskDecoder: SAM2_1TinyMaskDecoderFLOAT16
     
-    private let encoder: edge_sam_encoder
-    private let decoder: edge_sam_decoder
-    // CIContext is expensive to create; stored as a field so it's reused across calls
     private let ciContext = CIContext()
     
-    // Cache the image embeddings so we don't re-encode for multiple clicks on the same image
-    private var cachedImageEmbeddings: MLMultiArray?
+    // Cache the image encoder output (SAM 2 usually requires high-res features in addition to base embeddings)
+    // We store the entire output object to easily pass its properties to the decoder later.
+    private var cachedEncoderOutput: SAM2_1TinyImageEncoderFLOAT16Output?
     private var cachedImageHash: Int?
 
-    // `throws` means this initializer can fail — callers must use `try` and handle errors
-    init() async throws {
-        // Load the Edge-SAM encoder model
-        guard let encoderURL = Bundle.main.url(forResource: "edge_sam_encoder", withExtension: "mlmodelc")
-            ?? Bundle.main.url(forResource: "edge_sam_encoder", withExtension: "mlmodel") else {
-            throw PipelineError.modelNotFound(name: "edge_sam_encoder")
-        }
-        
-        // Load the Edge-SAM decoder model
-        guard let decoderURL = Bundle.main.url(forResource: "edge_sam_decoder", withExtension: "mlmodelc")
-            ?? Bundle.main.url(forResource: "edge_sam_decoder", withExtension: "mlmodel") else {
-            throw PipelineError.modelNotFound(name: "edge_sam_decoder")
-        }
-        
-        self.encoder = try await edge_sam_encoder.load(contentsOf: encoderURL)
-        self.decoder = try await edge_sam_decoder.load(contentsOf: decoderURL)
+    enum PipelineError: Error {
+        case modelNotFound(name: String)
+        case invalidImage
+        case renderFailed
     }
 
-    /**
-     Encodes the full image to create embeddings. This only needs to be done once per image.
-     - Parameters:
-        - image: The full image containing the mole
-        - modelSize: The input size for the encoder (typically 1024x1024 for SAM)
-     
-     - Returns: Image embeddings that can be reused for multiple point prompts
-     - Throws: invalidImage & renderFailed
-     */
-    private func encodeImage(_ image: UIImage, modelSize: Int = 1024) async throws -> MLMultiArray {
-        // Check if we already have embeddings for this exact image
-        let imageHash = image.hashValue
-        if let cached = cachedImageEmbeddings, cachedImageHash == imageHash {
-            return cached
+    init() async throws {
+        // Load Image Encoder URL
+        guard let encoderURL = Bundle.main.url(forResource: "SAM2_1TinyImageEncoderFLOAT16", withExtension: "mlmodelc")
+            ?? Bundle.main.url(forResource: "SAM2_1TinyImageEncoderFLOAT16", withExtension: "mlmodel") else {
+            throw PipelineError.modelNotFound(name: "SAM2_1TinyImageEncoderFLOAT16")
         }
         
-        guard let cgImage = image.cgImage else {
-            throw PipelineError.invalidImage
+        // Load Prompt Encoder URL
+        guard let promptURL = Bundle.main.url(forResource: "SAM2_1TinyPromptEncoderFLOAT16", withExtension: "mlmodelc")
+            ?? Bundle.main.url(forResource: "SAM2_1TinyPromptEncoderFLOAT16", withExtension: "mlmodel") else {
+            throw PipelineError.modelNotFound(name: "SAM2_1TinyPromptEncoderFLOAT16")
         }
         
-        let pixelBuffer = try createPixelBuffer(from: cgImage, size: modelSize)
+        // Load Mask Decoder URL
+        guard let decoderURL = Bundle.main.url(forResource: "SAM2_1TinyMaskDecoderFLOAT16", withExtension: "mlmodelc")
+            ?? Bundle.main.url(forResource: "SAM2_1TinyMaskDecoderFLOAT16", withExtension: "mlmodel") else {
+            throw PipelineError.modelNotFound(name: "SAM2_1TinyMaskDecoderFLOAT16")
+        }
         
-        // Convert pixel buffer to MLMultiArray in the format the model expects: [1, 3, 1024, 1024]
-        let mlArray = try convertPixelBufferToMLMultiArray(pixelBuffer, width: modelSize, height: modelSize)
-        
-        // Run the encoder
-        let input = edge_sam_encoderInput(image: mlArray)
-        let output = try await encoder.prediction(input: input)
-        
-        // Cache the embeddings
-        cachedImageEmbeddings = output.image_embeddings
-        cachedImageHash = imageHash
-        
-        return output.image_embeddings
-    }
+        // --- THE FIX ---
+        // Create a configuration that forces Core ML to bypass the Apple Neural Engine
+        let config = MLModelConfiguration()
+            config.computeUnits = .cpuOnly
+            
+            // Initialize the models with the CPU-only configuration
+            self.imageEncoder = try await SAM2_1TinyImageEncoderFLOAT16.load(contentsOf: encoderURL, configuration: config)
+            self.promptEncoder = try await SAM2_1TinyPromptEncoderFLOAT16.load(contentsOf: promptURL, configuration: config)
+            self.maskDecoder = try await SAM2_1TinyMaskDecoderFLOAT16.load(contentsOf: decoderURL, configuration: config)
+        }
+
+    private func encodeImage(_ image: UIImage, modelSize: Int = 1024) async throws -> SAM2_1TinyImageEncoderFLOAT16Output {
+            let imageHash = image.hashValue
+            if let cached = cachedEncoderOutput, cachedImageHash == imageHash {
+                return cached
+            }
+            
+            guard let cgImage = image.cgImage else { throw PipelineError.invalidImage }
+            
+            // 1. Create the Pixel Buffer (this explicitly forces the safe 32BGRA format)
+            let pixelBuffer = try createPixelBuffer(from: cgImage, size: modelSize)
+            
+            // 2. Pass the pixel buffer DIRECTLY to the encoder.
+            // Do NOT use `MLMultiArray` and do NOT use the `imageWith: cgImage` helper!
+            let input = SAM2_1TinyImageEncoderFLOAT16Input(image: pixelBuffer)
+            let output = try await imageEncoder.prediction(input: input)
+            
+            cachedEncoderOutput = output
+            cachedImageHash = imageHash
+            
+            return output
+        }
     
-    /**
-     Runs segmentation on an image based on a point click
-     - Parameters:
-        - image: The full image containing the mole
-        - point: The CGPoint where the user clicked (in image coordinates)
-        - modelSize: The input size for the SAM model (typically 1024x1024)
-     
-     - Returns: A segmentation mask showing the mole at the clicked location
-     - Throws: invalidImage & renderFailed
-     */
     func segment(image: UIImage, point: CGPoint, modelSize: Int = 1024) async throws -> MLMultiArray {
-        // First, get the image embeddings
-        let embeddings = try await encodeImage(image, modelSize: modelSize)
+        // 1. Get the Image Features (Embeddings + High Res features)
+        let encoderOutput = try await encodeImage(image, modelSize: modelSize)
+                
+        // ADD THIS: Check if the image encoder actually saw anything
+        print("📸 Image Encoder test value: \(encoderOutput.image_embedding[0])")
         
-        // Normalize the point coordinates to the model's input size
-        guard let cgImage = image.cgImage else {
-            throw PipelineError.invalidImage
-        }
+        guard let cgImage = image.cgImage else { throw PipelineError.invalidImage }
         
         let scaleX = Double(modelSize) / Double(cgImage.width)
         let scaleY = Double(modelSize) / Double(cgImage.height)
         let normalizedX = Double(point.x) * scaleX
         let normalizedY = Double(point.y) * scaleY
         
-        // Create point coordinates array [1, 1, 2] - format: [batch, num_points, coordinates]
-        // Edge-SAM expects points in shape [1, num_points, 2]
-        guard let pointCoords = try? MLMultiArray(shape: [1, 1, 2], dataType: .float32) else {
+        // 2. Set up Prompt Encoder Inputs
+        // Note: Check Xcode autocomplete to see if it wants .float32 or .float16 based on your model export
+        guard let pointCoords = try? MLMultiArray(shape: [1, 2, 2], dataType: .float16),
+              let pointLabels = try? MLMultiArray(shape: [1, 2], dataType: .float16) else {
             throw PipelineError.renderFailed
         }
+        
+        // POINT 1: The user's actual click
         pointCoords[[0, 0, 0] as [NSNumber]] = NSNumber(value: normalizedX)
         pointCoords[[0, 0, 1] as [NSNumber]] = NSNumber(value: normalizedY)
+        pointLabels[[0, 0] as [NSNumber]] = 1.0 // 1.0 = Foreground
         
-        // Create point labels array [1, 1] - format: [batch, num_points]
-        // 1 means foreground point, 0 means background
-        guard let pointLabels = try? MLMultiArray(shape: [1, 1], dataType: .float32) else {
-            throw PipelineError.renderFailed
-        }
-        pointLabels[[0, 0] as [NSNumber]] = 1.0 // Foreground point
+        // POINT 2: The SAM padding point
+        // SAM requires this dummy point so the tensor is the correct size
+        pointCoords[[0, 1, 0] as [NSNumber]] = 0.0
+        pointCoords[[0, 1, 1] as [NSNumber]] = 0.0
+        pointLabels[[0, 1] as [NSNumber]] = -1.0 // -1.0 = Ignore / Padding
         
-        // Run the decoder
-        let decoderInput = edge_sam_decoderInput(
-            image_embeddings: embeddings,
-            point_coords: pointCoords,
-            point_labels: pointLabels
+        // Run Prompt Encoder
+        let promptInput = SAM2_1TinyPromptEncoderFLOAT16Input(
+            points: pointCoords,
+            labels: pointLabels
         )
-        let output = try await decoder.prediction(input: decoderInput)
+        let promptOutput = try await promptEncoder.prediction(input: promptInput)
         
-        return output.masks
+        // ADD THIS: Check if the prompt encoder actually registered the click
+        print("🎯 Prompt Encoder test value: \(promptOutput.dense_embeddings[0])")
+        
+        // 3. Set up Mask Decoder Inputs
+        // Combine image features and prompt features
+        // NOTE: SAM 2 image encoders usually output `image_embeddings`, `high_res_feats_0`, and `high_res_feats_1`.
+        // Ensure you are passing all required features to the decoder input.
+        let decoderInput = SAM2_1TinyMaskDecoderFLOAT16Input(
+            image_embedding: encoderOutput.image_embedding,
+            sparse_embedding: promptOutput.sparse_embeddings, // Note: watch out for the 's' at the end of promptOutput.sparse_embeddings if the parameter name is singular!
+            dense_embedding: promptOutput.dense_embeddings,
+            feats_s0: encoderOutput.feats_s0,
+            feats_s1: encoderOutput.feats_s1
+        )
+        
+        let decoderOutput = try await maskDecoder.prediction(input: decoderInput)
+        
+        // Return the generated masks
+        return decoderOutput.low_res_masks
     }
     
     /**
@@ -134,7 +149,8 @@ class MoleSegmentor {
         
         let bufferAttributes: [String: Any] = [
             kCVPixelBufferCGImageCompatibilityKey as String: true,
-            kCVPixelBufferCGBitmapContextCompatibilityKey as String: true
+            kCVPixelBufferCGBitmapContextCompatibilityKey as String: true,
+            kCVPixelBufferIOSurfacePropertiesKey as String: [:] // <-- ADD THIS LINE
         ]
         
         var pixelBuffer: CVPixelBuffer?
@@ -198,9 +214,72 @@ class MoleSegmentor {
         return mlArray
     }
     
+    /**
+     Converts the SAM mask output into a transparent UIImage with a colored overlay.
+     */
+    func createMaskImage(from mlArray: MLMultiArray) -> UIImage? {
+        let shape = mlArray.shape
+        // SAM mask outputs usually have the shape [batch, masks, height, width].
+        // We grab the height and width from the last two dimensions.
+        let height = shape[shape.count - 2].intValue
+        let width = shape[shape.count - 1].intValue
+        
+        // Create an array to hold the raw RGBA pixel data
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        
+        // Safely get a pointer to the Float32 data inside the MLMultiArray
+        // Note: If your decoder outputs Float16, you will need to cast this to Float16 instead
+        guard let pointer = try? UnsafeBufferPointer<Float32>(mlArray) else {
+            print("Failed to access MLMultiArray data")
+            return nil
+        }
+        
+        // Iterate through the pixels
+        for y in 0..<height {
+            for x in 0..<width {
+                let index = y * width + x
+                let value = pointer[index]
+                
+                let pixelIndex = index * 4
+                
+                // If logit > 0, it's the mole! Paint it semi-transparent red.
+                if value > 0.0 {
+                    pixels[pixelIndex]     = 255  // Red
+                    pixels[pixelIndex + 1] = 0    // Green
+                    pixels[pixelIndex + 2] = 0    // Blue
+                    pixels[pixelIndex + 3] = 128  // Alpha (Semi-transparent)
+                } else {
+                    // Background is completely transparent
+                    pixels[pixelIndex]     = 0
+                    pixels[pixelIndex + 1] = 0
+                    pixels[pixelIndex + 2] = 0
+                    pixels[pixelIndex + 3] = 0
+                }
+            }
+        }
+        
+        // Convert the pixel array into a CGImage, then to a UIImage
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue)
+        
+        guard let context = CGContext(
+            data: &pixels,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: width * 4,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo.rawValue
+        ), let cgImage = context.makeImage() else {
+            return nil
+        }
+        
+        return UIImage(cgImage: cgImage)
+    }
+    
     /// Clears the cached embeddings - call this when switching to a new image
     func clearCache() {
-        cachedImageEmbeddings = nil
+        // cachedImageEmbeddings = nil
         cachedImageHash = nil
     }
 }
