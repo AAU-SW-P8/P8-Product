@@ -95,13 +95,12 @@ struct MoleSegmentationTestView: View {
                 }
 
                 if let mask = cropMaskImage, let box = boundingBox {
-                    Image(uiImage: mask)
-                        .resizable()
-                        .frame(width: box.width, height: box.height)
-                        .position(x: box.midX, y: box.midY)
-                        .opacity(0.5)
-                        .blendMode(.multiply)
-                }
+                                    Image(uiImage: mask)
+                                        .resizable()
+                                        .frame(width: box.width, height: box.height)
+                                        .position(x: box.midX, y: box.midY)
+                                        // Removed .opacity and .blendMode here!
+                                }
             }
             .contentShape(Rectangle())
             .onTapGesture { location in
@@ -235,47 +234,79 @@ struct MoleSegmentationTestView: View {
     /// - Returns: A grayscale `UIImage` of the binary mask.
     /// - Throws: `PipelineError.renderFailed` if a `CGContext` cannot be created.
     private func convertMaskToImage(_ maskArray: MLMultiArray, targetSize: CGSize) throws -> UIImage {
-        let shape = maskArray.shape.map { $0.intValue }
+            let shape = maskArray.shape.map { $0.intValue }
+            let maskH = shape[shape.count - 2]
+            let maskW = shape[shape.count - 1]
+            let maskCount = shape.count == 4 ? shape[1] : 1 // Usually 3
+            
+            // Let's see exactly what type of memory Core ML is handing us!
+            let typeString = maskArray.dataType == .float32 ? "Float32" : (maskArray.dataType == .float16 ? "Float16" : "Other")
+            print("🧠 Mask Memory Type: \(typeString)")
 
-        let (maskH, maskW): (Int, Int)
-        switch shape.count {
-        case 4:  (maskH, maskW) = (shape[2], shape[3])
-        case 3:  (maskH, maskW) = (shape[1], shape[2])
-        case 2:  (maskH, maskW) = (shape[0], shape[1])
-        default: throw PipelineError.renderFailed
-        }
+            var pixels = [UInt8](repeating: 0, count: maskW * maskH * 4)
+            var maxLogit: Float = -1000.0
 
-        guard let ctx = CGContext(data: nil, width: maskW, height: maskH,
-                                  bitsPerComponent: 8, bytesPerRow: maskW,
-                                  space: CGColorSpaceCreateDeviceGray(),
-                                  bitmapInfo: CGImageAlphaInfo.none.rawValue),
-              let buf = ctx.data else {
-            throw PipelineError.renderFailed
-        }
+            for y in 0..<maskH {
+                for x in 0..<maskW {
+                    let pixelIndex = (y * maskW + x) * 4
+                    
+                    // Find the highest score across ALL 3 MASKS for this pixel
+                    var bestValue: Float = -1000.0
+                    
+                    if shape.count == 4 {
+                        for m in 0..<maskCount {
+                            let val = maskArray[[0, m, y, x] as [NSNumber]].floatValue
+                            if val > bestValue { bestValue = val }
+                        }
+                    } else if shape.count == 3 {
+                        bestValue = maskArray[[0, y, x] as [NSNumber]].floatValue
+                    } else {
+                        bestValue = maskArray[[y, x] as [NSNumber]].floatValue
+                    }
 
-        let pixels = buf.assumingMemoryBound(to: UInt8.self)
-        for y in 0..<maskH {
-            for x in 0..<maskW {
-                let value: Float
-                switch shape.count {
-                case 4:  value = maskArray[[0, 0, y, x] as [NSNumber]].floatValue
-                case 3:  value = maskArray[[0, y, x] as [NSNumber]].floatValue
-                default: value = maskArray[[y, x] as [NSNumber]].floatValue
+                    if bestValue > maxLogit {
+                        maxLogit = bestValue
+                    }
+
+                    if bestValue > 0.0 {
+                        // FOREGROUND: Semi-transparent Red
+                        pixels[pixelIndex]     = 255
+                        pixels[pixelIndex + 1] = 0
+                        pixels[pixelIndex + 2] = 0
+                        pixels[pixelIndex + 3] = 128
+                    } else {
+                        // BACKGROUND: Semi-transparent Blue
+                        pixels[pixelIndex]     = 0
+                        pixels[pixelIndex + 1] = 0
+                        pixels[pixelIndex + 2] = 255
+                        pixels[pixelIndex + 3] = 64
+                    }
                 }
-                pixels[y * maskW + x] = value > 0.5 ? 255 : 0
             }
+            
+            print("📊 Max logit across ALL masks: \(maxLogit)")
+
+            let colorSpace = CGColorSpaceCreateDeviceRGB()
+            let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue)
+
+            guard let context = CGContext(
+                data: &pixels, width: maskW, height: maskH,
+                bitsPerComponent: 8, bytesPerRow: maskW * 4,
+                space: colorSpace, bitmapInfo: bitmapInfo.rawValue
+            ), let cgMask = context.makeImage() else {
+                throw NSError(domain: "Segmentor", code: 2, userInfo: [NSLocalizedDescriptionKey: "Context failed"])
+            }
+
+            let maskImage = UIImage(cgImage: cgMask)
+            guard maskImage.size != targetSize else { return maskImage }
+
+            UIGraphicsBeginImageContextWithOptions(targetSize, false, 0.0)
+            maskImage.draw(in: CGRect(origin: .zero, size: targetSize))
+            let resized = UIGraphicsGetImageFromCurrentImageContext() ?? maskImage
+            UIGraphicsEndImageContext()
+            
+            return resized
         }
-
-        guard let cgMask = ctx.makeImage() else { throw PipelineError.renderFailed }
-        let maskImage = UIImage(cgImage: cgMask)
-        guard maskImage.size != targetSize else { return maskImage }
-
-        UIGraphicsBeginImageContextWithOptions(targetSize, false, 1.0)
-        maskImage.draw(in: CGRect(origin: .zero, size: targetSize))
-        let resized = UIGraphicsGetImageFromCurrentImageContext() ?? maskImage
-        UIGraphicsEndImageContext()
-        return resized
-    }
 
     // MARK: - Supporting views
 
