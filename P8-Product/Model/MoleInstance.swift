@@ -1,8 +1,6 @@
 //
-//  MoleInstance.swift
-//  P8-Product
-//
-//  Created by Nicolaj Skjødt on 25/03/2026.
+// MoleInstance.swift
+// P8-Product
 //
 
 import Foundation
@@ -17,6 +15,12 @@ final class MoleInstance {
     var mole: Mole?
     var moleScan: MoleScan?
     
+    /// Creates a new MoleInstance record.
+    /// - Parameters:
+    ///   - diameter (mm) : The diameter of the mole.
+    ///   - area (mm^2): The area of the mole.
+    ///   - mole: Specific mole in the moleScan.
+    ///   - moleScan: Picture of the mole.
     init
     (
         diameter: Float,

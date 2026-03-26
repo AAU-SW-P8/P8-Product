@@ -1,6 +1,6 @@
 //
-//  MoleScan.swift
-//  P8-Product
+// MoleScan.swift
+// P8-Product
 //
 
 import Foundation
@@ -13,9 +13,14 @@ final class MoleScan {
     
     var captureDate: Date = Date()
     
+    // If a MoleScan is deleted, all its instances are deleted
     @Relationship(deleteRule: .cascade, inverse: \MoleInstance.moleScan)
     var instances: [MoleInstance] = []
     
+    /// Creates a new MoleScan record.
+    /// - Parameters:
+    ///   - captureDate: The date of when the picture was taken.
+    ///   - imageData: The image data.
     init
     (
         captureDate: Date = Date(),
