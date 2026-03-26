@@ -15,6 +15,8 @@ struct CameraView: View {
     @State private var selectedImage: UIImage?
     @State private var showARCamera = false
     @State private var hasAutoOpenedCamera = false
+    private let supportsARCapture = ARWorldTrackingConfiguration.isSupported
+        && ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh)
 
     var body: some View {
         ZStack {
@@ -26,6 +28,8 @@ struct CameraView: View {
                     .onTapGesture {
                         openARCamera()
                     }
+            } else if !supportsARCapture {
+                simulatorFallbackView
             } else {
                 Color.black
                     .ignoresSafeArea()
@@ -60,7 +64,38 @@ struct CameraView: View {
     }
 
     private func openARCamera() {
+        guard supportsARCapture else { return }
         showARCamera = true
+    }
+
+    private var simulatorFallbackView: some View {
+        LinearGradient(
+            colors: [Color(.systemGray6), Color(.systemGray4)],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        .ignoresSafeArea()
+        .overlay {
+            VStack(spacing: 20) {
+                Image(systemName: "iphone.slash")
+                    .font(.system(size: 56))
+                    .foregroundStyle(.secondary)
+
+                Text("AR capture is unavailable in Simulator")
+                    .font(.title3.weight(.semibold))
+
+                Text("Run on a LiDAR-equipped iPhone or iPad to use the camera flow. In Simulator, a placeholder image is shown so the app still runs.")
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 24)
+
+                Button("Load Placeholder Image") {
+                    selectedImage = UIImage(systemName: "camera.macro")
+                }
+                .buttonStyle(.borderedProminent)
+            }
+            .padding(24)
+        }
     }
 }
 
