@@ -29,6 +29,10 @@ struct ContentView: View {
                 .tabItem {
                     Label("Capture", systemImage: "camera")
                 }
+            MoleSegmentationTestView()
+                .tabItem {
+                    Label("Segment", systemImage: "camera")
+                }
         }
     }
 }

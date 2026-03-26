@@ -8,75 +8,199 @@ import CoreML
 import UIKit
 
 class MoleSegmentor {
-    //takes single mole and makes a segmentation mask
-
-    // `private let` — constant field, equivalent to a private final field in Java/C#
-    private let model: unet_mole
+    // Edge-SAM uses two models: encoder processes the image, decoder generates masks from prompts
+    
+    private let encoder: edge_sam_encoder
+    private let decoder: edge_sam_decoder
     // CIContext is expensive to create; stored as a field so it's reused across calls
     private let ciContext = CIContext()
+    
+    // Cache the image embeddings so we don't re-encode for multiple clicks on the same image
+    private var cachedImageEmbeddings: MLMultiArray?
+    private var cachedImageHash: Int?
 
     // `throws` means this initializer can fail — callers must use `try` and handle errors
-    init(modelname: String) async throws {
-        // `guard let` is an early-exit unwrap: if the right-hand side is nil,
-        // the else block runs and must exit the scope (here via throw).
-        guard let modelURL = Bundle.main.url(forResource: modelname, withExtension: "mlmodelc")
-            ?? Bundle.main.url(forResource: modelname, withExtension: "mlmodel") else {
-            throw PipelineError.modelNotFound(name: modelname)
+    init() async throws {
+        // Load the Edge-SAM encoder model
+        guard let encoderURL = Bundle.main.url(forResource: "edge_sam_encoder", withExtension: "mlmodelc")
+            ?? Bundle.main.url(forResource: "edge_sam_encoder", withExtension: "mlmodel") else {
+            throw PipelineError.modelNotFound(name: "edge_sam_encoder")
         }
-        self.model = try await unet_mole.load(contentsOf: modelURL)
+        
+        // Load the Edge-SAM decoder model
+        guard let decoderURL = Bundle.main.url(forResource: "edge_sam_decoder", withExtension: "mlmodelc")
+            ?? Bundle.main.url(forResource: "edge_sam_decoder", withExtension: "mlmodel") else {
+            throw PipelineError.modelNotFound(name: "edge_sam_decoder")
+        }
+        
+        self.encoder = try await edge_sam_encoder.load(contentsOf: encoderURL)
+        self.decoder = try await edge_sam_decoder.load(contentsOf: decoderURL)
     }
 
     /**
-     Runs segmentation on a cropped image
+     Encodes the full image to create embeddings. This only needs to be done once per image.
      - Parameters:
-        - cropped: Image cropped specifically focused on a mole.
-        - modelSize: The input UNet model
-
+        - image: The full image containing the mole
+        - modelSize: The input size for the encoder (typically 1024x1024 for SAM)
      
-     - Returns: An MLMultiArray mask output from the UNet model. Size: [1, 256, 256, 3]
-        - 1 is amount of images
-        - 256 is the resolution
-        - 3 is the color chanels
-     
-     - Throws: invalidImage & renderFailed.
-     
+     - Returns: Image embeddings that can be reused for multiple point prompts
+     - Throws: invalidImage & renderFailed
      */
-    func segment(cropped: UIImage, modelSize: Int = 256)
-    async throws -> MLMultiArray? {
-        // guard only runs this function if condition holds.
-        // `.cgImage` is an optional property — UIImage wraps CGImage but doesn't always have one
-        guard let cgImage = cropped.cgImage else {
+    private func encodeImage(_ image: UIImage, modelSize: Int = 1024) async throws -> MLMultiArray {
+        // Check if we already have embeddings for this exact image
+        let imageHash = image.hashValue
+        if let cached = cachedImageEmbeddings, cachedImageHash == imageHash {
+            return cached
+        }
+        
+        guard let cgImage = image.cgImage else {
             throw PipelineError.invalidImage
         }
-
-        // CIImage is an immutable image representation used by Core Image (GPU-accelerated filters).
-        // '.extent' is the image's bounding rectangle (origin + size)
+        
+        let pixelBuffer = try createPixelBuffer(from: cgImage, size: modelSize)
+        
+        // Convert pixel buffer to MLMultiArray in the format the model expects: [1, 3, 1024, 1024]
+        let mlArray = try convertPixelBufferToMLMultiArray(pixelBuffer, width: modelSize, height: modelSize)
+        
+        // Run the encoder
+        let input = edge_sam_encoderInput(image: mlArray)
+        let output = try await encoder.prediction(input: input)
+        
+        // Cache the embeddings
+        cachedImageEmbeddings = output.image_embeddings
+        cachedImageHash = imageHash
+        
+        return output.image_embeddings
+    }
+    
+    /**
+     Runs segmentation on an image based on a point click
+     - Parameters:
+        - image: The full image containing the mole
+        - point: The CGPoint where the user clicked (in image coordinates)
+        - modelSize: The input size for the SAM model (typically 1024x1024)
+     
+     - Returns: A segmentation mask showing the mole at the clicked location
+     - Throws: invalidImage & renderFailed
+     */
+    func segment(image: UIImage, point: CGPoint, modelSize: Int = 1024) async throws -> MLMultiArray {
+        // First, get the image embeddings
+        let embeddings = try await encodeImage(image, modelSize: modelSize)
+        
+        // Normalize the point coordinates to the model's input size
+        guard let cgImage = image.cgImage else {
+            throw PipelineError.invalidImage
+        }
+        
+        let scaleX = Double(modelSize) / Double(cgImage.width)
+        let scaleY = Double(modelSize) / Double(cgImage.height)
+        let normalizedX = Double(point.x) * scaleX
+        let normalizedY = Double(point.y) * scaleY
+        
+        // Create point coordinates array [1, 1, 2] - format: [batch, num_points, coordinates]
+        // Edge-SAM expects points in shape [1, num_points, 2]
+        guard let pointCoords = try? MLMultiArray(shape: [1, 1, 2], dataType: .float32) else {
+            throw PipelineError.renderFailed
+        }
+        pointCoords[[0, 0, 0] as [NSNumber]] = NSNumber(value: normalizedX)
+        pointCoords[[0, 0, 1] as [NSNumber]] = NSNumber(value: normalizedY)
+        
+        // Create point labels array [1, 1] - format: [batch, num_points]
+        // 1 means foreground point, 0 means background
+        guard let pointLabels = try? MLMultiArray(shape: [1, 1], dataType: .float32) else {
+            throw PipelineError.renderFailed
+        }
+        pointLabels[[0, 0] as [NSNumber]] = 1.0 // Foreground point
+        
+        // Run the decoder
+        let decoderInput = edge_sam_decoderInput(
+            image_embeddings: embeddings,
+            point_coords: pointCoords,
+            point_labels: pointLabels
+        )
+        let output = try await decoder.prediction(input: decoderInput)
+        
+        return output.masks
+    }
+    
+    /**
+     Helper method to create a CVPixelBuffer from a CGImage
+     */
+    private func createPixelBuffer(from cgImage: CGImage, size: Int) throws -> CVPixelBuffer {
         let originalCI = CIImage(cgImage: cgImage)
-        let scaleX = CGFloat(modelSize) / originalCI.extent.width
-        let scaleY = CGFloat(modelSize) / originalCI.extent.height
-        // `.transformed(by:)` returns a new CIImage — CIImage operations are lazy/non-destructive
+        let scaleX = CGFloat(size) / originalCI.extent.width
+        let scaleY = CGFloat(size) / originalCI.extent.height
         let resizedCI = originalCI.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
-
-        // CVPixelBuffer is a raw pixel memory buffer used by CoreML and CoreImage.
-        // The attributes tell the system this buffer needs to be compatible with CGImage rendering.
+        
         let bufferAttributes: [String: Any] = [
             kCVPixelBufferCGImageCompatibilityKey as String: true,
             kCVPixelBufferCGBitmapContextCompatibilityKey as String: true
         ]
-        // CVPixelBufferCreate uses an output-parameter pattern: pass a pointer with '&' at the end
-        // and the function writes the result into it. The result is Optional (nil on failure)
+        
         var pixelBuffer: CVPixelBuffer?
-        CVPixelBufferCreate(kCFAllocatorDefault, modelSize, modelSize, kCVPixelFormatType_32BGRA, bufferAttributes as CFDictionary, &pixelBuffer)
-        guard let inputBuffer = pixelBuffer else {
+        CVPixelBufferCreate(
+            kCFAllocatorDefault,
+            size,
+            size,
+            kCVPixelFormatType_32BGRA,
+            bufferAttributes as CFDictionary,
+            &pixelBuffer
+        )
+        
+        guard let buffer = pixelBuffer else {
             throw PipelineError.renderFailed
         }
-        // Renders the CIImage into the pixel buffer
-        ciContext.render(resizedCI, to: inputBuffer)
-
-        // unet_moleInput is a generated Swift wrapper for the CoreML model's input schema
-        let input = unet_moleInput(x: inputBuffer)
-        let output = try await model.prediction(input: input)
-
-        return output.Identity
+        
+        ciContext.render(resizedCI, to: buffer)
+        return buffer
+    }
+    
+    /**
+     Converts a CVPixelBuffer to MLMultiArray in the format [1, 3, height, width]
+     The pixel values are normalized to [0, 1] range
+     */
+    private func convertPixelBufferToMLMultiArray(_ pixelBuffer: CVPixelBuffer, width: Int, height: Int) throws -> MLMultiArray {
+        // Create MLMultiArray with shape [1, 3, height, width]
+        guard let mlArray = try? MLMultiArray(shape: [1, 3, height as NSNumber, width as NSNumber], dataType: .float32) else {
+            throw PipelineError.renderFailed
+        }
+        
+        CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
+        
+        guard let baseAddress = CVPixelBufferGetBaseAddress(pixelBuffer) else {
+            throw PipelineError.renderFailed
+        }
+        
+        let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
+        let buffer = baseAddress.assumingMemoryBound(to: UInt8.self)
+        
+        // Convert BGRA to RGB and normalize to [0, 1]
+        for y in 0..<height {
+            for x in 0..<width {
+                let pixelIndex = y * bytesPerRow + x * 4
+                
+                let b = Float(buffer[pixelIndex]) / 255.0
+                let g = Float(buffer[pixelIndex + 1]) / 255.0
+                let r = Float(buffer[pixelIndex + 2]) / 255.0
+                
+                // MLMultiArray indexing: [batch, channel, height, width]
+                let rIndex = [0, 0, y, x] as [NSNumber]
+                let gIndex = [0, 1, y, x] as [NSNumber]
+                let bIndex = [0, 2, y, x] as [NSNumber]
+                
+                mlArray[rIndex] = NSNumber(value: r)
+                mlArray[gIndex] = NSNumber(value: g)
+                mlArray[bIndex] = NSNumber(value: b)
+            }
+        }
+        
+        return mlArray
+    }
+    
+    /// Clears the cached embeddings - call this when switching to a new image
+    func clearCache() {
+        cachedImageEmbeddings = nil
+        cachedImageHash = nil
     }
 }
