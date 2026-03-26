@@ -107,7 +107,7 @@ public struct OverviewView: View {
                     selectedPerson = firstPerson
                 }
             }
-            // ADD THIS: This watches the database. When MockData finishes
+
             // inserting, this will trigger and update your UI.
             .onChange(of: people) { _, newValue in
                 if selectedPerson == nil, let first = newValue.first {
