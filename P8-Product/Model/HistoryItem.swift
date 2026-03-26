@@ -15,7 +15,7 @@ final class HistoryItem {
     @Attribute(.externalStorage) var imageData: Data?
     var isFlagged: Bool = false
     var person: Person?
-    
+
     var image: UIImage? {
         get {
             guard let imageData else { return nil }
@@ -25,7 +25,7 @@ final class HistoryItem {
             imageData = newValue?.pngData()
         }
     }
-    
+
     init(name: String, timestamp: Date = Date(), image: UIImage? = nil, isFlagged: Bool = false, person: Person? = nil) {
         self.name = name
         self.timestamp = timestamp
