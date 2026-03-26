@@ -18,6 +18,8 @@ public struct OverviewView: View {
     @State private var personToEdit: Person?
     @State private var showingDeleteAlert = false
     @State private var personToDelete: Person?
+    @State private var showingDeleteMoleAlert = false
+    @State private var moleToDelete: Mole?
     @State private var slideEdge: Edge = .trailing
     @State private var cameraShowing: Bool = false
     @State private var capturedImage: UIImage?
@@ -85,6 +87,19 @@ public struct OverviewView: View {
                 }
             } message: {
                 Text("Are you sure you want to delete \(personToDelete?.name ?? "this person")?")
+            }
+            .alert("Delete Mole", isPresented: $showingDeleteMoleAlert) {
+                Button("Delete", role: .destructive) {
+                    if let mole = moleToDelete {
+                        modelContext.delete(mole)
+                    }
+                    moleToDelete = nil
+                }
+                Button("Cancel", role: .cancel) {
+                    moleToDelete = nil
+                }
+            } message: {
+                Text("Are you sure you want to delete \(moleToDelete?.name ?? "this item")?")
             }
             .onAppear {
                 // If data is already there on load, select the first person
@@ -190,8 +205,8 @@ public struct OverviewView: View {
                         }
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
-                                modelContext.delete(mole)
-                                try? modelContext.save()
+                                moleToDelete = mole
+                                showingDeleteMoleAlert = true
                             } label: {
                                 Label("Delete", systemImage: "trash.fill")
                             }
