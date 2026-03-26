@@ -9,7 +9,7 @@ import UIKit
 
 public struct OverviewView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \Person.timestamp) private var people: [Person]
+    @Query(sort: \Person.createdAt) private var people: [Person]
     @State private var selectedPerson: Person?
     @State private var showingAddPerson = false
     @State private var newPersonName = ""
@@ -18,8 +18,8 @@ public struct OverviewView: View {
     @State private var personToEdit: Person?
     @State private var showingDeleteAlert = false
     @State private var personToDelete: Person?
-    @State private var showingDeleteHistoryAlert = false
-    @State private var itemToDelete: HistoryItem?
+    @State private var showingDeleteMoleAlert = false
+    @State private var moleToDelete: Mole?
     @State private var slideEdge: Edge = .trailing
     @State private var cameraShowing: Bool = false
     @State private var capturedImage: UIImage?
@@ -43,13 +43,10 @@ public struct OverviewView: View {
             .onChange(of: capturedImage) { _, newImage in
                 guard let image = newImage,
                       let person = selectedPerson else { return }
-                
-                let newItem = HistoryItem(
-                    name: "Mole \(person.historyItems.count + 1)",
-                    image: image,
-                    person: person
-                )
-                modelContext.insert(newItem)
+
+                let scan = saveMoleScan(image)
+                let mole = saveMole(person)
+                saveMoleInstance(mole, scan)
                 capturedImage = nil
             }
             .alert("Add Person", isPresented: $showingAddPerson) {
@@ -91,24 +88,30 @@ public struct OverviewView: View {
             } message: {
                 Text("Are you sure you want to delete \(personToDelete?.name ?? "this person")?")
             }
-            .alert("Delete Item", isPresented: $showingDeleteHistoryAlert) {
+            .alert("Delete Mole", isPresented: $showingDeleteMoleAlert) {
                 Button("Delete", role: .destructive) {
-                    if let item = itemToDelete {
-                        modelContext.delete(item)
+                    if let mole = moleToDelete {
+                        modelContext.delete(mole)
                     }
-                    itemToDelete = nil
+                    moleToDelete = nil
                 }
                 Button("Cancel", role: .cancel) {
-                    itemToDelete = nil
+                    moleToDelete = nil
                 }
             } message: {
-                Text("Are you sure you want to delete \(itemToDelete?.name ?? "this item")?")
+                Text("Are you sure you want to delete \(moleToDelete?.name ?? "this item")?")
             }
             .onAppear {
-                if people.isEmpty {
-                    showingAddPerson = true
-                } else if selectedPerson == nil {
-                    selectedPerson = people.first
+                // If data is already there on load, select the first person
+                if let firstPerson = people.first, selectedPerson == nil {
+                    selectedPerson = firstPerson
+                }
+            }
+
+            // inserting, this will trigger and update your UI.
+            .onChange(of: people) { _, newValue in
+                if selectedPerson == nil, let first = newValue.first {
+                    selectedPerson = first
                 }
             }
         }
@@ -196,14 +199,14 @@ public struct OverviewView: View {
         ZStack {
             if let person = selectedPerson {
                 List {
-                    ForEach(person.historyItems) { item in
-                        NavigationLink(destination: Text("Details for \(item.name)")) {
-                            moleRow(for: item)
+                    ForEach(person.moles) { mole in
+                        NavigationLink(destination: Text("Details for \(mole.name)")) {
+                            moleRow(for: mole)
                         }
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
-                                itemToDelete = item
-                                showingDeleteHistoryAlert = true
+                                moleToDelete = mole
+                                showingDeleteMoleAlert = true
                             } label: {
                                 Label("Delete", systemImage: "trash.fill")
                             }
@@ -221,16 +224,16 @@ public struct OverviewView: View {
             }
         }
     }
-    
-    private func moleRow(for item: HistoryItem) -> some View {
+
+    private func moleRow(for mole: Mole) -> some View {
         HStack(spacing: 16) {
             ZStack {
                 Rectangle()
                     .fill(Color.gray.opacity(0.2))
                     .frame(width: 80, height: 80)
                     .cornerRadius(8)
-                
-                if let uiImage = item.image {
+
+                if let data = latestScan(for: mole)?.imageData, let uiImage = UIImage(data: data) {
                     Image(uiImage: uiImage)
                         .resizable()
                         .scaledToFill()
@@ -245,14 +248,14 @@ public struct OverviewView: View {
             
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text(item.name)
+                    Text(mole.name)
                         .font(.system(size: 20, weight: .semibold))
-                    if item.isFlagged {
+                    if mole.isReminderActive {
                         Image(systemName: "flag.fill")
                             .foregroundColor(.orange)
                     }
                 }
-                Text("Body part")
+                Text(mole.bodyPart)
                     .font(.system(size: 16))
                     .foregroundColor(.secondary)
             }
@@ -260,6 +263,13 @@ public struct OverviewView: View {
             Spacer()
         }
         .padding(.vertical, 8)
+    }
+
+    private func latestScan(for mole: Mole) -> MoleScan? {
+        mole.instances
+            .compactMap(\.moleScan)
+            .sorted { $0.captureDate > $1.captureDate }
+            .first
     }
     
     private var newScanButton: some View {
@@ -308,9 +318,39 @@ public struct OverviewView: View {
             selectedPerson = nil
         }
         modelContext.delete(person)
+        try? modelContext.save()
     }
     
+    private func saveMoleScan(_ image: UIImage) -> MoleScan {
+        let scan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9))
+        modelContext.insert(scan)
+        return scan
+    }
+    
+    private func saveMole(_ person: Person) -> Mole {
+        let mole = Mole(
+            name: "Mole \(person.moles.count + 1)",
+            bodyPart: "Unassigned",
+            isReminderActive: false,
+            reminderFrequency: nil,
+            nextDueDate: nil,
+            person: person
+        )
+        modelContext.insert(mole)
+        return mole
+    }
+    
+    private func saveMoleInstance(_ mole: Mole, _ scan: MoleScan) {
+        let instance = MoleInstance(
+            diameter: 0,
+            area: 0,
+            mole: mole,
+            moleScan: scan
+        )
+        modelContext.insert(instance)
+    }
+    
+    
+    
+    
 }
-
-
-
