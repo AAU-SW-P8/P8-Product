@@ -70,14 +70,6 @@ struct MoleSegmentationTestView: View {
                     .scaledToFit()
                     .frame(width: geometry.size.width, height: geometry.size.height)
 
-                // Crosshair at tap point
-                if let tap = lastTapPoint {
-                    Circle()
-                        .fill(Color.red)
-                        .frame(width: 20, height: 20)
-                        .position(tap)
-                }
-
                 // Bounding box
                 if let box = boundingBox {
                     Rectangle()
@@ -139,14 +131,6 @@ struct MoleSegmentationTestView: View {
             x: max(0, min(pixelW, tapInImage.x)),
             y: max(0, min(pixelH, tapInImage.y))
         )
-        
-        print("🔴 TAP DEBUG:")
-        print("   View size: \(viewSize)")
-        print("   Image size: \(pixelW) x \(pixelH)")
-        print("   Displayed size: \(displayedSize)")
-        print("   Offset: \(offset)")
-        print("   Raw tap: \(location)")
-        print("   Image-pixel tap: \(tap)")
         
         // Store for display - but we need to convert BACK to view coordinates for drawing!
         lastTapPoint = CGPoint(
