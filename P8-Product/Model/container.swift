@@ -49,7 +49,18 @@ class DataController {
             MoleScan.self
         ])
 
-        let config = ModelConfiguration(url: storeURL)
+        let isTesting = ProcessInfo.processInfo.environment["CI"] == "true" ||
+                        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+
+        // 2. Configure based on environment
+        let config: ModelConfiguration
+        if isTesting {
+            // In-memory for testing isolation
+            config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        } else {
+            // Persistent storage for production
+            config = ModelConfiguration(schema: schema, url: storeURL)
+        }
         return try ModelContainer(for: schema, configurations: [config])
     }
 
