@@ -44,19 +44,19 @@ struct MockData {
 
         let alexScan1 = MoleScan(
             captureDate: date(daysAgo: 20),
-            image: UIImage(systemName: "dot.circle.viewfinder")
+            imageData: UIImage(systemName: "dot.circle.viewfinder")?.pngData()
         )
         let alexScan2 = MoleScan(
             captureDate: date(daysAgo: 5),
-            image: UIImage(systemName: "dot.circle.fill")
+            imageData: UIImage(systemName: "dot.circle.fill")?.pngData()
         )
         let alexScan3 = MoleScan(
             captureDate: date(daysAgo: 10),
-            image: UIImage(systemName: "circle.dotted")
+            imageData: UIImage(systemName: "circle.dotted")?.pngData()
         )
         let jordanScan1 = MoleScan(
             captureDate: date(daysAgo: 2),
-            image: UIImage(systemName: "face.smiling")
+            imageData: UIImage(systemName: "face.smiling")?.pngData()
         )
 
         let alexLeftArmInstance1 = MoleInstance(

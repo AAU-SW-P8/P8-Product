@@ -9,10 +9,14 @@ import UIKit
 
 @main
 struct P8_Product: App {
+    
+    let dataController = DataController.shared
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(for: [HistoryItem.self, Person.self])
+        .modelContainer(dataController.container)
     }
+    
 }

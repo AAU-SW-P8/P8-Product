@@ -11,8 +11,11 @@ class DataController {
             container = try Self.makePersistentContainer()
             checkAndSeed()
         } catch {
+            // Fallback: If the schema changed, the container fails to build.
+            // We CANNOT call container.erase() here because we don't have a container.
+            // We must delete the SQLite files manually to recover safely.
             do {
-                try Self.resetPersistentStore()
+                try Self.deleteStoreFiles()
                 container = try Self.makePersistentContainer()
                 checkAndSeed()
             } catch {
@@ -21,6 +24,11 @@ class DataController {
         }
     }
 
+    // Wipes all data from the container (iOS 18)
+    func eraseAllData() throws {
+            try container.erase()
+    }
+    
     private func checkAndSeed() {
         let context = container.mainContext
         let descriptor = FetchDescriptor<Person>()
@@ -53,12 +61,14 @@ class DataController {
         return directory.appending(path: "default.store")
     }
 
-    private static func resetPersistentStore() throws {
+    private static func deleteStoreFiles() throws {
         let storeURL = storeURL
+        let storePath = storeURL.path()
+        
         let relatedURLs = [
             storeURL,
-            storeURL.appendingPathExtension("shm"),
-            storeURL.appendingPathExtension("wal")
+            URL(fileURLWithPath: storePath + "-shm"),
+            URL(fileURLWithPath: storePath + "-wal")
         ]
 
         for url in relatedURLs where FileManager.default.fileExists(atPath: url.path()) {
