@@ -1,25 +1,29 @@
 //
-//  MockData.swift
-//  P8-Product
-//  Created by Nicolaj Skjødt on 25/03/2026.
+// MockData.swift
+// File only used for debugging
+// Inserts mocked data into Application.
+// P8-Product
 //
+
 import Foundation
 import SwiftData
 import SwiftUI
 
+/// A utility structure used to populate the application with sample data.
+/// This is primarily used for debugging, SwiftUI previews, and initial database seeding
 @MainActor
 struct MockData {
+    /// Inserts a comprehensive set of sample people, moles, and scans into the provided context.
+    /// - Parameter context: The ``ModelContext`` where the sample data will be persisted.
     static func insertSampleData(into context: ModelContext) {
         let calendar = Calendar.current
         let today = Date()
 
-        func date(daysAgo: Int) -> Date {
-            calendar.date(byAdding: .day, value: -daysAgo, to: today) ?? today
-        }
+        // Create root Person objects
+        let person1 = Person(name: "Alex", createdAt: daysAgo(30, from: today))
+        let person2 = Person(name: "Jordan", createdAt: daysAgo(15, from: today))
 
-        let person1 = Person(name: "Alex", createdAt: date(daysAgo: 30))
-        let person2 = Person(name: "Jordan", createdAt: date(daysAgo: 15))
-
+        // Create Mole objects for Alex
         let alexLeftArmMole = Mole(
             name: "Left Arm Mole",
             bodyPart: "Left Arm",
@@ -38,6 +42,7 @@ struct MockData {
             person: person1
         )
 
+        // Create Mole object for Jordan
         let jordanFaceMole = Mole(
             name: "Face Mole",
             bodyPart: "Face",
@@ -47,23 +52,25 @@ struct MockData {
             person: person2
         )
 
+        // Create Scans with placeholder image data
         let alexScan1 = MoleScan(
-            captureDate: date(daysAgo: 20),
+            captureDate: daysAgo(20, from: today),
             imageData: UIImage(systemName: "dot.circle.viewfinder")?.pngData()
         )
         let alexScan2 = MoleScan(
-            captureDate: date(daysAgo: 5),
+            captureDate: daysAgo(5, from: today),
             imageData: UIImage(systemName: "dot.circle.fill")?.pngData()
         )
         let alexScan3 = MoleScan(
-            captureDate: date(daysAgo: 10),
+            captureDate: daysAgo(10, from: today),
             imageData: UIImage(systemName: "circle.dotted")?.pngData()
         )
         let jordanScan1 = MoleScan(
-            captureDate: date(daysAgo: 2),
+            captureDate: daysAgo(2, from: today),
             imageData: UIImage(systemName: "face.smiling")?.pngData()
         )
 
+        // Link everything together via MoleInstances
         let alexLeftArmInstance1 = MoleInstance(
             diameter: 4.2,
             area: 13.8,
@@ -89,6 +96,7 @@ struct MockData {
             moleScan: jordanScan1
         )
 
+        // Insert Objects
         context.insert(person1)
         context.insert(person2)
         context.insert(alexLeftArmMole)
@@ -102,5 +110,14 @@ struct MockData {
         context.insert(alexLeftArmInstance2)
         context.insert(alexBackInstance)
         context.insert(jordanFaceInstance)
+    }
+    
+    /// Helper to calculate a date in the past.
+    /// - Parameters:
+    ///   - days: Number of days to subtract.
+    ///   - anchorDate: The starting date.
+    /// - Returns: A calculated `Date` object.
+    private static func daysAgo(_ days: Int, from anchorDate: Date) -> Date {
+        Calendar.current.date(byAdding: .day, value: -days, to: anchorDate) ?? anchorDate
     }
 }

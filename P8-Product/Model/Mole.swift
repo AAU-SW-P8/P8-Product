@@ -1,8 +1,6 @@
 //
-//  Mole.swift
-//  P8-Product
-//
-//  Created by Nicolaj Skjødt on 25/03/2026.
+// Mole.swift
+// P8-Product
 //
 
 import Foundation
@@ -29,6 +27,14 @@ final class Mole {
     @Relationship(deleteRule: .cascade, inverse: \MoleInstance.mole)
     var instances: [MoleInstance] = []
     
+    /// Creates a new Mole record.
+    /// - Parameters:
+    ///   - name: The display name for the mole.
+    ///   - bodyPart: The body part where the mole is located.
+    ///   - isReminderActive: Whether reminders are currently enabled.
+    ///   - reminderFrequency: How often the mole should be checked.
+    ///   - nextDueDate: The date the next scan is expected.
+    ///   - person: The owner of the mole (defaults to `nil`).
     init(
         name: String,
         bodyPart: String,

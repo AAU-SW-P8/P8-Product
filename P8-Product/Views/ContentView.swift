@@ -1,6 +1,6 @@
 //
-//  ContentView.swift
-//  P8-Product
+// ContentView.swift
+// P8-Product
 //
 
 import SwiftUI
