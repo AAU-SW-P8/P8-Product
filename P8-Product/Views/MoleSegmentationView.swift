@@ -8,31 +8,44 @@
 import SwiftUI
 import CoreML
 
+/// A view that lets the user tap on a mole image to trigger Edge-SAM segmentation.
+///
+/// The image is displayed aspect-fit. When the user taps, a `cropSize × cropSize`
+/// bounding box is centred on the tap and only that crop is sent to the model,
+/// which keeps inference fast and improves accuracy for small moles.
+/// The resulting mask is composited back at the bounding-box position.
 struct MoleSegmentationTestView: View {
-    // The image we use to segment. Should be changed to the one captured in images
+
+    // MARK: - State
+
+    /// The image to segment. Replace with the image captured by the camera.
     @State private var testImage: UIImage? = UIImage(named: "test_mole_image")
 
-    // Segmentation result — just the cropped mask (not a full-size composite)
+    /// The segmentation mask for the last bounding-box crop.
     @State private var cropMaskImage: UIImage?
 
-    // Loading state
+    /// `true` while the segmentation pipeline is running.
     @State private var isProcessing = false
 
-    // Error handling
+    /// Holds the localised error message when segmentation fails.
     @State private var errorMessage: String?
+
+    /// Controls presentation of the error alert.
     @State private var showError = false
 
-    // The segmentor instance
+    /// The loaded Edge-SAM model wrapper, initialised asynchronously on appear.
     @State private var segmentor: MoleSegmentor?
 
-    // Tap point and bounding box, both in image-pixel coordinates
+    /// The last tap location in *view* coordinates, used to show debug info in the toolbar.
     @State private var lastTapPoint: CGPoint?
+
+    /// The bounding box in *view* coordinates, used to position the box and mask overlay.
     @State private var boundingBox: CGRect?
 
-    // Side length of the crop bounding box in image pixels
+    /// Side length of the square crop region sent to the model, in image pixels.
     private let cropSize: CGFloat = 200
 
-    // No zoom - keeping it simple
+    // MARK: - Body
 
     var body: some View {
         NavigationStack {
@@ -47,7 +60,7 @@ struct MoleSegmentationTestView: View {
                     loadingOverlay
                 }
             }
-            .navigationTitle("Mole Segmentation Test")
+            .navigationTitle("Mole Segmentation")
             .toolbar { toolbarContent }
             .alert("Error", isPresented: $showError) {
                 Button("OK") { showError = false }
@@ -58,19 +71,22 @@ struct MoleSegmentationTestView: View {
         }
     }
 
-    // MARK: - Image layer - SIMPLIFIED, no zoom
+    // MARK: - Image layer
 
+    /// Renders the base image together with the bounding-box rectangle and mask overlay.
+    ///
+    /// The view is laid out with `scaledToFit`, so a `GeometryReader` is used to calculate
+    /// the actual displayed image size and offset (letterbox) needed to convert between
+    /// view coordinates and image-pixel coordinates.
     @ViewBuilder
     private func imageContent(image: UIImage) -> some View {
         GeometryReader { geometry in
             ZStack {
-                // Base image - scaled to fit
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFit()
                     .frame(width: geometry.size.width, height: geometry.size.height)
 
-                // Bounding box
                 if let box = boundingBox {
                     Rectangle()
                         .stroke(Color.yellow, lineWidth: 2)
@@ -78,7 +94,6 @@ struct MoleSegmentationTestView: View {
                         .position(x: box.midX, y: box.midY)
                 }
 
-                // Mask overlay
                 if let mask = cropMaskImage, let box = boundingBox {
                     Image(uiImage: mask)
                         .resizable()
@@ -97,6 +112,13 @@ struct MoleSegmentationTestView: View {
 
     // MARK: - Actions
 
+    /// Converts a tap in view coordinates to image-pixel coordinates, builds the
+    /// bounding-box crop, runs segmentation, and updates the overlay.
+    ///
+    /// - Parameters:
+    ///   - location: The tap position in the view's coordinate space.
+    ///   - viewSize: The size of the `GeometryReader` frame containing the image.
+    ///   - image: The full source image.
     private func handleTap(at location: CGPoint, in viewSize: CGSize, image: UIImage) {
         guard let segmentor, let cgImage = image.cgImage else { return }
         guard !isProcessing else { return }
@@ -104,69 +126,67 @@ struct MoleSegmentationTestView: View {
         let pixelW = CGFloat(cgImage.width)
         let pixelH = CGFloat(cgImage.height)
 
-        // Calculate the displayed image size (aspect fit)
+        // Compute the sub-rect the aspect-fit image actually occupies inside viewSize.
         let imageAspect = pixelW / pixelH
-        let viewAspect = viewSize.width / viewSize.height
-        
+        let viewAspect  = viewSize.width / viewSize.height
+
         let displayedSize: CGSize
-        let offset: CGPoint
-        
+        let letterboxOffset: CGPoint
+
         if imageAspect > viewAspect {
-            // Image is wider - fits to width
-            displayedSize = CGSize(width: viewSize.width, height: viewSize.width / imageAspect)
-            offset = CGPoint(x: 0, y: (viewSize.height - displayedSize.height) / 2)
+            // Image is wider than the view — fits to width, pillarboxed vertically.
+            displayedSize    = CGSize(width: viewSize.width, height: viewSize.width / imageAspect)
+            letterboxOffset  = CGPoint(x: 0, y: (viewSize.height - displayedSize.height) / 2)
         } else {
-            // Image is taller - fits to height
-            displayedSize = CGSize(width: viewSize.height * imageAspect, height: viewSize.height)
-            offset = CGPoint(x: (viewSize.width - displayedSize.width) / 2, y: 0)
+            // Image is taller than the view — fits to height, letterboxed horizontally.
+            displayedSize    = CGSize(width: viewSize.height * imageAspect, height: viewSize.height)
+            letterboxOffset  = CGPoint(x: (viewSize.width - displayedSize.width) / 2, y: 0)
         }
-        
-        // Convert tap from view coordinates to image pixel coordinates
-        let tapInImage = CGPoint(
-            x: (location.x - offset.x) / displayedSize.width * pixelW,
-            y: (location.y - offset.y) / displayedSize.height * pixelH
+
+        // Map the tap from view space to image-pixel space.
+        let tapPixel = CGPoint(
+            x: max(0, min(pixelW, (location.x - letterboxOffset.x) / displayedSize.width  * pixelW)),
+            y: max(0, min(pixelH, (location.y - letterboxOffset.y) / displayedSize.height * pixelH))
         )
-        
-        let tap = CGPoint(
-            x: max(0, min(pixelW, tapInImage.x)),
-            y: max(0, min(pixelH, tapInImage.y))
-        )
-        
-        // Store for display - but we need to convert BACK to view coordinates for drawing!
+
+        // Store the tap back in view coordinates for the toolbar debug readout.
         lastTapPoint = CGPoint(
-            x: offset.x + (tap.x / pixelW) * displayedSize.width,
-            y: offset.y + (tap.y / pixelH) * displayedSize.height
+            x: letterboxOffset.x + (tapPixel.x / pixelW) * displayedSize.width,
+            y: letterboxOffset.y + (tapPixel.y / pixelH) * displayedSize.height
         )
 
-        // Build bounding box in image-pixel coordinates
-        let halfCrop = cropSize / 2
-        let boxX     = max(0, min(pixelW - cropSize, tap.x - halfCrop))
-        let boxY     = max(0, min(pixelH - cropSize, tap.y - halfCrop))
-        let box      = CGRect(x: boxX, y: boxY,
-                              width:  min(cropSize, pixelW),
-                              height: min(cropSize, pixelH))
-        
-        // Convert bounding box to view coordinates for display
+        // Build a cropSize × cropSize bounding box in image-pixel space, clamped to the image.
+        let halfCrop  = cropSize / 2
+        let boxPixel  = CGRect(
+            x:      max(0, min(pixelW - cropSize, tapPixel.x - halfCrop)),
+            y:      max(0, min(pixelH - cropSize, tapPixel.y - halfCrop)),
+            width:  min(cropSize, pixelW),
+            height: min(cropSize, pixelH)
+        )
+
+        // Convert the bounding box to view coordinates so SwiftUI can position the overlay.
         boundingBox = CGRect(
-            x: offset.x + (box.origin.x / pixelW) * displayedSize.width,
-            y: offset.y + (box.origin.y / pixelH) * displayedSize.height,
-            width: (box.width / pixelW) * displayedSize.width,
-            height: (box.height / pixelH) * displayedSize.height
+            x:      letterboxOffset.x + (boxPixel.origin.x / pixelW) * displayedSize.width,
+            y:      letterboxOffset.y + (boxPixel.origin.y / pixelH) * displayedSize.height,
+            width:  (boxPixel.width  / pixelW) * displayedSize.width,
+            height: (boxPixel.height / pixelH) * displayedSize.height
         )
 
-        let pointInCrop = CGPoint(x: tap.x - boxX, y: tap.y - boxY)
+        // The tap point relative to the crop, passed to the model as the prompt.
+        let pointInCrop = CGPoint(x: tapPixel.x - boxPixel.origin.x,
+                                  y: tapPixel.y - boxPixel.origin.y)
 
         Task {
             isProcessing = true
             do {
-                guard let croppedCG = cgImage.cropping(to: box) else {
+                guard let croppedCG = cgImage.cropping(to: boxPixel) else {
                     throw PipelineError.invalidImage
                 }
                 let croppedImage = UIImage(cgImage: croppedCG)
                 let maskArray    = try await segmentor.segment(image: croppedImage,
                                                                point: pointInCrop,
                                                                modelSize: 1024)
-                let maskImage    = try convertMaskToImage(maskArray, targetSize: box.size)
+                let maskImage    = try convertMaskToImage(maskArray, targetSize: boxPixel.size)
 
                 await MainActor.run {
                     cropMaskImage = maskImage
@@ -182,6 +202,7 @@ struct MoleSegmentationTestView: View {
         }
     }
 
+    /// Loads the Edge-SAM model asynchronously. Called once on view appear.
     private func loadSegmentor() async {
         do {
             segmentor = try await MoleSegmentor()
@@ -191,6 +212,8 @@ struct MoleSegmentationTestView: View {
         }
     }
 
+    /// Removes the current mask overlay, bounding box, and tap indicator,
+    /// and clears the model's image-embedding cache.
     private func clearSegmentation() {
         cropMaskImage = nil
         lastTapPoint  = nil
@@ -198,12 +221,19 @@ struct MoleSegmentationTestView: View {
         segmentor?.clearCache()
     }
 
-    private func resetZoom() {
-        // No zoom functionality anymore
-    }
-
     // MARK: - Mask conversion
 
+    /// Converts an `MLMultiArray` segmentation mask to a `UIImage`.
+    ///
+    /// Edge-SAM can return masks in several shapes — `[1,1,H,W]`, `[1,H,W]`, or `[H,W]`.
+    /// Values above `0.5` are treated as foreground (white); the rest become black.
+    /// The result is scaled to `targetSize` if the mask dimensions differ.
+    ///
+    /// - Parameters:
+    ///   - maskArray: The raw mask output from the Edge-SAM decoder.
+    ///   - targetSize: The size the returned image should match (typically the crop size).
+    /// - Returns: A grayscale `UIImage` of the binary mask.
+    /// - Throws: `PipelineError.renderFailed` if a `CGContext` cannot be created.
     private func convertMaskToImage(_ maskArray: MLMultiArray, targetSize: CGSize) throws -> UIImage {
         let shape = maskArray.shape.map { $0.intValue }
 
@@ -226,13 +256,13 @@ struct MoleSegmentationTestView: View {
         let pixels = buf.assumingMemoryBound(to: UInt8.self)
         for y in 0..<maskH {
             for x in 0..<maskW {
-                let v: Float
+                let value: Float
                 switch shape.count {
-                case 4:  v = maskArray[[0, 0, y, x] as [NSNumber]].floatValue
-                case 3:  v = maskArray[[0, y, x] as [NSNumber]].floatValue
-                default: v = maskArray[[y, x] as [NSNumber]].floatValue
+                case 4:  value = maskArray[[0, 0, y, x] as [NSNumber]].floatValue
+                case 3:  value = maskArray[[0, y, x] as [NSNumber]].floatValue
+                default: value = maskArray[[y, x] as [NSNumber]].floatValue
                 }
-                pixels[y * maskW + x] = v > 0.5 ? 255 : 0
+                pixels[y * maskW + x] = value > 0.5 ? 255 : 0
             }
         }
 
@@ -247,8 +277,9 @@ struct MoleSegmentationTestView: View {
         return resized
     }
 
-    // MARK: - Subviews
+    // MARK: - Supporting views
 
+    /// Full-screen overlay shown while the pipeline is running.
     private var loadingOverlay: some View {
         ZStack {
             Color.black.opacity(0.3).ignoresSafeArea()
@@ -264,6 +295,7 @@ struct MoleSegmentationTestView: View {
         }
     }
 
+    /// Shown in place of the image when `testImage` is `nil`.
     private var noImagePlaceholder: some View {
         VStack(spacing: 20) {
             Image(systemName: "photo")
@@ -279,13 +311,12 @@ struct MoleSegmentationTestView: View {
         }
     }
 
+    /// Navigation bar buttons and debug info.
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .navigationBarTrailing) {
-            Button("Clear") { 
-                clearSegmentation() 
-            }
-            .disabled(cropMaskImage == nil)
+            Button("Clear") { clearSegmentation() }
+                .disabled(cropMaskImage == nil)
         }
         ToolbarItem(placement: .navigationBarLeading) {
             if let point = lastTapPoint {
@@ -294,12 +325,6 @@ struct MoleSegmentationTestView: View {
                     .foregroundStyle(.secondary)
             }
         }
-    }
-
-    // MARK: - Helpers
-
-    private func clamp(_ v: CGFloat, _ lo: CGFloat, _ hi: CGFloat) -> CGFloat {
-        min(hi, max(lo, v))
     }
 }
 
