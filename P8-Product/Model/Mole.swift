@@ -32,6 +32,7 @@ final class Mole {
     ///   - name: The display name for the mole.
     ///   - bodyPart: The body part where the mole is located.
     ///   - isReminderActive: Whether reminders are currently enabled.
+    ///   - followDefault: Whether to follow the default reminder frequency (defaults to `true`).
     ///   - reminderFrequency: How often the mole should be checked.
     ///   - nextDueDate: The date the next scan is expected.
     ///   - person: The owner of the mole (defaults to `nil`).
@@ -39,6 +40,7 @@ final class Mole {
         name: String,
         bodyPart: String,
         isReminderActive: Bool,
+        followDefault: Bool = true,
         reminderFrequency: Frequency?,
         nextDueDate: Date?,
         person: Person? = nil,
@@ -46,6 +48,7 @@ final class Mole {
         self.name = name
         self.bodyPart = bodyPart
         self.isReminderActive = isReminderActive
+        self.followDefault = followDefault
         self.reminderFrequency = reminderFrequency
         self.nextDueDate = nextDueDate
         self.person = person

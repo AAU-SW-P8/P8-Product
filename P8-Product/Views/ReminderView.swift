@@ -12,8 +12,7 @@ struct ReminderView: View {
     @State private var frequency = "Weekly"
     
     var body: some View {
-        NavigationStack {
-            
+        NavigationStack { 
             List {
                 Section("Reminder Frequency") {
                     Picker("Frequency", selection: $frequency) {
@@ -25,21 +24,24 @@ struct ReminderView: View {
                     .onChange(of: frequency) { oldValue, newValue in
                         let calendar = Calendar.current
                         for mole in moles {
-                            let lastCheckIn = mole.instances.compactMap { $0.moleScan?.captureDate }.max()
-                            if let lastCheckIn = lastCheckIn {
-                                var nextDueDate: Date?
-                                switch newValue {
-                                case "Weekly":
-                                    nextDueDate = calendar.date(byAdding: .weekOfYear, value: 1, to: lastCheckIn)
-                                case "Monthly":
-                                    nextDueDate = calendar.date(byAdding: .month, value: 1, to: lastCheckIn)
-                                case "Quarterly":
-                                    nextDueDate = calendar.date(byAdding: .month, value: 3, to: lastCheckIn)
-                                default:
-                                    break
+                            if mole.followDefault == true {
+                                let lastCheckIn = mole.instances.compactMap { $0.moleScan?.captureDate }.max()
+                                if let lastCheckIn = lastCheckIn {
+                                    var nextDueDate: Date?
+                                    switch newValue {
+                                    case "Weekly":
+                                        nextDueDate = calendar.date(byAdding: .weekOfYear, value: 1, to: lastCheckIn)
+                                    case "Monthly":
+                                        nextDueDate = calendar.date(byAdding: .month, value: 1, to: lastCheckIn)
+                                    case "Quarterly":
+                                        nextDueDate = calendar.date(byAdding: .month, value: 3, to: lastCheckIn)
+                                    default:
+                                        break
+                                    }
+                                    nextDueDate = max(Date(), nextDueDate ?? Date())
+                                    mole.nextDueDate = nextDueDate
+                                    mole.reminderFrequency = newValue
                                 }
-                                nextDueDate = max(Date(), nextDueDate ?? Date())
-                                mole.nextDueDate = nextDueDate
                             }
                         }
                     }
