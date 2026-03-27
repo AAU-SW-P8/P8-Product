@@ -11,6 +11,7 @@ struct CompareView: View {
 
     @State private var selectedPerson: Person?
     @State private var selectedMole: Mole?
+    @State private var selectedMetric: ChartMetric = .area
     @State private var selectedIndexTop = 0
     @State private var selectedIndexBottom = 0
 
@@ -69,21 +70,30 @@ struct CompareView: View {
                     }
                     Spacer()
                 } else {
-                    ScrollView(.vertical, showsIndicators: true) {
-                        ImageCarousel(scans: scans, selectedIndex: $selectedIndexTop)
-
+                        HStack(spacing: 0) {
+                        ImageCarousel(scans: scans, selectedIndex: $selectedIndexTop, dotsOnLeft: true)
                         Divider()
-                            .padding(.vertical, 4)
-
                         ImageCarousel(scans: scans, selectedIndex: $selectedIndexBottom)
-
-                        Divider()
-                            .padding(.vertical, 4)
+                        }
+                        
+                        VStack (spacing: 2) {
+                        Text("Choose a metric to compare:")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Picker("Metric", selection: $selectedMetric) {
+                            ForEach(ChartMetric.allCases) { metric in
+                                Text(metric.title).tag(metric)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+                        
 
                         if let selectedMole {
-                            ChartView(mole: selectedMole)
+                            ChartView(mole: selectedMole, metric: selectedMetric)
                         }
-                    }
+                        }
                 }
             }
         }
