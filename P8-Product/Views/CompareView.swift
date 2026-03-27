@@ -69,12 +69,11 @@ struct CompareView: View {
                     }
                     Spacer()
                 } else {
-                    ImageCarousel(scans: scans, selectedIndex: $selectedIndexTop)
-
-                    Divider()
-                        .padding(.vertical, 4)
-
-                    ImageCarousel(scans: scans, selectedIndex: $selectedIndexBottom)
+                    HStack(spacing: 0) {
+                        ImageCarousel(scans: scans, selectedIndex: $selectedIndexTop, dotsOnLeft: true)
+                        Divider()
+                        ImageCarousel(scans: scans, selectedIndex: $selectedIndexBottom)
+                    }
                 }
             }
         }

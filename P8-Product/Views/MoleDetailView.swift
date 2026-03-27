@@ -28,7 +28,10 @@ struct MoleDetailView: View {
                     .padding(.top, 8)
                 Spacer()
             } else {
+                Spacer()
+
                 ImageCarousel(scans: scans, selectedIndex: $selectedIndex)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 let safeIndex = min(selectedIndex, scans.count - 1)
                 if let instance = mole.instances.first(where: { $0.moleScan == scans[safeIndex] }) {
@@ -45,7 +48,7 @@ struct MoleDetailView: View {
             }
         }
         .navigationTitle(mole.name)
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
         .onChange(of: scans.count) {
             if selectedIndex >= scans.count {
                 selectedIndex = max(0, scans.count - 1)
