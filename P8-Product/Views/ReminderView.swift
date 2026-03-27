@@ -9,9 +9,10 @@ import UIKit
 
 struct ReminderView: View {
     @Query(sort: \Mole.nextDueDate) private var moles: [Mole]
+    @State private var frequency = "Weekly"
+    
     var body: some View {
         NavigationStack {
-            @State var frequency = "Weekly"
             
             List {
                 Section("Reminder Frequency") {
@@ -21,6 +22,27 @@ struct ReminderView: View {
                         Text("Quarterly").tag("Quarterly")
                     }
                     .pickerStyle(.menu)
+                    .onChange(of: frequency) { newValue in
+                        let calendar = Calendar.current
+                        for mole in moles {
+                            let lastCheckIn = mole.instances.compactMap { $0.moleScan?.captureDate }.max()
+                            if let lastCheckIn = lastCheckIn {
+                                var nextDueDate: Date?
+                                switch newValue {
+                                case "Weekly":
+                                    nextDueDate = calendar.date(byAdding: .weekOfYear, value: 1, to: lastCheckIn)
+                                case "Monthly":
+                                    nextDueDate = calendar.date(byAdding: .month, value: 1, to: lastCheckIn)
+                                case "Quarterly":
+                                    nextDueDate = calendar.date(byAdding: .month, value: 3, to: lastCheckIn)
+                                default:
+                                    break
+                                }
+                                nextDueDate = max(Date(), nextDueDate ?? Date())
+                                mole.nextDueDate = nextDueDate
+                            }
+                        }
+                    }
                 }
 
                 Section("Upcoming Check-ins") {
