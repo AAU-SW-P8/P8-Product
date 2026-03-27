@@ -184,7 +184,7 @@ struct MoleSegmentationTestView: View {
                 let croppedImage = UIImage(cgImage: croppedCG)
                 let maskArray    = try await segmentor.segment(image: croppedImage,
                                                                point: pointInCrop,
-                                                               modelSize: 1024)
+                                                               modelSize: 1008)
                 let maskImage    = try convertMaskToImage(maskArray, targetSize: boxPixel.size)
 
                 await MainActor.run {
