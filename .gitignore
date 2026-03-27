@@ -8,3 +8,4 @@
 # but ignore the compiled versions
 
 .build/
+sam3/
