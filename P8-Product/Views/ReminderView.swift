@@ -22,7 +22,7 @@ struct ReminderView: View {
                         Text("Quarterly").tag("Quarterly")
                     }
                     .pickerStyle(.menu)
-                    .onChange(of: frequency) { newValue in
+                    .onChange(of: frequency) { oldValue, newValue in
                         let calendar = Calendar.current
                         for mole in moles {
                             let lastCheckIn = mole.instances.compactMap { $0.moleScan?.captureDate }.max()
