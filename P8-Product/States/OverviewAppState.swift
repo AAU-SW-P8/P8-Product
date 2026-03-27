@@ -28,10 +28,6 @@ class OverviewAppState {
     
     private let dataController: DataController
     
-    init() {
-        self.dataController = .shared
-    }
-    
     init(dataController: DataController) {
         self.dataController = dataController
     }
@@ -107,6 +103,11 @@ class OverviewAppState {
 
     func confirmDeletePerson() {
 
+        defer {
+            personToDelete = nil
+            showingDeleteAlert = false
+        }
+
         guard let person: Person = personToDelete else { return }
 
         if selectedPerson == person { 
@@ -115,8 +116,6 @@ class OverviewAppState {
 
         dataController.delete(person)
 
-        personToDelete = nil
-        showingDeleteAlert = false
     }
     
     // MARK: - Mole Actions
@@ -128,13 +127,14 @@ class OverviewAppState {
     
     func confirmDeleteMole() {
 
-        guard let mole: Mole = moleToDelete else { return }
+        defer {
+            moleToDelete = nil
+            showingDeleteMoleAlert = false
+        }
 
-        
+        guard let mole: Mole = moleToDelete else { return}
+
         dataController.delete(mole)
-        
-        moleToDelete = nil
-        showingDeleteMoleAlert = false
         
     }
     
