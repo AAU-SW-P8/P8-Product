@@ -8,19 +8,32 @@ import SwiftData
 import UIKit
 
 struct ReminderView: View {
+    @Query(sort: \Mole.nextDueDate) private var moles: [Mole]
     var body: some View {
         NavigationStack {
+            @State var frequency = "Weekly"
+            
             List {
                 Section("Reminder Frequency") {
-                    LabeledContent("Frequency", value: "Daily")
+                    Picker("Frequency", selection: $frequency) {
+                        Text("Weekly").tag("Weekly")
+                        Text("Monthly").tag("Monthly")
+                        Text("Quarterly").tag("Quarterly")
+                    }
+                    .pickerStyle(.menu)
                 }
 
                 Section("Upcoming Check-ins") {
-                    LabeledContent("Image ID: 101") {
-                        Text(Date(), format: .dateTime.month().day().hour().minute())
-                    }
-                    LabeledContent("Image ID: 102") {
-                        Text(Date().addingTimeInterval(86400), format: .dateTime.month().day().hour().minute())
+                    ForEach(moles) { mole in
+                        HStack {
+                            Text("Mole \(mole.name)")
+                            Spacer()
+                            if let dueDate = mole.nextDueDate {
+                                Text(dueDate, format: .dateTime.month().day().hour().minute())
+                            } else {
+                                Text("No date set")
+                            }
+                        }
                     }
                 }
             }
