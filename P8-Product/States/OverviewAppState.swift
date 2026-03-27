@@ -1,6 +1,6 @@
 import SwiftUI
 import SwiftData
-import UIKit
+
 
 @MainActor
 @Observable
@@ -34,12 +34,20 @@ class OverviewAppState {
     
     // MARK: - Person Initialization & Navigation
     
+    /**
+     Initializes the selected person if none is currently selected.
+     Should be called when the list of people is loaded or changes.
+     */
     func initializeSelectionIfNeeded(with people: [Person]) {
         if selectedPerson == nil, let firstPerson: Person = people.first {
             selectedPerson = firstPerson
         }
     }
     
+    /**
+     Selects the previous person in the list, if possible, and sets the slide animation direction.
+     - Parameter people: The current list of people to determine the index of the selected person.
+     */
     func selectPreviousPerson(from people: [Person]) {
         guard let current: Person = selectedPerson,
               let index: Array<Person>.Index = people.firstIndex(of: current),
@@ -51,6 +59,10 @@ class OverviewAppState {
         }
     }
     
+    /**
+     Selects the next person in the list, if possible, and sets the slide animation direction.
+     - Parameter people: The current list of people to determine the index of the selected person.
+     */
     func selectNextPerson(from people: [Person]) {
         guard let current: Person = selectedPerson,
               let index: Array<Person>.Index = people.firstIndex(of: current),
@@ -64,6 +76,10 @@ class OverviewAppState {
     
     // MARK: - Person CRUD Actions
     
+    /** 
+     Validates and creates a new person, then selects them and resets the add person state.
+     Should be called when confirming the addition of a new person.
+     */
     func confirmAddPerson() {
         guard !newPersonName.isEmpty else { return }
         let newPerson: Person = dataController.addPerson(name: newPersonName)
@@ -72,17 +88,29 @@ class OverviewAppState {
         showingAddPerson = false
     }
     
+    /**
+     Resets the add person state without creating a new person.
+     Should be called when cancelling the addition of a new person.
+     */
     func cancelAddPerson() {
         newPersonName = ""
         showingAddPerson = false
     }
     
+    /**
+     Starts the editing process for a person.
+     - Parameter person: The person to edit.
+     */
     func startEditing(person: Person) {
         personToEdit = person
         editingName = person.name
         showingEditPerson = true
     }
     
+    /**
+     Validates and saves the edited person's name, then resets the edit state.
+     Should be called when confirming the edit of a person.
+     */
     func confirmEdit() {
         if let person: Person = personToEdit, !editingName.isEmpty {
             person.name = editingName // Updates the SwiftData Model

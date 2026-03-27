@@ -7,7 +7,7 @@
 
 import Foundation
 import SwiftData
-import UIKit
+
 
 /// A utility structure used to populate the application with sample data.
 /// This is primarily used for debugging, SwiftUI previews, and initial database seeding

@@ -5,7 +5,7 @@
 
 import Foundation
 import SwiftData
-import UIKit
+
 
 /// `DataController` handles the initialization of the `ModelContainer`, environment-specific
 /// configurations (e.g., in-memory storage for testing), and safe recovery from database
@@ -38,7 +38,7 @@ class DataController {
     }
 
     // Wipes all data from the persistent container (iOS 18)
-    func eraseAllData() throws {
+    func eraseAllData() {
         do {
             try container.erase()
         } catch {

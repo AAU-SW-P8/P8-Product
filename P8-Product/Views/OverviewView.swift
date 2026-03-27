@@ -5,10 +5,9 @@
 
 import SwiftUI
 import SwiftData
-import UIKit
+
 
 public struct OverviewView: View {
-    @Environment(\.modelContext) private var modelContext
     @Query(sort: \Person.createdAt) private var people: [Person]
     
     // Hold the AppState. It starts as nil until we have the ModelContext.
@@ -153,9 +152,9 @@ private struct OverviewContentView: View {
     
     private var moleListView: some View {
         ZStack {
-            if let person = appState.selectedPerson {
+            if let person: Person = appState.selectedPerson {
                 List {
-                    ForEach(person.moles) { mole in
+                    ForEach(person.moles) { mole: Mole in
                         NavigationLink(destination: Text("Details for \(mole.name)")) {
                             moleRow(for: mole)
                         }
