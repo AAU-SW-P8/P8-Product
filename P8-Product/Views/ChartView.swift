@@ -53,21 +53,13 @@ struct ChartView: View {
             .sorted { $0.date < $1.date }
     }
 
-    private var evolution: Double? {
-        guard let first = chartData.first?.value,
-              let last = chartData.last?.value,
-              chartData.count > 1
-        else { return nil }
-
-        let delta = last - first
-        return delta
+    private var evolution: Double {
+        let first = chartData.first?.value ?? 0
+        let last = chartData.last?.value ?? first
+        return last - first
     }
 
     private var evolutionText: String {
-        guard let evolution else {
-            return "Need at least 2 scans to show evolution"
-        }
-
         let deltaText = String(format: "%.1f", abs(evolution))
         if evolution > 0 {
             return "+\(deltaText) \(metric.unit)"

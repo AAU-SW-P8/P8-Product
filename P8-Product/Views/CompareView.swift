@@ -75,7 +75,7 @@ struct CompareView: View {
                         Divider()
                         ImageCarousel(scans: scans, selectedIndex: $selectedIndexBottom)
                         }
-                        
+                        if scans.count > 1 {
                         VStack (spacing: 2) {
                         Text("Choose a metric to compare:")
                             .font(.subheadline)
@@ -94,6 +94,7 @@ struct CompareView: View {
                             ChartView(mole: selectedMole, metric: selectedMetric)
                         }
                         }
+                    }
                 }
             }
         }
