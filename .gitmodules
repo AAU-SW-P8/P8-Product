@@ -1,0 +1,3 @@
+[submodule "MoleImagePipeline/models/coreml-sam2.1-large"]
+	path = MoleImagePipeline/models/coreml-sam2.1-large
+	url = https://huggingface.co/apple/coreml-sam2.1-large

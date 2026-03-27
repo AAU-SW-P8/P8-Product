@@ -9,15 +9,15 @@ import UIKit
 
 class MoleSegmentor {
     // SAM 2 uses three models: Image Encoder, Prompt Encoder, and Mask Decoder
-    private let imageEncoder: SAM2_1TinyImageEncoderFLOAT16
-    private let promptEncoder: SAM2_1TinyPromptEncoderFLOAT16
-    private let maskDecoder: SAM2_1TinyMaskDecoderFLOAT16
+    private let imageEncoder: SAM2_1LargeImageEncoderFLOAT16
+    private let promptEncoder: SAM2_1LargePromptEncoderFLOAT16
+    private let maskDecoder: SAM2_1LargeMaskDecoderFLOAT16
     
     private let ciContext = CIContext()
     
     // Cache the image encoder output (SAM 2 usually requires high-res features in addition to base embeddings)
     // We store the entire output object to easily pass its properties to the decoder later.
-    private var cachedEncoderOutput: SAM2_1TinyImageEncoderFLOAT16Output?
+    private var cachedEncoderOutput: SAM2_1LargeImageEncoderFLOAT16Output?
     private var cachedImageHash: Int?
 
     enum PipelineError: Error {
@@ -28,21 +28,21 @@ class MoleSegmentor {
 
     init() async throws {
         // Load Image Encoder URL
-        guard let encoderURL = Bundle.main.url(forResource: "SAM2_1TinyImageEncoderFLOAT16", withExtension: "mlmodelc")
-            ?? Bundle.main.url(forResource: "SAM2_1TinyImageEncoderFLOAT16", withExtension: "mlmodel") else {
-            throw PipelineError.modelNotFound(name: "SAM2_1TinyImageEncoderFLOAT16")
+        guard let encoderURL = Bundle.main.url(forResource: "SAM2_1LargeImageEncoderFLOAT16", withExtension: "mlmodelc")
+            ?? Bundle.main.url(forResource: "SAM2_1LargeImageEncoderFLOAT16", withExtension: "mlmodel") else {
+            throw PipelineError.modelNotFound(name: "SAM2_1LargeImageEncoderFLOAT16")
         }
         
         // Load Prompt Encoder URL
-        guard let promptURL = Bundle.main.url(forResource: "SAM2_1TinyPromptEncoderFLOAT16", withExtension: "mlmodelc")
-            ?? Bundle.main.url(forResource: "SAM2_1TinyPromptEncoderFLOAT16", withExtension: "mlmodel") else {
-            throw PipelineError.modelNotFound(name: "SAM2_1TinyPromptEncoderFLOAT16")
+        guard let promptURL = Bundle.main.url(forResource: "SAM2_1LargePromptEncoderFLOAT16", withExtension: "mlmodelc")
+            ?? Bundle.main.url(forResource: "SAM2_1LargePromptEncoderFLOAT16", withExtension: "mlmodel") else {
+            throw PipelineError.modelNotFound(name: "SAM2_1LargePromptEncoderFLOAT16")
         }
         
         // Load Mask Decoder URL
-        guard let decoderURL = Bundle.main.url(forResource: "SAM2_1TinyMaskDecoderFLOAT16", withExtension: "mlmodelc")
-            ?? Bundle.main.url(forResource: "SAM2_1TinyMaskDecoderFLOAT16", withExtension: "mlmodel") else {
-            throw PipelineError.modelNotFound(name: "SAM2_1TinyMaskDecoderFLOAT16")
+        guard let decoderURL = Bundle.main.url(forResource: "SAM2_1LargeMaskDecoderFLOAT16", withExtension: "mlmodelc")
+            ?? Bundle.main.url(forResource: "SAM2_1LargeMaskDecoderFLOAT16", withExtension: "mlmodel") else {
+            throw PipelineError.modelNotFound(name: "SAM2_1LargeMaskDecoderFLOAT16")
         }
         
         // --- THE FIX ---
@@ -51,12 +51,12 @@ class MoleSegmentor {
             config.computeUnits = .cpuOnly
             
             // Initialize the models with the CPU-only configuration
-            self.imageEncoder = try await SAM2_1TinyImageEncoderFLOAT16.load(contentsOf: encoderURL, configuration: config)
-            self.promptEncoder = try await SAM2_1TinyPromptEncoderFLOAT16.load(contentsOf: promptURL, configuration: config)
-            self.maskDecoder = try await SAM2_1TinyMaskDecoderFLOAT16.load(contentsOf: decoderURL, configuration: config)
+            self.imageEncoder = try await SAM2_1LargeImageEncoderFLOAT16.load(contentsOf: encoderURL, configuration: config)
+            self.promptEncoder = try await SAM2_1LargePromptEncoderFLOAT16.load(contentsOf: promptURL, configuration: config)
+            self.maskDecoder = try await SAM2_1LargeMaskDecoderFLOAT16.load(contentsOf: decoderURL, configuration: config)
         }
 
-    private func encodeImage(_ image: UIImage, modelSize: Int = 1024) async throws -> SAM2_1TinyImageEncoderFLOAT16Output {
+    private func encodeImage(_ image: UIImage, modelSize: Int = 1024) async throws -> SAM2_1LargeImageEncoderFLOAT16Output {
             let imageHash = image.hashValue
             if let cached = cachedEncoderOutput, cachedImageHash == imageHash {
                 return cached
@@ -69,7 +69,7 @@ class MoleSegmentor {
             
             // 2. Pass the pixel buffer DIRECTLY to the encoder.
             // Do NOT use `MLMultiArray` and do NOT use the `imageWith: cgImage` helper!
-            let input = SAM2_1TinyImageEncoderFLOAT16Input(image: pixelBuffer)
+            let input = SAM2_1LargeImageEncoderFLOAT16Input(image: pixelBuffer)
             let output = try await imageEncoder.prediction(input: input)
             
             cachedEncoderOutput = output
@@ -111,7 +111,7 @@ class MoleSegmentor {
         pointLabels[[0, 1] as [NSNumber]] = -1.0 // -1.0 = Ignore / Padding
         
         // Run Prompt Encoder
-        let promptInput = SAM2_1TinyPromptEncoderFLOAT16Input(
+        let promptInput = SAM2_1LargePromptEncoderFLOAT16Input(
             points: pointCoords,
             labels: pointLabels
         )
@@ -124,7 +124,7 @@ class MoleSegmentor {
         // Combine image features and prompt features
         // NOTE: SAM 2 image encoders usually output `image_embeddings`, `high_res_feats_0`, and `high_res_feats_1`.
         // Ensure you are passing all required features to the decoder input.
-        let decoderInput = SAM2_1TinyMaskDecoderFLOAT16Input(
+        let decoderInput = SAM2_1LargeMaskDecoderFLOAT16Input(
             image_embedding: encoderOutput.image_embedding,
             sparse_embedding: promptOutput.sparse_embeddings, // Note: watch out for the 's' at the end of promptOutput.sparse_embeddings if the parameter name is singular!
             dense_embedding: promptOutput.dense_embeddings,
