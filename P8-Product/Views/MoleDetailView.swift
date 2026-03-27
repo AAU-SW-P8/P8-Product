@@ -31,7 +31,7 @@ struct MoleDetailView: View {
                 Spacer()
 
                 ImageCarousel(scans: scans, selectedIndex: $selectedIndex)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .fixedSize(horizontal: true, vertical: true)
 
                 let safeIndex = min(selectedIndex, scans.count - 1)
                 if let instance = mole.instances.first(where: { $0.moleScan == scans[safeIndex] }) {
