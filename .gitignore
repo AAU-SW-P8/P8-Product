@@ -7,3 +7,4 @@
 # Keep the source .mlmodel or .mlpackage files
 # but ignore the compiled versions
 
+.build/
