@@ -69,12 +69,21 @@ struct CompareView: View {
                     }
                     Spacer()
                 } else {
-                    ImageCarousel(scans: scans, selectedIndex: $selectedIndexTop)
+                    ScrollView(.vertical, showsIndicators: true) {
+                        ImageCarousel(scans: scans, selectedIndex: $selectedIndexTop)
 
-                    Divider()
-                        .padding(.vertical, 4)
+                        Divider()
+                            .padding(.vertical, 4)
 
-                    ImageCarousel(scans: scans, selectedIndex: $selectedIndexBottom)
+                        ImageCarousel(scans: scans, selectedIndex: $selectedIndexBottom)
+
+                        Divider()
+                            .padding(.vertical, 4)
+
+                        if let selectedMole {
+                            ChartView(mole: selectedMole)
+                        }
+                    }
                 }
             }
         }

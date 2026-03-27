@@ -65,6 +65,12 @@ struct MockData {
             captureDate: daysAgo(10, from: today),
             imageData: UIImage(systemName: "circle.dotted")?.pngData()
         )
+
+        let alexScan4 = MoleScan(
+            captureDate: daysAgo(60, from: today),
+            imageData: UIImage(systemName: "circle.dashed")?.pngData()
+        )
+
         let jordanScan1 = MoleScan(
             captureDate: daysAgo(2, from: today),
             imageData: UIImage(systemName: "face.smiling")?.pngData()
@@ -83,6 +89,14 @@ struct MockData {
             mole: alexLeftArmMole,
             moleScan: alexScan2
         )
+    
+        let alexLeftArmInstance3 = MoleInstance(
+            diameter: 5.0,
+            area: 16.0,
+            mole: alexLeftArmMole,
+            moleScan: alexScan4
+        )
+
         let alexBackInstance = MoleInstance(
             diameter: 3.6,
             area: 10.1,
@@ -105,9 +119,11 @@ struct MockData {
         context.insert(alexScan1)
         context.insert(alexScan2)
         context.insert(alexScan3)
+        context.insert(alexScan4)
         context.insert(jordanScan1)
         context.insert(alexLeftArmInstance1)
         context.insert(alexLeftArmInstance2)
+        context.insert(alexLeftArmInstance3)
         context.insert(alexBackInstance)
         context.insert(jordanFaceInstance)
     }

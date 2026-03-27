@@ -36,9 +36,15 @@ class DataController {
         }
     }
 
-    // Wipes all data from the persistent container (iOS 18)
+    // Wipes all data from the persistent container
     func eraseAllData() throws {
+        // Try iOS 18+ native erase first
+        if #available(iOS 18, *) {
             try container.erase()
+        } else {
+            // Fallback for earlier iOS versions: manually delete store files
+            try Self.deleteStoreFiles()
+        }
     }
     
     // Checks if the database is empty and populates it with sample data if necessary.
