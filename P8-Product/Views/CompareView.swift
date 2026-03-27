@@ -76,8 +76,10 @@ struct CompareView: View {
                         ImageCarousel(scans: scans, selectedIndex: $selectedIndexBottom)
                         }
                         if scans.count > 1 {
+                        
                         VStack (spacing: 2) {
-                        Text("Choose a metric to compare:")
+                        
+                        Text("Choose a metric evolution:")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         Picker("Metric", selection: $selectedMetric) {
@@ -94,6 +96,17 @@ struct CompareView: View {
                             ChartView(mole: selectedMole, metric: selectedMetric)
                         }
                         }
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(Color(.secondarySystemBackground))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                        )
+                        .padding(.horizontal)
+                        .padding(.top, 8)
                     }
                 }
             }

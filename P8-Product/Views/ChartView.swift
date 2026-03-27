@@ -34,10 +34,16 @@ enum ChartMetric: String, CaseIterable, Identifiable {
 }
 
 struct ChartView: View {
+    private struct DataPoint: Identifiable {
+        let id = UUID()
+        let date: Date
+        let value: Double
+    }
+
     let mole: Mole
     let metric: ChartMetric
 
-    private var chartData: [(date: Date, value: Double)] {
+    private var chartData: [DataPoint] {
         mole.instances
             .compactMap { instance in
                 guard let scan = instance.moleScan else { return nil }
@@ -48,7 +54,7 @@ struct ChartView: View {
                 case .diameter:
                     value = Double(instance.diameter)
                 }
-                return (date: scan.captureDate, value: value)
+                return DataPoint(date: scan.captureDate, value: value)
             }
             .sorted { $0.date < $1.date }
     }
@@ -86,8 +92,7 @@ struct ChartView: View {
             .padding(.horizontal)
 
             Chart {
-                ForEach(chartData.indices, id: \.self) { index in
-                    let point = chartData[index]
+                ForEach(chartData) { point in
                     LineMark(
                         x: .value("Date", point.date),
                         y: .value(metric.title, point.value)
@@ -106,8 +111,7 @@ struct ChartView: View {
                         Text(formattedMetricValue(point.value))
                             .font(.caption)
                             .foregroundStyle(.primary)
-                    }
-                    
+                    }   
                 }
             }
             .chartXAxis {
@@ -119,7 +123,11 @@ struct ChartView: View {
             .chartYAxis {
                 AxisMarks(values: .automatic(desiredCount: 3)) { value in
                     AxisGridLine()
-                    AxisValueLabel()
+                    AxisValueLabel {
+                        if let yValue = value.as(Double.self) {
+                            Text("\(yValue.formatted(.number.precision(.fractionLength(1)))) \(metric.unit)")
+                        }
+                    }
                 }
             }
             .chartYScale(domain: .automatic(includesZero: false))
