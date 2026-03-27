@@ -32,6 +32,7 @@ struct ImageCarousel: View {
                                     .shadow(radius: 3)
                                     .padding(.horizontal, 8)
                                     .frame(height: height)
+                                    .containerRelativeFrame(.vertical)
                                     .id(index)
                             } else {
                                 ZStack {
@@ -43,6 +44,7 @@ struct ImageCarousel: View {
                                 }
                                 .padding(.horizontal, 8)
                                 .frame(height: height)
+                                .containerRelativeFrame(.vertical)
                                 .id(index)
                             }
                         }
@@ -50,13 +52,13 @@ struct ImageCarousel: View {
                     .scrollTargetLayout()
                 }
                 .frame(height: height)
-                .scrollTargetBehavior(.viewAligned)
+                .scrollTargetBehavior(.paging)
                 .scrollPosition(id: Binding(
                     get: { safeIndex as Int? },
                     set: { newValue in
                         if let newValue { selectedIndex = newValue }
                     }
-                ))
+                ), anchor: .center)
 
                 if !dotsOnLeft { dots }
             }
