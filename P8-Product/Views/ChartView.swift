@@ -90,6 +90,8 @@ struct ChartView: View {
             .fontWeight(.semibold)
             .foregroundStyle(.blue)
             .padding(.horizontal)
+            .padding(.top, 10)
+            .padding(.bottom, 6)
 
             Chart {
                 ForEach(chartData) { point in
