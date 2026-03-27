@@ -10,23 +10,39 @@ import UIKit
 public struct OverviewView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Person.createdAt) private var people: [Person]
-    @State private var selectedPerson: Person?
-    @State private var showingAddPerson = false
-    @State private var newPersonName = ""
-    @State private var showingEditPerson = false
-    @State private var editingName = ""
-    @State private var personToEdit: Person?
-    @State private var showingDeleteAlert = false
-    @State private var personToDelete: Person?
-    @State private var showingDeleteMoleAlert = false
-    @State private var moleToDelete: Mole?
-    @State private var slideEdge: Edge = .trailing
-    @State private var cameraShowing: Bool = false
-    @State private var capturedImage: UIImage?
+    
+    // Hold the AppState. It starts as nil until we have the ModelContext.
+    @State private var appState: OverviewAppState?
     
     public init() {}
     
     public var body: some View {
+        Group {
+            if let appState = appState {
+                // Once initialized, pass the non-optional state to the content view
+                OverviewContentView(appState: appState, people: people)
+            } else {
+                ProgressView()
+                    .onAppear {
+                        // Initialize AppState once the ModelContext is available
+                        appState = OverviewAppState()
+                    }
+            }
+        }
+    }
+}
+
+private struct OverviewContentView: View {
+    // Declared at the top of the struct, so ALL subviews below can see it!
+    @Bindable var appState: OverviewAppState
+    var people: [Person]
+    
+    var body: some View {
+        navigationContent
+            .modifier(OverviewAlertsModifier(appState: appState))
+    }
+
+    private var navigationContent: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 headerView
@@ -36,86 +52,25 @@ public struct OverviewView: View {
                 Spacer()
                 newScanButton
             }
-            .fullScreenCover(isPresented: $cameraShowing) {
-                ARCameraView(capturedImage: $capturedImage)
+            .fullScreenCover(isPresented: $appState.cameraShowing) {
+                ARCameraView(capturedImage: $appState.capturedImage)
                     .ignoresSafeArea()
             }
-            .onChange(of: capturedImage) { _, newImage in
-                guard let image = newImage,
-                      let person = selectedPerson else { return }
-
-                let scan = saveMoleScan(image)
-                let mole = saveMole(person)
-                saveMoleInstance(mole, scan)
-                capturedImage = nil
-            }
-            .alert("Add Person", isPresented: $showingAddPerson) {
-                TextField("Name", text: $newPersonName)
-                Button("Add") {
-                    if !newPersonName.isEmpty {
-                        let person = Person(name: newPersonName)
-                        modelContext.insert(person)
-                        selectedPerson = person
-                        newPersonName = ""
-                    }
+            .onChange(of: appState.capturedImage) { _, newImage in
+                if newImage != nil {
+                    appState.processCapturedImage()
                 }
-                Button("Cancel", role: .cancel) {
-                    newPersonName = ""
-                }
-            }
-            .alert("Edit Person", isPresented: $showingEditPerson) {
-                TextField("Name", text: $editingName)
-                Button("Save") {
-                    if let person = personToEdit, !editingName.isEmpty {
-                        person.name = editingName
-                    }
-                    personToEdit = nil
-                }
-                Button("Cancel", role: .cancel) {
-                    personToEdit = nil
-                }
-            }
-            .alert("Delete Person", isPresented: $showingDeleteAlert) {
-                Button("Delete", role: .destructive) {
-                    if let person = personToDelete {
-                        deletePerson(person)
-                    }
-                    personToDelete = nil
-                }
-                Button("Cancel", role: .cancel) {
-                    personToDelete = nil
-                }
-            } message: {
-                Text("Are you sure you want to delete \(personToDelete?.name ?? "this person")?")
-            }
-            .alert("Delete Mole", isPresented: $showingDeleteMoleAlert) {
-                Button("Delete", role: .destructive) {
-                    if let mole = moleToDelete {
-                        modelContext.delete(mole)
-                    }
-                    moleToDelete = nil
-                }
-                Button("Cancel", role: .cancel) {
-                    moleToDelete = nil
-                }
-            } message: {
-                Text("Are you sure you want to delete \(moleToDelete?.name ?? "this item")?")
             }
             .onAppear {
-                // If data is already there on load, select the first person
-                if let firstPerson = people.first, selectedPerson == nil {
-                    selectedPerson = firstPerson
-                }
+                appState.initializeSelectionIfNeeded(with: people)
             }
-
-            // inserting, this will trigger and update your UI.
             .onChange(of: people) { _, newValue in
-                if selectedPerson == nil, let first = newValue.first {
-                    selectedPerson = first
-                }
+                appState.initializeSelectionIfNeeded(with: newValue)
             }
         }
     }
+
+    
     
     // MARK: - Subviews
     
@@ -126,7 +81,7 @@ public struct OverviewView: View {
                 .fontWeight(.bold)
             Spacer()
             Button(action: {
-                showingAddPerson = true
+                appState.showingAddPerson = true
             }) {
                 Image(systemName: "person.fill.badge.plus")
                     .font(.system(size: 32))
@@ -140,32 +95,29 @@ public struct OverviewView: View {
     
     private var personSelectorView: some View {
         HStack {
-            Button(action: selectPreviousPerson) {
+            Button(action: { appState.selectPreviousPerson(from: people) }) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 30, weight: .bold))
                     .foregroundColor(.primary)
                     .frame(width: 44, height: 44)
             }
-            .disabled(selectedPerson == people.first)
-            .opacity(selectedPerson == people.first ? 0.3 : 1.0)
+            .disabled(appState.selectedPerson == people.first || people.isEmpty)
+            .opacity((appState.selectedPerson == people.first || people.isEmpty) ? 0.3 : 1.0)
             
             ZStack {
-                if let person = selectedPerson {
+                if let person = appState.selectedPerson {
                     Text(person.name)
                         .font(.system(size: 18, weight: .semibold))
                         .lineLimit(1)
                         .foregroundColor(.primary)
                         .contextMenu {
                             Button {
-                                personToEdit = person
-                                editingName = person.name
-                                showingEditPerson = true
+                                appState.startEditing(person: person)
                             } label: {
                                 Label("Edit Name", systemImage: "pencil")
                             }
                             Button(role: .destructive) {
-                                personToDelete = person
-                                showingDeleteAlert = true
+                                appState.requestDelete(person: person) // Perfectly in scope here!
                             } label: {
                                 Label("Delete", systemImage: "trash")
                             }
@@ -173,22 +125,26 @@ public struct OverviewView: View {
                         .background(Color(.systemGray6))
                         .id(person)
                         .transition(.asymmetric(
-                            insertion: .move(edge: slideEdge).combined(with: .opacity),
-                            removal: .move(edge: slideEdge == .leading ? .trailing : .leading).combined(with: .opacity)
+                            insertion: .move(edge: appState.slideEdge).combined(with: .opacity),
+                            removal: .move(edge: appState.slideEdge == .leading ? .trailing : .leading).combined(with: .opacity)
                         ))
+                } else {
+                    Text("No Person Selected")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.secondary)
                 }
             }
             .frame(maxWidth: .infinity)
             .clipped()
             
-            Button(action: selectNextPerson) {
+            Button(action: { appState.selectNextPerson(from: people) }) {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 30, weight: .bold))
                     .foregroundColor(.primary)
                     .frame(width: 44, height: 44)
             }
-            .disabled(selectedPerson == people.last)
-            .opacity(selectedPerson == people.last ? 0.3 : 1.0)
+            .disabled(appState.selectedPerson == people.last || people.isEmpty)
+            .opacity((appState.selectedPerson == people.last || people.isEmpty) ? 0.3 : 1.0)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 8)
@@ -197,20 +153,18 @@ public struct OverviewView: View {
     
     private var moleListView: some View {
         ZStack {
-            if let person = selectedPerson {
+            if let person = appState.selectedPerson {
                 List {
                     ForEach(person.moles) { mole in
                         NavigationLink(destination: Text("Details for \(mole.name)")) {
                             moleRow(for: mole)
                         }
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button(role: .destructive) {
-                                moleToDelete = mole
-                                showingDeleteMoleAlert = true
+                            Button {
+                                appState.requestDelete(mole: mole) // Perfectly in scope here!
                             } label: {
                                 Label("Delete", systemImage: "trash.fill")
                             }
-                            .font(.headline)
                             .tint(.red)
                         }
                     }
@@ -218,8 +172,8 @@ public struct OverviewView: View {
                 .listStyle(.plain)
                 .id(person)
                 .transition(.asymmetric(
-                    insertion: .move(edge: slideEdge),
-                    removal: .move(edge: slideEdge == .leading ? .trailing : .leading)
+                    insertion: .move(edge: appState.slideEdge),
+                    removal: .move(edge: appState.slideEdge == .leading ? .trailing : .leading)
                 ))
             }
         }
@@ -274,8 +228,8 @@ public struct OverviewView: View {
     
     private var newScanButton: some View {
         Button(action: {
-            if selectedPerson != nil {
-                cameraShowing = true
+            if appState.selectedPerson != nil {
+                appState.cameraShowing = true
             }
         }) {
             HStack {
@@ -296,61 +250,46 @@ public struct OverviewView: View {
             .padding(.vertical, 12)
         }
     }
-    
-    private func selectPreviousPerson() {
-        guard let current = selectedPerson, let index = people.firstIndex(of: current), index > 0 else { return }
-        slideEdge = .leading
-        withAnimation {
-            selectedPerson = people[index - 1]
-        }
+}
+
+private struct OverviewAlertsModifier: ViewModifier {
+    @Bindable var appState: OverviewAppState
+
+    func body(content: Content) -> some View {
+        content
+            .alert("Add Person", isPresented: $appState.showingAddPerson) {
+                TextField("Name", text: $appState.newPersonName)
+                Button("Add") { appState.confirmAddPerson() }
+                Button("Cancel", role: .cancel) { appState.cancelAddPerson() }
+            }
+            .alert("Edit Person", isPresented: $appState.showingEditPerson) {
+                TextField("Name", text: $appState.editingName)
+                Button("Save") { appState.confirmEdit() }
+                Button("Cancel", role: .cancel) { appState.cancelEdit() }
+            }
+            .alert("Delete Person", isPresented: $appState.showingDeleteAlert) {
+                Button("Delete", role: .destructive) { appState.confirmDeletePerson() }
+                Button("Cancel", role: .cancel) {
+                    appState.personToDelete = nil
+                }
+            } message: {
+                Text(deletePersonMessage)
+            }
+            .alert("Delete Mole", isPresented: $appState.showingDeleteMoleAlert) {
+                Button("Delete", role: .destructive) { appState.confirmDeleteMole() }
+                Button("Cancel", role: .cancel) {
+                    appState.moleToDelete = nil
+                }
+            } message: {
+                Text(deleteMoleMessage)
+            }
     }
-    
-    private func selectNextPerson() {
-        guard let current = selectedPerson, let index = people.firstIndex(of: current), index < people.count - 1 else { return }
-        slideEdge = .trailing
-        withAnimation {
-            selectedPerson = people[index + 1]
-        }
+
+    private var deletePersonMessage: String {
+        "Are you sure you want to delete \(appState.personToDelete?.name ?? "this person")?"
     }
-    
-    private func deletePerson(_ person: Person) {
-        if selectedPerson == person {
-            selectedPerson = nil
-        }
-        modelContext.delete(person)
-        try? modelContext.save()
+
+    private var deleteMoleMessage: String {
+        "Are you sure you want to delete \(appState.moleToDelete?.name ?? "this mole")?"
     }
-    
-    private func saveMoleScan(_ image: UIImage) -> MoleScan {
-        let scan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9))
-        modelContext.insert(scan)
-        return scan
-    }
-    
-    private func saveMole(_ person: Person) -> Mole {
-        let mole = Mole(
-            name: "Mole \(person.moles.count + 1)",
-            bodyPart: "Unassigned",
-            isReminderActive: false,
-            reminderFrequency: nil,
-            nextDueDate: nil,
-            person: person
-        )
-        modelContext.insert(mole)
-        return mole
-    }
-    
-    private func saveMoleInstance(_ mole: Mole, _ scan: MoleScan) {
-        let instance = MoleInstance(
-            diameter: 0,
-            area: 0,
-            mole: mole,
-            moleScan: scan
-        )
-        modelContext.insert(instance)
-    }
-    
-    
-    
-    
 }
