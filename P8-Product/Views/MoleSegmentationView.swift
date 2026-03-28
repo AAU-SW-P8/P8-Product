@@ -10,7 +10,7 @@ import CoreML
 
 // MARK: - Mole Segmentation View
 
-/// A view that lets the user tap on a mole image to trigger Edge-SAM segmentation.
+/// A view that lets the user tap on a mole image to trigger SAM2.1 segmentation.
 ///
 /// The image is displayed aspect-fit. When the user taps, a `cropSize × cropSize`
 /// bounding box is centred on the tap and only that crop is sent to the model,
@@ -134,36 +134,29 @@ struct MoleSegmentationTestView: View {
             viewSize: viewSize
         )
 
-        // Convert tap from view coordinates to image-pixel coordinates
-        let tapPixel = converter.viewToPixel(location)
-
-        // Build a cropSize × cropSize bounding box in image-pixel space, clamped to the image
-        let halfCrop  = cropSize / 2
-        let boxPixel  = CGRect(
-            x:      max(0, min(pixelW - cropSize, tapPixel.x - halfCrop)),
-            y:      max(0, min(pixelH - cropSize, tapPixel.y - halfCrop)),
-            width:  min(cropSize, pixelW),
-            height: min(cropSize, pixelH)
-        )
-
-        // Convert the bounding box to view coordinates so SwiftUI can position the overlay
+        // Map the tap from view space to image-pixel space
+        let tapPixel    = converter.viewToPixel(location)
+        // Build a square crop around the tap point
+        let boxPixel    = converter.croppingRect(around: tapPixel, cropSize: cropSize)
+        // Express the tap relative to the crop origin (used as the SAM prompt point)
+        let pointInCrop = converter.pointInRect(tapPixel, relativeTo: boxPixel)
+        // Map the crop box back to view space for the SwiftUI overlay
         boundingBox = converter.pixelRectToView(boxPixel)
-
-        // The tap point relative to the crop, passed to the model as the prompt.
-        let pointInCrop = CGPoint(x: tapPixel.x - boxPixel.origin.x,
-                                  y: tapPixel.y - boxPixel.origin.y)
 
         Task {
             isProcessing = true
             do {
+                // Crop the source image to the bounding box
                 guard let croppedCG = cgImage.cropping(to: boxPixel) else {
                     throw PipelineError.invalidImage
                 }
+                // Run SAM segmentation on the crop
                 let croppedImage = UIImage(cgImage: croppedCG)
                 let maskArray    = try await segmentor.segment(image: croppedImage,
                                                                point: pointInCrop,
                                                                modelSize: 1024)
-                let maskImage    = try convertMaskToImage(maskArray, targetSize: boxPixel.size)
+                // Convert the raw mask tensor to a displayable overlay image
+                let maskImage    = try maskRenderer.render(maskArray, targetSize: boxPixel.size)
 
                 await MainActor.run {
                     cropMaskImage = maskImage
@@ -199,91 +192,7 @@ struct MoleSegmentationTestView: View {
 
     // MARK: - Helpers
 
-    /// Converts an `MLMultiArray` segmentation mask to a `UIImage`.
-    ///
-    /// Edge-SAM can return masks in several shapes — `[1,1,H,W]`, `[1,H,W]`, or `[H,W]`.
-    /// Values above `0.5` are treated as foreground (white); the rest become black.
-    /// The result is scaled to `targetSize` if the mask dimensions differ.
-    ///
-    /// - Parameters:
-    ///   - maskArray: The raw mask output from the SAM decoder.
-    ///   - targetSize: The size the returned image should match (typically the crop size).
-    /// - Returns: A grayscale `UIImage` of the binary mask.
-    /// - Throws: `PipelineError.renderFailed` if a `CGContext` cannot be created.
-    private func convertMaskToImage(_ maskArray: MLMultiArray, targetSize: CGSize) throws -> UIImage {
-            let shape = maskArray.shape.map { $0.intValue }
-            let maskH = shape[shape.count - 2]
-            let maskW = shape[shape.count - 1]
-            let maskCount = shape.count == 4 ? shape[1] : 1 // Usually 3
-
-            // Let's see exactly what type of memory Core ML is handing us!
-            let typeString = maskArray.dataType == .float32 ? "Float32" : (maskArray.dataType == .float16 ? "Float16" : "Other")
-            print("🧠 Mask Memory Type: \(typeString)")
-
-            var pixels = [UInt8](repeating: 0, count: maskW * maskH * 4)
-            var maxLogit: Float = -1000.0
-
-            for y in 0..<maskH {
-                for x in 0..<maskW {
-                    let pixelIndex = (y * maskW + x) * 4
-
-                    // Find the highest score across ALL 3 MASKS for this pixel
-                    var bestValue: Float = -1000.0
-
-                    if shape.count == 4 {
-                        for m in 0..<maskCount {
-                            let val = maskArray[[0, m, y, x] as [NSNumber]].floatValue
-                            if val > bestValue { bestValue = val }
-                        }
-                    } else if shape.count == 3 {
-                        bestValue = maskArray[[0, y, x] as [NSNumber]].floatValue
-                    } else {
-                        bestValue = maskArray[[y, x] as [NSNumber]].floatValue
-                    }
-
-                    if bestValue > maxLogit {
-                        maxLogit = bestValue
-                    }
-
-                    if bestValue > 0.0 {
-                        // FOREGROUND: Semi-transparent Red
-                        pixels[pixelIndex]     = 255
-                        pixels[pixelIndex + 1] = 0
-                        pixels[pixelIndex + 2] = 0
-                        pixels[pixelIndex + 3] = 128
-                    } else {
-                        // BACKGROUND: Semi-transparent Blue
-                        pixels[pixelIndex]     = 0
-                        pixels[pixelIndex + 1] = 0
-                        pixels[pixelIndex + 2] = 255
-                        pixels[pixelIndex + 3] = 64
-                    }
-                }
-            }
-
-            print("📊 Max logit across ALL masks: \(maxLogit)")
-
-            let colorSpace = CGColorSpaceCreateDeviceRGB()
-            let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue)
-
-            guard let context = CGContext(
-                data: &pixels, width: maskW, height: maskH,
-                bitsPerComponent: 8, bytesPerRow: maskW * 4,
-                space: colorSpace, bitmapInfo: bitmapInfo.rawValue
-            ), let cgMask = context.makeImage() else {
-                throw NSError(domain: "Segmentor", code: 2, userInfo: [NSLocalizedDescriptionKey: "Context failed"])
-            }
-
-            let maskImage = UIImage(cgImage: cgMask)
-            guard maskImage.size != targetSize else { return maskImage }
-
-            UIGraphicsBeginImageContextWithOptions(targetSize, false, 0.0)
-            maskImage.draw(in: CGRect(origin: .zero, size: targetSize))
-            let resized = UIGraphicsGetImageFromCurrentImageContext() ?? maskImage
-            UIGraphicsEndImageContext()
-
-            return resized
-        }
+    private let maskRenderer = MaskRenderer()
 
     // MARK: - Supporting Views
 

@@ -63,6 +63,34 @@ struct ImageCoordinateConverter {
         )
     }
     
+    /// Builds a square crop rect in pixel space, clamped to the image bounds.
+    /// - Parameters:
+    ///   - center: The center of the crop in image-pixel coordinates.
+    ///   - cropSize: The side length of the square crop.
+    /// - Returns: A clamped `CGRect` in image-pixel coordinates.
+    func croppingRect(around center: CGPoint, cropSize: CGFloat) -> CGRect {
+        let halfCrop = cropSize / 2
+        let clampedSize = CGSize(
+            width:  min(cropSize, imageSize.width),
+            height: min(cropSize, imageSize.height)
+        )
+        return CGRect(
+            x: max(0, min(imageSize.width  - clampedSize.width,  center.x - halfCrop)),
+            y: max(0, min(imageSize.height - clampedSize.height, center.y - halfCrop)),
+            width:  clampedSize.width,
+            height: clampedSize.height
+        )
+    }
+
+    /// Returns a point expressed relative to a rectangle's origin.
+    /// - Parameters:
+    ///   - point: A point in image-pixel coordinates.
+    ///   - rect: The rectangle whose origin becomes the new origin.
+    /// - Returns: The point offset by the rectangle's origin.
+    func pointInRect(_ point: CGPoint, relativeTo rect: CGRect) -> CGPoint {
+        CGPoint(x: point.x - rect.origin.x, y: point.y - rect.origin.y)
+    }
+
     /// Converts a rectangle from image-pixel coordinates to view coordinates
     /// - Parameter pixelRect: A rectangle in the image's pixel coordinate space
     /// - Returns: The corresponding rectangle in the view's coordinate space
