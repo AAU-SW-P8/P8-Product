@@ -8,278 +8,325 @@ import CoreML
 import UIKit
 
 class MoleSegmentor {
-    // SAM3 uses three models: Vision Encoder, Text Encoder, and Decoder.
-    // Unlike SAM2 (point prompts), SAM3 uses text + bounding box prompts —
-    // which lets us target "mole" specifically.
-    private let visionEncoder: sam3_vision_encoder
-    private let textEncoder: sam3_text_encoder
-    private let decoder: sam3_decoder
+
+    // MARK: - Properties
+
+    // SAM3 uses three models: Vision Encoder, Text Encoder, and Decoder
+    private let visionEncoder: MLModel
+    private let textEncoder: MLModel
+    private let decoder: MLModel
 
     private let ciContext = CIContext()
 
-    // Vision encoder output is cached per image (expensive to recompute)
-    private var cachedVisionOutput: sam3_vision_encoderOutput?
+    // Cache the vision encoder output for repeated segmentation on the same image
+    private var cachedVisionOutput: MLFeatureProvider?
     private var cachedImageHash: Int?
 
-    // Text encoder output is cached for the lifetime of the instance
-    // since our text prompt ("mole") never changes.
-    private var cachedTextOutput: sam3_text_encoderOutput?
+    // Pre-encoded text features (prompt is fixed to "moles")
+    private let textFeatures: MLFeatureProvider
 
-    // CLIP token IDs for the text prompt "mole".
-    // Format: [<|startoftext|>, <token for "mole">, <|endoftext|>, 0, 0, ...]
-    //
-    // To regenerate these for a different prompt, run in Python:
-    //   import clip
-    //   tokens = clip.tokenize(["mole"]).tolist()[0]
-    //   print(tokens[:5])  # Shows leading non-zero tokens
-    //
-    // Standard CLIP special tokens: start=49406, end=49407, pad=0
-    private static let clipTextPrompt = "mole"
-    private static let clipInputIds: [Int32] = {
-        var ids = [Int32](repeating: 0, count: 32)
-        ids[0] = 49406  // <|startoftext|>
-        ids[1] = 22020  // "mole" — verify with: clip.tokenize(["mole"])
-        ids[2] = 49407  // <|endoftext|>
-        return ids
-    }()
-    private static let clipAttentionMask: [Int32] = {
-        var mask = [Int32](repeating: 0, count: 32)
-        mask[0] = 1
-        mask[1] = 1
-        mask[2] = 1
-        return mask
-    }()
+    static let inputSize = 1008
+    static let maskSize = 288
+
+    // MARK: - Init
 
     init() async throws {
-        let config = MLModelConfiguration()
-        config.computeUnits = .cpuOnly
-
+        // Load Vision Encoder
         guard let visionURL = Bundle.main.url(forResource: "sam3-vision-encoder", withExtension: "mlmodelc")
             ?? Bundle.main.url(forResource: "sam3-vision-encoder", withExtension: "mlpackage") else {
             throw PipelineError.modelNotFound(name: "sam3-vision-encoder")
         }
+
+        // Load Text Encoder
         guard let textURL = Bundle.main.url(forResource: "sam3-text-encoder", withExtension: "mlmodelc")
             ?? Bundle.main.url(forResource: "sam3-text-encoder", withExtension: "mlpackage") else {
             throw PipelineError.modelNotFound(name: "sam3-text-encoder")
         }
+
+        // Load Decoder
         guard let decoderURL = Bundle.main.url(forResource: "sam3-decoder", withExtension: "mlmodelc")
             ?? Bundle.main.url(forResource: "sam3-decoder", withExtension: "mlpackage") else {
             throw PipelineError.modelNotFound(name: "sam3-decoder")
         }
 
-        self.visionEncoder = try await sam3_vision_encoder.load(contentsOf: visionURL, configuration: config)
-        self.textEncoder   = try await sam3_text_encoder.load(contentsOf: textURL, configuration: config)
-        self.decoder       = try await sam3_decoder.load(contentsOf: decoderURL, configuration: config)
+        let config = MLModelConfiguration()
+        config.computeUnits = .cpuOnly
+
+        print("📦 Loading SAM3 vision encoder…")
+        self.visionEncoder = try await MLModel.load(contentsOf: visionURL, configuration: config)
+        print("📦 Loading SAM3 text encoder…")
+        self.textEncoder = try await MLModel.load(contentsOf: textURL, configuration: config)
+        print("📦 Loading SAM3 decoder…")
+        self.decoder = try await MLModel.load(contentsOf: decoderURL, configuration: config)
+
+        // Pre-encode the text prompt "moles" once at init
+        print("📝 Encoding text prompt 'moles'…")
+        self.textFeatures = try MoleSegmentor.encodeText(with: self.textEncoder)
+        print("✅ SAM3 models loaded and text encoded")
     }
 
-    // MARK: - Public API
+    // MARK: - Public
 
-    /// Segment a mole at the tapped point.
-    /// - Parameters:
-    ///   - image: The source image.
-    ///   - point: The tap point in the image's coordinate space.
-    ///   - boxPadding: How far to expand the bounding box from the tap point (in normalised 0–1 units).
-    /// - Returns: The raw low-resolution mask logits from the decoder.
-    func segment(image: UIImage, point: CGPoint, modelSize: Int = 1008, boxPadding: Float = 0.15) async throws -> MLMultiArray {
-        // 1. Encode the image (FPN features)
-        let visionOutput = try await encodeImage(image, modelSize: modelSize)
-        print("📸 Vision encoder fpn_feat_0[0]: \(visionOutput.fpn_feat_0[0])")
+    /// Segments moles in the image using the text prompt "moles".
+    /// Returns a semi-transparent overlay image (red = mole) sized to match the input,
+    /// or nil if no moles were detected above the confidence threshold.
+    func segment(image: UIImage, confidenceThreshold: Float = 0.01) throws -> UIImage? {
+        // 1. Encode image through vision encoder
+        print("🖼️ Encoding image…")
+        let visionOutput = try encodeImage(image)
 
-        // 2. Encode the text prompt "mole" (cached after first call)
-        let textOutput = try await encodeText()
-        print("📝 Text encoder text_features[0]: \(textOutput.text_features[0])")
-
-        guard let cgImage = image.cgImage else { throw PipelineError.invalidImage }
-
-        // 3. Build a bounding box centred on the tap point.
-        //    SAM3 expects normalised coordinates [x1, y1, x2, y2] in the model's
-        //    1024×1024 coordinate space (i.e. pixel values 0–1024).
-        let scaleX = Float(modelSize) / Float(cgImage.width)
-        let scaleY = Float(modelSize) / Float(cgImage.height)
-        let cx = Float(point.x) * scaleX
-        let cy = Float(point.y) * scaleY
-        let pad = boxPadding * Float(modelSize)
-
-        let x1 = max(0, cx - pad)
-        let y1 = max(0, cy - pad)
-        let x2 = min(Float(modelSize), cx + pad)
-        let y2 = min(Float(modelSize), cy + pad)
-
-        // input_boxes shape: [1, 5, 4]  — batch x num_boxes x (x1, y1, x2, y2)
-        let inputBoxes = try MLMultiArray(shape: [1, 5, 4], dataType: .float32)
-        inputBoxes[[0, 0, 0] as [NSNumber]] = NSNumber(value: x1)
-        inputBoxes[[0, 0, 1] as [NSNumber]] = NSNumber(value: y1)
-        inputBoxes[[0, 0, 2] as [NSNumber]] = NSNumber(value: x2)
-        inputBoxes[[0, 0, 3] as [NSNumber]] = NSNumber(value: y2)
-
-        // input_boxes_labels shape: [1]  — 1 = valid foreground box
-        let inputBoxesLabels = try MLMultiArray(shape: [1, 5], dataType: .float32)
-        inputBoxesLabels[[0, 0] as [NSNumber]] = 1.0
-
-        // 4. Run the decoder
-        let decoderInput = sam3_decoderInput(
-            fpn_feat_0: visionOutput.fpn_feat_0,
-            fpn_feat_1: visionOutput.fpn_feat_1,
-            fpn_feat_2: visionOutput.fpn_feat_2,
-            fpn_pos_2: visionOutput.fpn_pos_2,
-            text_features: textOutput.text_features,
-            text_mask: textOutput.text_mask,
-            input_boxes: inputBoxes,
-            input_boxes_labels: inputBoxesLabels
-        )
-        let decoderOutput = try await decoder.prediction(input: decoderInput)
-        print("🎭 Decoder output var_4027[0]: \(decoderOutput.var_4027[0])")
-
-        // var_4027 is the primary mask output (low-res logits)
-        return decoderOutput.var_4027
-    }
-
-    // MARK: - Mask Rendering
-
-    /// Converts the raw mask logits into a semi-transparent overlay UIImage.
-    func createMaskImage(from mlArray: MLMultiArray) -> UIImage? {
-        let shape = mlArray.shape
-        let height = shape[shape.count - 2].intValue
-        let width  = shape[shape.count - 1].intValue
-
-        var pixels = [UInt8](repeating: 0, count: width * height * 4)
-
-        guard let pointer = try? UnsafeBufferPointer<Float32>(mlArray) else {
-            print("Failed to access MLMultiArray data")
-            return nil
+        // Verify vision encoder outputs exist
+        guard let fpn0 = visionOutput.featureValue(for: "fpn_feat_0"),
+              let fpn1 = visionOutput.featureValue(for: "fpn_feat_1"),
+              let fpn2 = visionOutput.featureValue(for: "fpn_feat_2"),
+              let pos2 = visionOutput.featureValue(for: "fpn_pos_2") else {
+            print("❌ Vision encoder missing expected output features")
+            print("   Available features: \(visionOutput.featureNames.joined(separator: ", "))")
+            throw PipelineError.unexpectedModelOutput
         }
 
-        for y in 0..<height {
-            for x in 0..<width {
-                let index = y * width + x
-                let value = pointer[index]
-                let pixelIndex = index * 4
+        guard let textFeat = textFeatures.featureValue(for: "text_features"),
+              let textMask = textFeatures.featureValue(for: "text_mask") else {
+            print("❌ Text encoder missing expected output features")
+            throw PipelineError.unexpectedModelOutput
+        }
 
-                // Logit > 0 → inside the mole; paint with a semi-transparent red overlay
-                if value > 0.0 {
-                    pixels[pixelIndex]     = 255  // R
-                    pixels[pixelIndex + 1] = 0    // G
-                    pixels[pixelIndex + 2] = 0    // B
-                    pixels[pixelIndex + 3] = 128  // A (semi-transparent)
-                }
-                // else: transparent background (already zero-filled)
+        // 2. Prepare decoder inputs — no box prompts, text-only grounding
+        let inputBoxes = try MLMultiArray.zeros(shape: [1, 5, 4], dataType: .float16)
+        let inputBoxesLabels = try MLMultiArray.zeros(shape: [1, 5], dataType: .int32)
+
+        let decoderInput = try MLDictionaryFeatureProvider(dictionary: [
+            "fpn_feat_0": fpn0,
+            "fpn_feat_1": fpn1,
+            "fpn_feat_2": fpn2,
+            "fpn_pos_2": pos2,
+            "text_features": textFeat,
+            "text_mask": textMask,
+            "input_boxes": MLFeatureValue(multiArray: inputBoxes),
+            "input_boxes_labels": MLFeatureValue(multiArray: inputBoxesLabels)
+        ])
+
+        // 3. Run decoder
+        print("🧠 Running decoder…")
+        let decoderOutput = try decoder.prediction(from: decoderInput)
+
+        guard let masks = decoderOutput.featureValue(for: "var_4027")?.multiArrayValue,
+              let scores = decoderOutput.featureValue(for: "var_3862")?.multiArrayValue else {
+            print("❌ Decoder missing expected output features")
+            print("   Available features: \(decoderOutput.featureNames.joined(separator: ", "))")
+            throw PipelineError.unexpectedModelOutput
+        }
+
+        print("📊 Scores shape: \(scores.shape), dataType: \(scores.dataType.rawValue)")
+        print("📊 Masks shape: \(masks.shape), dataType: \(masks.dataType.rawValue)")
+
+        // 4. Filter detections by confidence — use safe .floatValue accessor
+        //    (CoreML may promote Float16 → Float32 at runtime)
+        var confidentIndices: [Int] = []
+        for i in 0..<200 {
+            let logit = scores[[0, i] as [NSNumber]].floatValue
+            let prob = 1.0 / (1.0 + exp(-logit))
+            if prob >= confidenceThreshold {
+                confidentIndices.append(i)
+                print("🎯 Detection \(i): logit=\(logit), prob=\(prob)")
             }
         }
 
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue)
-        guard let context = CGContext(
-            data: &pixels,
-            width: width,
-            height: height,
-            bitsPerComponent: 8,
-            bytesPerRow: width * 4,
-            space: colorSpace,
-            bitmapInfo: bitmapInfo.rawValue
-        ), let cgImage = context.makeImage() else {
+        guard !confidentIndices.isEmpty else {
+            print("⚠️ No detections above threshold \(confidenceThreshold)")
             return nil
         }
 
-        return UIImage(cgImage: cgImage)
+        print("✅ Found \(confidentIndices.count) moles")
+
+        // 5. Combine masks of all confident detections into one overlay
+        return createCombinedMask(from: masks, indices: confidentIndices, imageSize: image.size)
     }
 
-    /// Clears the image embedding cache — call this when switching to a new image.
+    /// Clears the cached image embeddings — call when switching to a new image.
     func clearCache() {
         cachedVisionOutput = nil
         cachedImageHash = nil
-        // Note: cachedTextOutput is intentionally kept; the "mole" prompt never changes.
     }
 
-    // MARK: - Private helpers
+    // MARK: - Text Encoding
 
-    private func encodeImage(_ image: UIImage, modelSize: Int) async throws -> sam3_vision_encoderOutput {
+    /// BERT-tokenises the prompt "moles" and runs it through the text encoder.
+    /// Token IDs: [CLS]=101  mole=16709  ##s=2015  [SEP]=102  + 28×[PAD]=0
+    private static func encodeText(with encoder: MLModel) throws -> MLFeatureProvider {
+        let tokenIds: [Int32]      = [101, 16709, 2015, 102] + Array(repeating: 0, count: 28)
+        let attentionMask: [Int32] = [1, 1, 1, 1]            + Array(repeating: 0, count: 28)
+
+        let inputIds = try MLMultiArray(shape: [1, 32], dataType: .int32)
+        let mask     = try MLMultiArray(shape: [1, 32], dataType: .int32)
+
+        for i in 0..<32 {
+            inputIds[[0, i] as [NSNumber]] = NSNumber(value: tokenIds[i])
+            mask[[0, i] as [NSNumber]]     = NSNumber(value: attentionMask[i])
+        }
+
+        let input = try MLDictionaryFeatureProvider(dictionary: [
+            "input_ids":      MLFeatureValue(multiArray: inputIds),
+            "attention_mask": MLFeatureValue(multiArray: mask)
+        ])
+
+        let output = try encoder.prediction(from: input)
+        print("📝 Text encoder output features: \(output.featureNames.joined(separator: ", "))")
+        return output
+    }
+
+    // MARK: - Image Encoding
+
+    private func encodeImage(_ image: UIImage) throws -> MLFeatureProvider {
         let imageHash = image.hashValue
         if let cached = cachedVisionOutput, cachedImageHash == imageHash {
+            print("📦 Using cached vision embeddings")
             return cached
         }
 
         guard let cgImage = image.cgImage else { throw PipelineError.invalidImage }
-        let imageArray = try createImageArray(from: cgImage, size: modelSize)
 
-        let input = sam3_vision_encoderInput(images: imageArray)
-        let output = try await visionEncoder.prediction(input: input)
+        let size = Self.inputSize
+        let pixelBuffer = try createPixelBuffer(from: cgImage, size: size)
+        let imageArray  = try pixelBufferToMLMultiArray(pixelBuffer, size: size)
 
+        let input = try MLDictionaryFeatureProvider(dictionary: [
+            "images": MLFeatureValue(multiArray: imageArray)
+        ])
+
+        let output = try visionEncoder.prediction(from: input)
+        print("🖼️ Vision encoder output features: \(output.featureNames.joined(separator: ", "))")
         cachedVisionOutput = output
         cachedImageHash = imageHash
         return output
     }
 
-    private func encodeText() async throws -> sam3_text_encoderOutput {
-        if let cached = cachedTextOutput {
-            return cached
-        }
+    // MARK: - Pixel Buffer Helpers
 
-        let inputIds = try MLMultiArray(shape: [1, 32], dataType: .int32)
-        let attentionMask = try MLMultiArray(shape: [1, 32], dataType: .int32)
+    private func createPixelBuffer(from cgImage: CGImage, size: Int) throws -> CVPixelBuffer {
+        let originalCI = CIImage(cgImage: cgImage)
+        let scaleX = CGFloat(size) / originalCI.extent.width
+        let scaleY = CGFloat(size) / originalCI.extent.height
+        let resizedCI = originalCI.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
 
-        for i in 0..<32 {
-            inputIds[[0, i] as [NSNumber]]     = NSNumber(value: MoleSegmentor.clipInputIds[i])
-            attentionMask[[0, i] as [NSNumber]] = NSNumber(value: MoleSegmentor.clipAttentionMask[i])
-        }
-
-        let input = sam3_text_encoderInput(input_ids: inputIds, attention_mask: attentionMask)
-        let output = try await textEncoder.prediction(input: input)
-
-        cachedTextOutput = output
-        return output
-    }
-
-    // ImageNet mean/std used by CLIP-based models (SAM3 uses CLIP vision backbone)
-    private static let imagenetMean: (Float, Float, Float) = (0.485, 0.456, 0.406)
-    private static let imagenetStd:  (Float, Float, Float) = (0.229, 0.224, 0.225)
-
-    /// Resizes `cgImage` to `size`×`size`, then returns a float32 MLMultiArray
-    /// of shape [1, 3, size, size] with ImageNet-normalised channel-first values.
-    private func createImageArray(from cgImage: CGImage, size: Int) throws -> MLMultiArray {
-        // Resize via CIImage → CVPixelBuffer (BGRA)
-        let ciImage = CIImage(cgImage: cgImage)
-        let scaleX = CGFloat(size) / ciImage.extent.width
-        let scaleY = CGFloat(size) / ciImage.extent.height
-        let resized = ciImage.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
+        let bufferAttributes: [String: Any] = [
+            kCVPixelBufferCGImageCompatibilityKey as String: true,
+            kCVPixelBufferCGBitmapContextCompatibilityKey as String: true,
+            kCVPixelBufferIOSurfacePropertiesKey as String: [:]
+        ]
 
         var pixelBuffer: CVPixelBuffer?
         CVPixelBufferCreate(kCFAllocatorDefault, size, size,
                             kCVPixelFormatType_32BGRA,
-                            [kCVPixelBufferIOSurfacePropertiesKey: [:]] as CFDictionary,
+                            bufferAttributes as CFDictionary,
                             &pixelBuffer)
-        guard let buffer = pixelBuffer else { throw PipelineError.renderFailed }
-        ciContext.render(resized, to: buffer)
 
-        // Build MLMultiArray [1, 3, size, size]
-        let array = try MLMultiArray(shape: [1, 3, size as NSNumber, size as NSNumber],
-                                     dataType: .float32)
-        let floatPtr = array.dataPointer.assumingMemoryBound(to: Float32.self)
-        let channelStride = size * size
-
-        CVPixelBufferLockBaseAddress(buffer, .readOnly)
-        defer { CVPixelBufferUnlockBaseAddress(buffer, .readOnly) }
-        guard let baseAddress = CVPixelBufferGetBaseAddress(buffer) else {
+        guard let buffer = pixelBuffer else {
+            print("❌ CVPixelBufferCreate failed for size \(size)×\(size)")
             throw PipelineError.renderFailed
         }
-        let bytesPerRow = CVPixelBufferGetBytesPerRow(buffer)
-        let bytePtr = baseAddress.assumingMemoryBound(to: UInt8.self)
+        ciContext.render(resizedCI, to: buffer)
+        return buffer
+    }
 
-        let (mr, mg, mb) = MoleSegmentor.imagenetMean
-        let (sr, sg, sb) = MoleSegmentor.imagenetStd
+    /// Converts a BGRA CVPixelBuffer to a Float16 MLMultiArray in [1, 3, H, W] layout (RGB, normalised to 0-1).
+    private func pixelBufferToMLMultiArray(_ pixelBuffer: CVPixelBuffer, size: Int) throws -> MLMultiArray {
+        let array = try MLMultiArray(shape: [1, 3, size as NSNumber, size as NSNumber], dataType: .float16)
+
+        CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
+
+        guard let baseAddress = CVPixelBufferGetBaseAddress(pixelBuffer) else {
+            print("❌ CVPixelBufferGetBaseAddress returned nil")
+            throw PipelineError.renderFailed
+        }
+
+        let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
+        let bytes = baseAddress.assumingMemoryBound(to: UInt8.self)
+        let hw = size * size
+
+        // Use unsafe pointer for performance — we own this array so Float16 is guaranteed
+        let dataPtr = array.dataPointer.bindMemory(to: Float16.self, capacity: 3 * hw)
 
         for y in 0..<size {
             for x in 0..<size {
-                let px = y * bytesPerRow + x * 4  // BGRA layout
-                let r = Float(bytePtr[px + 2]) / 255.0
-                let g = Float(bytePtr[px + 1]) / 255.0
-                let b = Float(bytePtr[px])     / 255.0
-                let idx = y * size + x
-                floatPtr[idx]                     = (r - mr) / sr
-                floatPtr[channelStride + idx]     = (g - mg) / sg
-                floatPtr[2 * channelStride + idx] = (b - mb) / sb
+                let pixelOffset = y * bytesPerRow + x * 4
+                // BGRA → RGB
+                let b = Float(bytes[pixelOffset])     / 255.0
+                let g = Float(bytes[pixelOffset + 1]) / 255.0
+                let r = Float(bytes[pixelOffset + 2]) / 255.0
+
+                let spatial = y * size + x
+                dataPtr[0 * hw + spatial] = Float16(r)
+                dataPtr[1 * hw + spatial] = Float16(g)
+                dataPtr[2 * hw + spatial] = Float16(b)
             }
         }
 
+        return array
+    }
+
+    // MARK: - Mask Rendering
+
+    /// Combines all confident detection masks into a single semi-transparent red overlay,
+    /// then resizes to match the original image dimensions.
+    private func createCombinedMask(from masks: MLMultiArray, indices: [Int], imageSize: CGSize) -> UIImage? {
+        let h = Self.maskSize  // 288
+        let w = Self.maskSize
+        let hw = h * w
+        var pixels = [UInt8](repeating: 0, count: w * h * 4)
+
+        // Use safe .floatValue accessor — works regardless of runtime data type
+        for y in 0..<h {
+            for x in 0..<w {
+                let spatial = y * w + x
+                let pixelIdx = spatial * 4
+
+                for detIdx in indices {
+                    let logit = masks[[0, detIdx, y, x] as [NSNumber]].floatValue
+                    if logit > 7 { // Change this number
+                        pixels[pixelIdx]     = 255  // R
+                        pixels[pixelIdx + 1] = 0    // G
+                        pixels[pixelIdx + 2] = 0    // B
+                        pixels[pixelIdx + 3] = 128  // A (semi-transparent)
+                        break
+                    }
+                }
+            }
+        }
+
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue)
+
+        guard let context = CGContext(
+            data: &pixels, width: w, height: h,
+            bitsPerComponent: 8, bytesPerRow: w * 4,
+            space: colorSpace, bitmapInfo: bitmapInfo.rawValue
+        ), let cgMask = context.makeImage() else {
+            return nil
+        }
+
+        // Resize to match the original image
+        let maskImage = UIImage(cgImage: cgMask)
+        guard maskImage.size != imageSize else { return maskImage }
+
+        UIGraphicsBeginImageContextWithOptions(imageSize, false, 0.0)
+        maskImage.draw(in: CGRect(origin: .zero, size: imageSize))
+        let resized = UIGraphicsGetImageFromCurrentImageContext() ?? maskImage
+        UIGraphicsEndImageContext()
+
+        return resized
+    }
+}
+
+// MARK: - MLMultiArray Helper
+
+private extension MLMultiArray {
+    /// Creates a zero-initialised MLMultiArray.
+    static func zeros(shape: [NSNumber], dataType: MLMultiArrayDataType) throws -> MLMultiArray {
+        let array = try MLMultiArray(shape: shape, dataType: dataType)
+        let byteCount = array.count * (dataType == .float16 ? 2 : (dataType == .int32 ? 4 : 4))
+        memset(array.dataPointer, 0, byteCount)
         return array
     }
 }

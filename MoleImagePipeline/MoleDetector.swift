@@ -9,7 +9,7 @@ import Vision
 import CoreML
 import UIKit
 
-class MoleDetecor {
+class MoleDetector {
     // Makes bounding box around moles in a picture
     private let model: VNCoreMLModel
     
