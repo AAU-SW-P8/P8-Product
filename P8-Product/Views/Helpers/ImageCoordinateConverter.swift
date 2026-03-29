@@ -28,10 +28,10 @@ struct ImageCoordinateConverter {
         let viewAspect = viewSize.width / viewSize.height
         
         if imageAspect > viewAspect {
-            // Image is wider than the view — fits to width, pillarboxed vertically
+            // Image is wider than the view — fits to width
             return CGSize(width: viewSize.width, height: viewSize.width / imageAspect)
         } else {
-            // Image is taller than the view — fits to height, letterboxed horizontally
+            // Image is taller than the view — fits to height
             return CGSize(width: viewSize.height * imageAspect, height: viewSize.height)
         }
     }
