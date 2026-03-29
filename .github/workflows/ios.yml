@@ -27,15 +27,27 @@ jobs:
       - name: Resolve Simulator
         id: sim
         run: |
-          # Extract the UUID of the first available iPhone simulator from xcodebuild destinations
           if [ -f default ]; then scheme=$(cat default); else scheme="P8-Product"; fi
-          dest_line=$(xcodebuild -scheme "$scheme" -showdestinations 2>/dev/null \
+
+          # Dump raw output for debugging
+          echo "--- Available destinations ---"
+          xcodebuild -scheme "$scheme" -showdestinations 2>&1 | grep 'iOS Simulator' | grep 'iPhone' || true
+          echo "---"
+
+          # Extract the UUID using grep -oE (more robust than sed)
+          device_id=$(xcodebuild -scheme "$scheme" -showdestinations 2>&1 \
             | grep 'platform:iOS Simulator' \
             | grep 'name:iPhone' \
-            | head -1)
-          device_id=$(echo "$dest_line" | sed 's/.*id:\([^,}]*\).*/\1/' | xargs)
-          device_name=$(echo "$dest_line" | sed 's/.*name:\([^,}]*\).*/\1/' | xargs)
-          echo "Resolved simulator: $device_name ($device_id)"
+            | head -1 \
+            | grep -oE 'id:[0-9A-Fa-f-]+' \
+            | cut -d: -f2)
+
+          if [ -z "$device_id" ]; then
+            echo "ERROR: Could not resolve a simulator device ID"
+            exit 1
+          fi
+
+          echo "Resolved simulator ID: $device_id"
           echo "device_id=$device_id" >> "$GITHUB_OUTPUT"
 
       - name: Build
