@@ -30,19 +30,8 @@ struct MoleDetailView: View {
             } else {
                 Spacer()
 
-                ImageCarousel(scans: scans, selectedIndex: $selectedIndex)
+                ImageCarousel(scans: scans, mole: mole, selectedIndex: $selectedIndex)
                     .fixedSize(horizontal: true, vertical: true)
-
-                let safeIndex = min(selectedIndex, scans.count - 1)
-                if let instance = mole.instances.first(where: { $0.moleScan == scans[safeIndex] }) {
-                    VStack(spacing: 4) {
-                        Text("Diameter: \(instance.diameter, specifier: "%.1f") mm")
-                        Text("Area: \(instance.area, specifier: "%.1f") mm²")
-                    }
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .padding(.top, 8)
-                }
 
                 Spacer()
             }

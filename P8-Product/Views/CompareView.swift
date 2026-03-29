@@ -72,9 +72,9 @@ struct CompareView: View {
                 } else {
                     if scans.count > 1 {
                         HStack(spacing: 0) {
-                            ImageCarousel(scans: scans, selectedIndex: $selectedIndexTop, dotsOnLeft: true)
+                            ImageCarousel(scans: scans, mole: selectedMole, selectedIndex: $selectedIndexTop, dotsOnLeft: true)
                             Divider()
-                            ImageCarousel(scans: scans, selectedIndex: $selectedIndexBottom)
+                            ImageCarousel(scans: scans, mole: selectedMole, selectedIndex: $selectedIndexBottom)
                         }
                         .padding(.vertical, 12)
                         .background(
@@ -122,7 +122,7 @@ struct CompareView: View {
                         HStack(spacing: 0) {
                             //ImageCarousel(scans: scans, selectedIndex: $selectedIndexTop, dotsOnLeft: true)
                             Divider()
-                            ImageCarousel(scans: scans, selectedIndex: $selectedIndexBottom)
+                            ImageCarousel(scans: scans, mole: selectedMole, selectedIndex: $selectedIndexBottom)
                         }
                     }
                 }
