@@ -26,23 +26,6 @@
 		F1845EEE2F59945F00E27D2B /* P8-Product.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "P8-Product.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		97C2DB272F6AB49400454255 /* Exceptions for "Tests" folder in "P8-Product" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				PipelineTests/PipelineTests.swift,
-			);
-			target = F1845EED2F59945F00E27D2B /* P8-Product */;
-		};
-		97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				PipelineTests/PipelineTests.swift,
-			);
-			target = 97C2DB192F6AB3F100454255 /* PipelineTests */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		97C2DAEC2F6AAFA600454255 /* MoleImagePipeline */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
@@ -51,10 +34,6 @@
 		};
 		97C2DB232F6AB48B00454255 /* Tests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				97C2DB272F6AB49400454255 /* Exceptions for "Tests" folder in "P8-Product" target */,
-				97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */,
-			);
 			path = Tests;
 			sourceTree = "<group>";
 		};
@@ -119,6 +98,9 @@
 			dependencies = (
 				97C2DB1F2F6AB3F100454255 /* PBXTargetDependency */,
 			);
+			fileSystemSynchronizedGroups = (
+				97C2DB232F6AB48B00454255 /* Tests */,
+			);
 			name = PipelineTests;
 			packageProductDependencies = (
 			);
@@ -140,7 +122,6 @@
 			);
 			fileSystemSynchronizedGroups = (
 				97C2DAEC2F6AAFA600454255 /* MoleImagePipeline */,
-				97C2DB232F6AB48B00454255 /* Tests */,
 				F1845EF02F59945F00E27D2B /* P8-Product */,
 			);
 			name = "P8-Product";
@@ -239,7 +220,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = YN4R45KS47;
+				DEVELOPMENT_TEAM = 484SQATWRN;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
 				MACOSX_DEPLOYMENT_TARGET = 26.2;
@@ -265,7 +246,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = YN4R45KS47;
+				DEVELOPMENT_TEAM = 484SQATWRN;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
 				MACOSX_DEPLOYMENT_TARGET = 26.2;
@@ -413,7 +394,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = JE5R9S88TC;
+				DEVELOPMENT_TEAM = 484SQATWRN;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = SPOT;
@@ -448,7 +429,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = JE5R9S88TC;
+				DEVELOPMENT_TEAM = 484SQATWRN;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = SPOT;
