@@ -229,7 +229,8 @@ class MoleSegmentor {
         return buffer
     }
 
-    /// Converts a BGRA CVPixelBuffer to a Float16 MLMultiArray in [1, 3, H, W] layout (RGB, normalised to 0-1).
+    /// Converts a BGRA CVPixelBuffer to a Float16 MLMultiArray in [1, 3, H, W] layout (RGB, normalised to [-1, 1]).
+    /// SAM3 expects Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]), i.e. (pixel/255 - 0.5) / 0.5 = pixel/127.5 - 1.
     private func pixelBufferToMLMultiArray(_ pixelBuffer: CVPixelBuffer, size: Int) throws -> MLMultiArray {
         let array = try MLMultiArray(shape: [1, 3, size as NSNumber, size as NSNumber], dataType: .float16)
 
@@ -251,10 +252,10 @@ class MoleSegmentor {
         for y in 0..<size {
             for x in 0..<size {
                 let pixelOffset = y * bytesPerRow + x * 4
-                // BGRA → RGB
-                let b = Float(bytes[pixelOffset])     / 255.0
-                let g = Float(bytes[pixelOffset + 1]) / 255.0
-                let r = Float(bytes[pixelOffset + 2]) / 255.0
+                // BGRA → RGB, normalized to [-1, 1]
+                let b = Float(bytes[pixelOffset])     / 127.5 - 1.0
+                let g = Float(bytes[pixelOffset + 1]) / 127.5 - 1.0
+                let r = Float(bytes[pixelOffset + 2]) / 127.5 - 1.0
 
                 let spatial = y * size + x
                 dataPtr[0 * hw + spatial] = Float16(r)
@@ -284,7 +285,7 @@ class MoleSegmentor {
 
                 for detIdx in indices {
                     let logit = masks[[0, detIdx, y, x] as [NSNumber]].floatValue
-                    if logit > 7 { // Change this number
+                    if logit > 0 { // sigmoid(0) = 0.5, matching SAM3's binary mask threshold
                         pixels[pixelIdx]     = 255  // R
                         pixels[pixelIdx + 1] = 0    // G
                         pixels[pixelIdx + 2] = 0    // B
