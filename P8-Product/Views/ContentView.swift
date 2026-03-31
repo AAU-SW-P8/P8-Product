@@ -29,10 +29,6 @@ struct ContentView: View {
                 .tabItem {
                     Label("Capture", systemImage: "camera")
                 }
-            MoleSegmentationTestView(inputImage: UIImage(named: "test_mole_image"))
-                .tabItem {
-                    Label("Segment", systemImage: "camera")
-                }
         }
     }
 }

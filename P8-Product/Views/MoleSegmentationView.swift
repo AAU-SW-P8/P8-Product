@@ -53,29 +53,27 @@ struct MoleSegmentationTestView: View {
     // MARK: - Body
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                if let image = testImage {
-                    imageContent(image: image)
-                } else {
-                    noImagePlaceholder
-                }
+        ZStack {
+            if let image = testImage {
+                imageContent(image: image)
+            } else {
+                noImagePlaceholder
+            }
 
-                if isProcessing {
-                    loadingOverlay
-                }
+            if isProcessing {
+                loadingOverlay
             }
-            .navigationTitle("Mole Segmentation")
-            .toolbar { toolbarContent }
-            .alert("Error", isPresented: $showError) {
-                Button("OK") { showError = false }
-            } message: {
-                Text(errorMessage ?? "Unknown error")
-            }
-            .task {
-                if testImage == nil { testImage = inputImage }
-                await loadSegmentor()
-            }
+        }
+        .navigationTitle("Mole Segmentation")
+        .toolbar { toolbarContent }
+        .alert("Error", isPresented: $showError) {
+            Button("OK") { showError = false }
+        } message: {
+            Text(errorMessage ?? "Unknown error")
+        }
+        .task {
+            if testImage == nil { testImage = inputImage }
+            await loadSegmentor()
         }
     }
 
