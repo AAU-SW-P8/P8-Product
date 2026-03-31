@@ -30,24 +30,42 @@ jobs:
       - name: Resolve Simulator
         id: sim
         run: |
-          if [ -f default ]; then scheme=$(cat default); else scheme="P8-Product"; fi
+          # List available iPhone simulator runtimes and devices
+          echo "--- Available runtimes ---"
+          xcrun simctl list runtimes
+          echo "--- Available devices ---"
+          xcrun simctl list devices available
 
-          # Dump raw output for debugging
-          echo "--- Available destinations ---"
-          xcodebuild -scheme "$scheme" -showdestinations 2>&1 | grep 'iOS Simulator' | grep 'iPhone' || true
-          echo "---"
-
-          # Extract the UUID using grep -oE (more robust than sed)
-          device_id=$(xcodebuild -scheme "$scheme" -showdestinations 2>&1 \
-            | grep 'platform:iOS Simulator' \
-            | grep 'name:iPhone' \
-            | head -1 \
-            | grep -oE 'id:[0-9A-Fa-f-]+' \
-            | cut -d: -f2)
+          # Pick the first available iPhone device
+          device_id=$(xcrun simctl list devices available -j \
+            | ruby -e '
+              require "json"
+              data = JSON.parse(STDIN.read)
+              data["devices"].each do |runtime, devices|
+                next unless runtime.include?("iOS")
+                devices.each do |d|
+                  if d["name"].include?("iPhone") && d["isAvailable"]
+                    puts d["udid"]
+                    exit
+                  end
+                end
+              end
+            ')
 
           if [ -z "$device_id" ]; then
-            echo "ERROR: Could not resolve a simulator device ID"
-            exit 1
+            echo "ERROR: No available iPhone simulator found"
+            echo "Creating an iPhone simulator..."
+            runtime=$(xcrun simctl list runtimes -j | ruby -e '
+              require "json"
+              runtimes = JSON.parse(STDIN.read)["runtimes"]
+              ios = runtimes.select { |r| r["name"].include?("iOS") && r["isAvailable"] }.last
+              puts ios["identifier"] if ios
+            ')
+            if [ -z "$runtime" ]; then
+              echo "ERROR: No iOS runtime available"
+              exit 1
+            fi
+            device_id=$(xcrun simctl create "CI iPhone" "iPhone 16" "$runtime")
           fi
 
           echo "Resolved simulator ID: $device_id"
