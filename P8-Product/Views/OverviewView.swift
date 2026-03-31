@@ -24,7 +24,7 @@ public struct OverviewView: View {
                 ProgressView()
                     .onAppear {
                         // Initialize AppState once the ModelContext is available
-                        appState = OverviewAppState()
+                        appState = OverviewAppState(dataController: .shared)
                     }
             }
         }
