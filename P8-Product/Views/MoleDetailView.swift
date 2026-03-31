@@ -31,7 +31,6 @@ struct MoleDetailView: View {
                 Spacer()
 
                 ImageCarousel(scans: scans, mole: mole, selectedIndex: $selectedIndex)
-                    .fixedSize(horizontal: true, vertical: true)
 
                 Spacer()
             }

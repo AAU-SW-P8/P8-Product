@@ -9,7 +9,6 @@ struct ImageCarousel: View {
     let scans: [MoleScan]
     var mole: Mole? = nil
     @Binding var selectedIndex: Int
-    var dotsOnLeft: Bool = false
     var height: CGFloat = 200
 
     private var safeIndex: Int {
@@ -32,11 +31,9 @@ struct ImageCarousel: View {
 
     var body: some View {
         VStack(spacing: 4) {
-            HStack(spacing: 4) {
-                if dotsOnLeft { dots }
-
-                ScrollView(.vertical, showsIndicators: false) {
-                    LazyVStack(spacing: 0) {
+            GeometryReader { geometry in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHStack(spacing: 0) {
                         ForEach(Array(scans.enumerated()), id: \.element.id) { index, scan in
                             if let imageData = scan.imageData, let uiImage = UIImage(data: imageData) {
                                 Image(uiImage: uiImage)
@@ -45,8 +42,7 @@ struct ImageCarousel: View {
                                     .clipShape(RoundedRectangle(cornerRadius: 12))
                                     .shadow(radius: 3)
                                     .padding(.horizontal, 8)
-                                    .frame(height: height)
-                                    .containerRelativeFrame(.vertical)
+                                    .frame(width: geometry.size.width, height: height)
                                     .id(index)
                             } else {
                                 ZStack {
@@ -57,15 +53,13 @@ struct ImageCarousel: View {
                                         .foregroundColor(.gray.opacity(0.5))
                                 }
                                 .padding(.horizontal, 8)
-                                .frame(height: height)
-                                .containerRelativeFrame(.vertical)
+                                .frame(width: geometry.size.width, height: height)
                                 .id(index)
                             }
                         }
                     }
                     .scrollTargetLayout()
                 }
-                .frame(height: height)
                 .scrollTargetBehavior(.paging)
                 .scrollPosition(id: Binding(
                     get: { safeIndex as Int? },
@@ -73,9 +67,10 @@ struct ImageCarousel: View {
                         if let newValue { selectedIndex = newValue }
                     }
                 ), anchor: .center)
-
-                if !dotsOnLeft { dots }
             }
+            .frame(height: height)
+
+            dots
 
             if let selectedScan {
                 Text(selectedScan.captureDate, format: .dateTime.year().month().day().hour().minute())
@@ -100,7 +95,7 @@ struct ImageCarousel: View {
     }
 
     private var dots: some View {
-        VStack(spacing: 6) {
+        HStack(spacing: 6) {
             ForEach(scans.indices, id: \.self) { index in
                 Circle()
                     .fill(index == safeIndex ? Color.primary : Color.gray.opacity(0.4))
@@ -112,6 +107,6 @@ struct ImageCarousel: View {
                     }
             }
         }
-        .padding(.horizontal, 4)
+        .padding(.top, 4)
     }
 }
