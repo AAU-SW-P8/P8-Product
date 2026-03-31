@@ -4,31 +4,22 @@
 //
 
 import SwiftUI
-import SwiftData
-import UIKit
 import ARKit
-import simd
-import Vision
-import CoreVideo
 
 struct CameraView: View {
     @State private var selectedImage: UIImage?
-    @State private var showARCamera = false
+    @State private var showCamera = false
+    @State private var showSegmentation = false
     @State private var hasAutoOpenedCamera = false
     private let supportsARCapture = ARWorldTrackingConfiguration.isSupported
         && ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh)
+    private let hasPhysicalCamera = UIImagePickerController.isSourceTypeAvailable(.camera)
 
     var body: some View {
         ZStack {
             if let selectedImage {
-                Image(uiImage: selectedImage)
-                    .resizable()
-                    .scaledToFit()
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        openARCamera()
-                    }
-            } else if !supportsARCapture {
+                imagePreview(selectedImage)
+            } else if !hasPhysicalCamera {
                 simulatorFallbackView
             } else {
                 Color.black
@@ -48,24 +39,75 @@ struct CameraView: View {
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            if !showARCamera {
-                openARCamera()
+            if !showCamera && selectedImage == nil {
+                openCamera()
             }
         }
         .onAppear {
             guard !hasAutoOpenedCamera else { return }
             hasAutoOpenedCamera = true
-            openARCamera()
+            openCamera()
         }
-        .fullScreenCover(isPresented: $showARCamera) {
-            ARCameraView(capturedImage: $selectedImage)
-                .ignoresSafeArea()
+        .fullScreenCover(isPresented: $showCamera) {
+            if supportsARCapture {
+                ARCameraView(capturedImage: $selectedImage)
+                    .ignoresSafeArea()
+            } else {
+                SimpleCameraView(capturedImage: $selectedImage)
+                    .ignoresSafeArea()
+            }
+        }
+        .fullScreenCover(isPresented: $showSegmentation) {
+            if let selectedImage {
+                MoleSegmentationTestView(inputImage: selectedImage)
+            }
         }
     }
 
-    private func openARCamera() {
-        guard supportsARCapture else { return }
-        showARCamera = true
+    private func imagePreview(_ image: UIImage) -> some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+
+            VStack {
+                Spacer()
+                HStack(spacing: 40) {
+                    Button {
+                        selectedImage = nil
+                        openCamera()
+                    } label: {
+                        Text("Retake")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 12)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Capsule())
+                    }
+
+                    Button {
+                        showSegmentation = true
+                    } label: {
+                        Text("Use Photo")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 12)
+                            .background(Color.accentColor)
+                            .clipShape(Capsule())
+                    }
+                }
+                .padding(.bottom, 40)
+            }
+        }
+    }
+
+    private func openCamera() {
+        guard hasPhysicalCamera else { return }
+        showCamera = true
     }
 
     private var simulatorFallbackView: some View {
@@ -81,10 +123,10 @@ struct CameraView: View {
                     .font(.system(size: 56))
                     .foregroundStyle(.secondary)
 
-                Text("AR capture is unavailable in Simulator")
+                Text("Camera is unavailable in Simulator")
                     .font(.title3.weight(.semibold))
 
-                Text("Run on a LiDAR-equipped iPhone or iPad to use the camera flow. In Simulator, a placeholder image is shown so the app still runs.")
+                Text("Run on an iPhone or iPad to use the camera. In Simulator, a placeholder image is shown so the app still runs.")
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 24)
@@ -95,6 +137,43 @@ struct CameraView: View {
                 .buttonStyle(.borderedProminent)
             }
             .padding(24)
+        }
+    }
+}
+
+struct SimpleCameraView: UIViewControllerRepresentable {
+    @Binding var capturedImage: UIImage?
+    @Environment(\.dismiss) var dismiss
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: SimpleCameraView
+
+        init(_ parent: SimpleCameraView) {
+            self.parent = parent
+        }
+
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            if let image = info[.originalImage] as? UIImage {
+                parent.capturedImage = image
+            }
+            parent.dismiss()
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.dismiss()
         }
     }
 }
@@ -126,10 +205,8 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
     private var cancelButton: UIButton!
     private var centerCrosshair: UIView!
     private var centerCircle: UIView!
-    private var triangleIndicator: CAShapeLayer!
-    
+
     private var currentDistance: Float = 100.0
-    private var currentTemperature: Float = 0.0
     private let targetDistance: Float = 0.35 // 35 cm in meters
     private let distanceTolerance: Float = 0.05 // ±5 cm tolerance
     
@@ -285,8 +362,6 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         let redColor = UIColor(red: 1.0, green: 0.3, blue: 0.3, alpha: 1.0).cgColor
         var layers: [CAShapeLayer] = []
         
-        let halfSize = size / 2
-        
         // Top-left corner
         let tlPath = UIBezierPath()
         tlPath.move(to: CGPoint(x: 0, y: cornerSize))
@@ -317,7 +392,7 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
             layer.strokeColor = redColor
             layer.lineWidth = lineWidth
             layer.fillColor = UIColor.clear.cgColor
-            layer.position = CGPoint(x: halfSize - size/2, y: halfSize - size/2)
+            layer.position = .zero
             layers.append(layer)
         }
         

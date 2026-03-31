@@ -21,12 +21,15 @@ struct MoleSegmentationTestView: View {
     // MARK: - Constants
 
     /// Side length of the square crop region sent to the model, in image pixels.
-    private let cropSize: CGFloat = 200
+    private let cropSize: CGFloat = 500
 
     // MARK: - State
 
-    /// The image to segment. Replace with the image captured by the camera.
-    @State private var testImage: UIImage? = UIImage(named: "test_mole_image")
+    /// The image to segment.
+    let inputImage: UIImage?
+
+    /// The image to segment, as state so it can be updated from the placeholder flow.
+    @State private var testImage: UIImage?
 
     /// The segmentation mask for the last bounding-box crop.
     @State private var cropMaskImage: UIImage?
@@ -69,7 +72,10 @@ struct MoleSegmentationTestView: View {
             } message: {
                 Text(errorMessage ?? "Unknown error")
             }
-            .task { await loadSegmentor() }
+            .task {
+                if testImage == nil { testImage = inputImage }
+                await loadSegmentor()
+            }
         }
     }
 
@@ -122,15 +128,15 @@ struct MoleSegmentationTestView: View {
     ///   - viewSize: The size of the `GeometryReader` frame containing the image.
     ///   - image: The full source image.
     private func handleTap(at location: CGPoint, in viewSize: CGSize, image: UIImage) {
-        guard let segmentor, let cgImage = image.cgImage else { return }
+        guard let segmentor else { return }
         guard !isProcessing else { return }
 
-        let pixelW = CGFloat(cgImage.width)
-        let pixelH = CGFloat(cgImage.height)
+        // Use UIImage.size which respects EXIF orientation (not cgImage.width/height)
+        let imageSize = image.size
 
         // Create coordinate converter
         let converter = ImageCoordinateConverter(
-            imageSize: CGSize(width: pixelW, height: pixelH),
+            imageSize: imageSize,
             viewSize: viewSize
         )
 
@@ -146,12 +152,11 @@ struct MoleSegmentationTestView: View {
         Task {
             isProcessing = true
             do {
-                // Crop the source image to the bounding box
-                guard let croppedCG = cgImage.cropping(to: boxPixel) else {
-                    throw PipelineError.invalidImage
+                // Crop using UIGraphicsImageRenderer which respects orientation
+                let renderer = UIGraphicsImageRenderer(size: boxPixel.size)
+                let croppedImage = renderer.image { _ in
+                    image.draw(at: CGPoint(x: -boxPixel.origin.x, y: -boxPixel.origin.y))
                 }
-                // Run SAM segmentation on the crop
-                let croppedImage = UIImage(cgImage: croppedCG)
                 let maskArray    = try await segmentor.segment(image: croppedImage,
                                                                point: pointInCrop,
                                                                modelSize: 1024)
@@ -241,5 +246,5 @@ struct MoleSegmentationTestView: View {
 // MARK: - Preview
 
 #Preview {
-    MoleSegmentationTestView()
+    MoleSegmentationTestView(inputImage: UIImage(named: "test_mole_image"))
 }
