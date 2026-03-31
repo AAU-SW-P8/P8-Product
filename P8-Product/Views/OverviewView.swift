@@ -154,7 +154,7 @@ private struct OverviewContentView: View {
         ZStack {
             if let person: Person = appState.selectedPerson {
                 List {
-                    ForEach(person.moles) { mole: Mole in
+                    ForEach(person.moles) { (mole: Mole) in
                         NavigationLink(destination: Text("Details for \(mole.name)")) {
                             moleRow(for: mole)
                         }
