@@ -6,7 +6,9 @@
 import SwiftUI
 import SwiftData
 
-
+/**
+ The `OverviewView` is the main interface for displaying and managing people, their moles, and associated scans. It provides navigation between people, a list of their moles, and actions to add/edit/delete people and moles. The view relies on `OverviewAppState` for managing its state and interactions with the data layer.
+ */
 public struct OverviewView: View {
     @Query(sort: \Person.createdAt) private var people: [Person]
     
@@ -17,7 +19,7 @@ public struct OverviewView: View {
     
     public var body: some View {
         Group {
-            if let appState = appState {
+            if let appState: OverviewAppState = appState {
                 // Once initialized, pass the non-optional state to the content view
                 OverviewContentView(appState: appState, people: people)
             } else {

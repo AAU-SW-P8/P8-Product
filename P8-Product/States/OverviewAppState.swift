@@ -118,6 +118,7 @@ class OverviewAppState {
         cancelEdit()
     }
     
+    
     func cancelEdit() {
         personToEdit = nil
         editingName = ""
