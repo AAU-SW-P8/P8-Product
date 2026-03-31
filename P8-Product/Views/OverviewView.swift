@@ -5,6 +5,7 @@
 
 import SwiftUI
 import SwiftData
+import UIKit
 
 /**
  The `OverviewView` is the main interface for displaying and managing people, their moles, and associated scans. It provides navigation between people, a list of their moles, and actions to add/edit/delete people and moles. The view relies on `OverviewAppState` for managing its state and interactions with the data layer.
@@ -12,24 +13,12 @@ import SwiftData
 public struct OverviewView: View {
     @Query(sort: \Person.createdAt) private var people: [Person]
     
-    // Hold the AppState. It starts as nil until we have the ModelContext.
-    @State private var appState: OverviewAppState?
+    @State private var appState = OverviewAppState(dataController: .shared)
     
     public init() {}
     
     public var body: some View {
-        Group {
-            if let appState: OverviewAppState = appState {
-                // Once initialized, pass the non-optional state to the content view
-                OverviewContentView(appState: appState, people: people)
-            } else {
-                ProgressView()
-                    .onAppear {
-                        // Initialize AppState once the ModelContext is available
-                        appState = OverviewAppState(dataController: .shared)
-                    }
-            }
-        }
+        OverviewContentView(appState: appState, people: people)
     }
 }
 
@@ -118,7 +107,7 @@ private struct OverviewContentView: View {
                                 Label("Edit Name", systemImage: "pencil")
                             }
                             Button(role: .destructive) {
-                                appState.requestDelete(person: person) // Perfectly in scope here!
+                                appState.requestDelete(person: person)
                             } label: {
                                 Label("Delete", systemImage: "trash")
                             }
