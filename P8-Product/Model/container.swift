@@ -5,7 +5,7 @@
 
 import Foundation
 import SwiftData
-
+import UIKit
 
 /// `DataController` handles the initialization of the `ModelContainer`, environment-specific
 /// configurations (e.g., in-memory storage for testing), and safe recovery from database
