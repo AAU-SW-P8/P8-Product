@@ -9,6 +9,6 @@ updates:
   - package-ecosystem: "swift"
     # Look in the `root` directory
     directory: "/"
-   # Check for updates daily
+    # Check for updates daily
     schedule:
       interval: "daily"
