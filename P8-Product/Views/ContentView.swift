@@ -1,6 +1,6 @@
 //
-//  ContentView.swift
-//  P8-Product
+// ContentView.swift
+// P8-Product
 //
 
 import SwiftUI
@@ -38,6 +38,20 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
-        .modelContainer(for: [HistoryItem.self, Person.self], inMemory: true)
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(
+    for: Person.self,
+        Mole.self,
+        MoleInstance.self,
+        MoleScan.self,
+        configurations: config
+    )
+    
+    // Seed preview data
+    Task { @MainActor in
+        MockData.insertSampleData(into: container.mainContext)
+    }
+    
+    return ContentView()
+        .modelContainer(container)
 }

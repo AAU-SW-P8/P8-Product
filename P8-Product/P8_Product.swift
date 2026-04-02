@@ -1,18 +1,21 @@
 //
-//  P8_Product_TestApp.swift
+//  P8_Product.swift
 //  P8-Product
 //
 
 import SwiftUI
 import SwiftData
-import UIKit
 
 @main
 struct P8_Product: App {
+    
+    let dataController = DataController.shared
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(for: [HistoryItem.self, Person.self])
+        .modelContainer(dataController.container) // Use the custom ModelContainer for the app
     }
+    
 }
