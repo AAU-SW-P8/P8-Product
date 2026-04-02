@@ -1,5 +1,5 @@
 //
-//  MoleDetector.swift
+//  MolePipeline.swift
 //  P8-Product
 //
 //

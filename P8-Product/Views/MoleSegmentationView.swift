@@ -1,12 +1,11 @@
 //
-//  MoleSegmentationTestView.swift
+//  MoleSegmentationView.swift
 //  P8-Product
 //
 //  Created by Simon Thordal on 3/24/26.
 //
 
 import SwiftUI
-import CoreML
 
 /// A view that automatically segments moles using SAM3 with the text prompt "moles".
 ///
@@ -60,7 +59,12 @@ struct MoleSegmentationTestView: View {
             } message: {
                 Text(errorMessage ?? "Unknown error")
             }
-            .task { await loadAndSegment() }
+            .task {
+                // Avoid reloading models every time the view becomes active.
+                // If a segmentor already exists, reuse it and skip re-initialization.
+                guard segmentor == nil else { return }
+                await loadAndSegment()
+            }
         }
     }
 
@@ -71,17 +75,19 @@ struct MoleSegmentationTestView: View {
     private func imageContent(image: UIImage) -> some View {
         GeometryReader { geometry in
             ZStack {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-
                 if let mask = maskOverlay {
+                    // Render the fully composited annotated image returned by MoleSegmentor
                     Image(uiImage: mask)
                         .resizable()
                         .scaledToFit()
                         .frame(width: geometry.size.width, height: geometry.size.height)
                         .allowsHitTesting(false)
+                } else {
+                    // Fallback: show the original image before segmentation completes
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: geometry.size.width, height: geometry.size.height)
                 }
             }
         }
@@ -97,20 +103,22 @@ struct MoleSegmentationTestView: View {
 
     /// Loads the SAM3 models, then immediately segments the test image.
     private func loadAndSegment() async {
-        guard testImage != nil else { return }
+        var image: UIImage?
 
-        isProcessing = true
-        statusMessage = "Loading SAM3 models…"
+        await MainActor.run {
+            image = testImage
+            isProcessing = true
+            statusMessage = "Loading SAM3 models…"
+        }
+
+        guard let image else { return }
 
         do {
             let seg = try await MoleSegmentor()
-            segmentor = seg
-            statusMessage = "Segmenting…"
-
-            guard let image = testImage else { return }
             let mask = try seg.segment(image: image)
 
             await MainActor.run {
+                segmentor = seg
                 maskOverlay = mask
                 statusMessage = mask != nil ? "Done — moles highlighted in red" : "No moles detected"
                 isProcessing = false
@@ -126,32 +134,37 @@ struct MoleSegmentationTestView: View {
     }
 
     /// Re-runs segmentation (e.g. after clearing).
+    @MainActor
     private func resegment() {
         guard let segmentor, let image = testImage else { return }
-        Task {
-            isProcessing = true
-            statusMessage = "Segmenting…"
-            segmentor.clearCache()
 
+        // These UI-related state changes are performed on the main actor.
+        isProcessing = true
+        statusMessage = "Segmenting…"
+        segmentor.clearCache()
+
+        // Run the model work off the main actor, then hop back to MainActor for UI updates.
+        Task.detached {
             do {
                 let mask = try segmentor.segment(image: image)
                 await MainActor.run {
-                    maskOverlay = mask
-                    statusMessage = mask != nil ? "Done — moles highlighted in red" : "No moles detected"
-                    isProcessing = false
+                    self.maskOverlay = mask
+                    self.statusMessage = mask != nil ? "Done — moles highlighted in red" : "No moles detected"
+                    self.isProcessing = false
                 }
             } catch {
                 await MainActor.run {
-                    errorMessage = "Segmentation failed: \(error.localizedDescription)"
-                    showError = true
-                    statusMessage = "Error"
-                    isProcessing = false
+                    self.errorMessage = "Segmentation failed: \(error.localizedDescription)"
+                    self.showError = true
+                    self.statusMessage = "Error"
+                    self.isProcessing = false
                 }
             }
         }
     }
 
     /// Removes the current mask overlay and clears the model's cache.
+    @MainActor
     private func clearSegmentation() {
         maskOverlay = nil
         statusMessage = "Cleared"
