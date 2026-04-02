@@ -8,7 +8,24 @@ import SwiftData
 import UIKit
 
 struct ContentView: View {
+    @StateObject private var modelLoader = SAM3ModelLoader.shared
+    
     var body: some View {
+        Group {
+            if modelLoader.isLoading || modelLoader.segmentor == nil {
+                loadingView
+            } else if let error = modelLoader.error {
+                errorView(error)
+            } else {
+                mainTabView
+            }
+        }
+        .task {
+            await modelLoader.loadModel()
+        }
+    }
+    
+    private var mainTabView: some View {
         TabView {
             OverviewView()
                 .tabItem {
@@ -33,6 +50,50 @@ struct ContentView: View {
                 .tabItem {
                     Label("Segment", systemImage: "camera")
                 }
+        }
+    }
+    
+    private var loadingView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "brain.head.profile")
+                .font(.system(size: 60))
+                .foregroundStyle(.blue)
+                .symbolEffect(.pulse)
+            
+            Text("Initializing AI Models…")
+                .font(.headline)
+            
+            ProgressView()
+                .controlSize(.large)
+            
+            Text("This may take a moment on first launch.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemBackground))
+    }
+    
+    private func errorView(_ error: Error) -> some View {
+        VStack(spacing: 20) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 60))
+                .foregroundStyle(.red)
+            
+            Text("Failed to Load AI Models")
+                .font(.headline)
+            
+            Text(error.localizedDescription)
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            
+            Button("Retry") {
+                Task {
+                    await modelLoader.loadModel()
+                }
+            }
+            .buttonStyle(.borderedProminent)
         }
     }
 }

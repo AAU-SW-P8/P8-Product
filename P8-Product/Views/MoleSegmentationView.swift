@@ -9,8 +9,8 @@ import SwiftUI
 
 /// A view that automatically segments moles using SAM3 with the text prompt "moles".
 ///
-/// When the view appears, the SAM3 pipeline loads and immediately runs segmentation
-/// on the test image — no tap or manual interaction needed. Detected mole regions
+/// When the view appears, it uses the pre-loaded SAM3 pipeline from SAM3ModelLoader
+/// and immediately runs segmentation on the test image. Detected mole regions
 /// are shown as a semi-transparent red overlay on top of the original image.
 struct MoleSegmentationTestView: View {
 
@@ -26,7 +26,7 @@ struct MoleSegmentationTestView: View {
     @State private var isProcessing = false
 
     /// Status text shown beneath the image.
-    @State private var statusMessage: String = "Loading models…"
+    @State private var statusMessage: String = "Waiting for model…"
 
     /// Holds the localised error message when something fails.
     @State private var errorMessage: String?
@@ -34,8 +34,8 @@ struct MoleSegmentationTestView: View {
     /// Controls presentation of the error alert.
     @State private var showError = false
 
-    /// The loaded SAM3 model wrapper, initialised asynchronously on appear.
-    @State private var segmentor: MoleSegmentor?
+    /// Access the global SAM3 model loader
+    @ObservedObject private var modelLoader = SAM3ModelLoader.shared
 
     // MARK: - Body
 
@@ -60,10 +60,7 @@ struct MoleSegmentationTestView: View {
                 Text(errorMessage ?? "Unknown error")
             }
             .task {
-                // Avoid reloading models every time the view becomes active.
-                // If a segmentor already exists, reuse it and skip re-initialization.
-                guard segmentor == nil else { return }
-                await loadAndSegment()
+                await runInitialSegmentation()
             }
         }
     }
@@ -101,24 +98,28 @@ struct MoleSegmentationTestView: View {
 
     // MARK: - Actions
 
-    /// Loads the SAM3 models, then immediately segments the test image.
-    private func loadAndSegment() async {
-        var image: UIImage?
-
-        await MainActor.run {
-            image = testImage
-            isProcessing = true
-            statusMessage = "Loading SAM3 models…"
+    /// Runs segmentation on the test image using the pre-loaded segmentor.
+    private func runInitialSegmentation() async {
+        guard testImage != nil else { return }
+        
+        // Wait for segmentor if it's still loading (though ContentView should handle this)
+        while modelLoader.segmentor == nil && modelLoader.error == nil {
+            try? await Task.sleep(nanoseconds: 500_000_000)
         }
 
-        guard let image else { return }
+        guard let seg = modelLoader.segmentor else {
+            statusMessage = "AI model not ready"
+            return
+        }
+
+        isProcessing = true
+        statusMessage = "Segmenting…"
 
         do {
-            let seg = try await MoleSegmentor()
+            guard let image = testImage else { return }
             let mask = try seg.segment(image: image)
 
             await MainActor.run {
-                segmentor = seg
                 maskOverlay = mask
                 statusMessage = mask != nil ? "Done — moles highlighted in red" : "No moles detected"
                 isProcessing = false
@@ -136,7 +137,7 @@ struct MoleSegmentationTestView: View {
     /// Re-runs segmentation (e.g. after clearing).
     @MainActor
     private func resegment() {
-        guard let segmentor, let image = testImage else { return }
+        guard let segmentor = modelLoader.segmentor, let image = testImage else { return }
 
         // These UI-related state changes are performed on the main actor.
         isProcessing = true
@@ -168,7 +169,7 @@ struct MoleSegmentationTestView: View {
     private func clearSegmentation() {
         maskOverlay = nil
         statusMessage = "Cleared"
-        segmentor?.clearCache()
+        modelLoader.segmentor?.clearCache()
     }
 
     // MARK: - Supporting views
@@ -211,7 +212,7 @@ struct MoleSegmentationTestView: View {
         ToolbarItem(placement: .navigationBarTrailing) {
             HStack {
                 Button("Re-segment") { resegment() }
-                    .disabled(segmentor == nil || isProcessing)
+                    .disabled(modelLoader.segmentor == nil || isProcessing)
                 Button("Clear") { clearSegmentation() }
                     .disabled(maskOverlay == nil)
             }
