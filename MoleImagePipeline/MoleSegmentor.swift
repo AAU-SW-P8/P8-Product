@@ -75,9 +75,15 @@ class MoleSegmentor {
     /// Returns the input image with colored mask overlays, bounding boxes, and
     /// per-detection labels (ID + score), or nil if no moles were detected.
     func segment(image: UIImage, confidenceThreshold: Float = 0.3, nmsThreshold: Float = 1.0) throws -> UIImage? {
+        let clock = ContinuousClock()
+        
         // 1. Encode image through vision encoder
         print("🖼️ Encoding image…")
-        let visionOutput = try encodeImage(image)
+        var visionOutput: MLFeatureProvider!
+        let encodeTime = try clock.measure {
+            visionOutput = try encodeImage(image)
+        }
+        print("⏱️ Encoding time: \(encodeTime)")
 
         // Verify vision encoder outputs exist (FPN multi-scale features + positional encoding)
         guard let fpnFeat0 = visionOutput.featureValue(for: "x_495"),   // [1,256,288,288]
@@ -108,7 +114,11 @@ class MoleSegmentor {
 
         // 3. Run decoder
         print("🧠 Running decoder…")
-        let decoderOutput = try decoder.prediction(from: decoderInput)
+        var decoderOutput: MLFeatureProvider!
+        let decodeTime = try clock.measure {
+            decoderOutput = try decoder.prediction(from: decoderInput)
+        }
+        print("⏱️ Decoder execution time: \(decodeTime)")
 
         guard let masks = decoderOutput.featureValue(for: "var_5020")?.multiArrayValue,
               let scores = decoderOutput.featureValue(for: "var_4806")?.multiArrayValue,
@@ -120,6 +130,22 @@ class MoleSegmentor {
 
         print("📊 Scores shape: \(scores.shape), Boxes shape: \(boxes.shape), Masks shape: \(masks.shape)")
 
+        // Validate output shapes and derive detection count
+        guard scores.shape.count == 2,
+              boxes.shape.count == 3,
+              masks.shape.count == 4,
+              scores.shape[0] == 1,
+              boxes.shape[0] == 1,
+              masks.shape[0] == 1,
+              scores.shape[1] == boxes.shape[1],
+              scores.shape[1] == masks.shape[1],
+              boxes.shape[2] == 4 else {
+            print("❌ Unexpected output shapes from decoder")
+            throw PipelineError.unexpectedModelOutput
+        }
+
+        let numDetections = scores.shape[1].intValue
+
         // 4. Filter detections by confidence
         struct RawDetection {
             let index: Int
@@ -128,7 +154,7 @@ class MoleSegmentor {
         }
 
         var rawDetections: [RawDetection] = []
-        for i in 0..<200 {
+        for i in 0..<numDetections {
             let prob = scores[[0, i] as [NSNumber]].floatValue
             if prob >= confidenceThreshold {
                 // Extract box — DETR-style [cx, cy, w, h] normalized to [0,1]

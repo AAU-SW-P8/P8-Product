@@ -27,14 +27,20 @@ class SAM3ModelLoader: ObservableObject {
         isLoading = true
         error = nil
         
-        do {
-            let seg = try await MoleSegmentor()
-            self.segmentor = seg
-            self.isLoading = false
-        } catch {
-            self.error = error
-            self.isLoading = false
-            print("❌ SAM3 Model Loading Failed: \(error.localizedDescription)")
+        let clock = ContinuousClock()
+        let result = await clock.measure {
+            do {
+                let seg = try await MoleSegmentor()
+                self.segmentor = seg
+            } catch {
+                self.error = error
+                print("❌ SAM3 Model Loading Failed: \(error.localizedDescription)")
+            }
+        }
+        
+        isLoading = false
+        if error == nil {
+            print("⏱️ Total SAM3 loading time: \(result)")
         }
     }
 }
