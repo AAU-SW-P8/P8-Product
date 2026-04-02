@@ -32,25 +32,25 @@ class MoleSegmentor {
 
     init() async throws {
         // Load Vision Encoder
-        guard let visionURL = Bundle.main.url(forResource: "sam3-vision-encoder", withExtension: "mlmodelc")
-            ?? Bundle.main.url(forResource: "sam3-vision-encoder", withExtension: "mlpackage") else {
-            throw PipelineError.modelNotFound(name: "sam3-vision-encoder")
+        guard let visionURL = Bundle.main.url(forResource: "SAM3.1_ImageEncoder_FP16", withExtension: "mlmodelc")
+            ?? Bundle.main.url(forResource: "SAM3.1_ImageEncoder_FP16", withExtension: "mlpackage") else {
+            throw PipelineError.modelNotFound(name: "SAM3.1_ImageEncoder_FP16")
         }
 
         // Load Text Encoder
-        guard let textURL = Bundle.main.url(forResource: "sam3-text-encoder", withExtension: "mlmodelc")
-            ?? Bundle.main.url(forResource: "sam3-text-encoder", withExtension: "mlpackage") else {
-            throw PipelineError.modelNotFound(name: "sam3-text-encoder")
+        guard let textURL = Bundle.main.url(forResource: "SAM3_TextEncoder_FP16", withExtension: "mlmodelc")
+            ?? Bundle.main.url(forResource: "SAM3.1_TextEncoder_FP16", withExtension: "mlpackage") else {
+            throw PipelineError.modelNotFound(name: "SAM3.1_TextEncoder_FP16")
         }
 
         // Load Decoder
-        guard let decoderURL = Bundle.main.url(forResource: "sam3-decoder", withExtension: "mlmodelc")
-            ?? Bundle.main.url(forResource: "sam3-decoder", withExtension: "mlpackage") else {
-            throw PipelineError.modelNotFound(name: "sam3-decoder")
+        guard let decoderURL = Bundle.main.url(forResource: "SAM3_Detector_FP16", withExtension: "mlmodelc")
+            ?? Bundle.main.url(forResource: "SAM3.1_Detector_FP16", withExtension: "mlpackage") else {
+            throw PipelineError.modelNotFound(name: "SAM3.1_Detector_FP16")
         }
 
         let config = MLModelConfiguration()
-        config.computeUnits = .cpuOnly
+        config.computeUnits = .all
 
         print("📦 Loading SAM3 vision encoder…")
         self.visionEncoder = try await MLModel.load(contentsOf: visionURL, configuration: config)
@@ -68,79 +68,99 @@ class MoleSegmentor {
     // MARK: - Public
 
     /// Segments moles in the image using the text prompt "moles".
-    /// Returns a semi-transparent overlay image (red = mole) sized to match the input,
-    /// or nil if no moles were detected above the confidence threshold.
-    func segment(image: UIImage, confidenceThreshold: Float = 0.01) throws -> UIImage? {
+    /// Returns the input image with colored mask overlays, bounding boxes, and
+    /// per-detection labels (ID + score), or nil if no moles were detected.
+    func segment(image: UIImage, confidenceThreshold: Float = 0.3, nmsThreshold: Float = 1.0) throws -> UIImage? {
         // 1. Encode image through vision encoder
         print("🖼️ Encoding image…")
         let visionOutput = try encodeImage(image)
 
-        // Verify vision encoder outputs exist
-        guard let fpn0 = visionOutput.featureValue(for: "fpn_feat_0"),
-              let fpn1 = visionOutput.featureValue(for: "fpn_feat_1"),
-              let fpn2 = visionOutput.featureValue(for: "fpn_feat_2"),
-              let pos2 = visionOutput.featureValue(for: "fpn_pos_2") else {
+        // Verify vision encoder outputs exist (FPN multi-scale features + positional encoding)
+        guard let fpnFeat0 = visionOutput.featureValue(for: "x_495"),   // [1,256,288,288]
+              let fpnFeat1 = visionOutput.featureValue(for: "x_497"),   // [1,256,144,144]
+              let fpnFeat2 = visionOutput.featureValue(for: "x_499"),   // [1,256,72,72]
+              let visPos   = visionOutput.featureValue(for: "const_762") // [1,256,72,72]
+        else {
             print("❌ Vision encoder missing expected output features")
             print("   Available features: \(visionOutput.featureNames.joined(separator: ", "))")
             throw PipelineError.unexpectedModelOutput
         }
 
-        guard let textFeat = textFeatures.featureValue(for: "text_features"),
-              let textMask = textFeatures.featureValue(for: "text_mask") else {
+        guard let textFeat = textFeatures.featureValue(for: "var_2489"),
+              let textMask = textFeatures.featureValue(for: "var_5") else {
             print("❌ Text encoder missing expected output features")
             throw PipelineError.unexpectedModelOutput
         }
 
-        // 2. Prepare decoder inputs — no box prompts, text-only grounding
-        let inputBoxes = try MLMultiArray.zeros(shape: [1, 5, 4], dataType: .float16)
-        let inputBoxesLabels = try MLMultiArray.zeros(shape: [1, 5], dataType: .int32)
-
+        // 2. Prepare decoder inputs — FPN features + text grounding
         let decoderInput = try MLDictionaryFeatureProvider(dictionary: [
-            "fpn_feat_0": fpn0,
-            "fpn_feat_1": fpn1,
-            "fpn_feat_2": fpn2,
-            "fpn_pos_2": pos2,
+            "fpn_feat0": fpnFeat0,
+            "fpn_feat1": fpnFeat1,
+            "fpn_feat2": fpnFeat2,
+            "vis_pos": visPos,
             "text_features": textFeat,
-            "text_mask": textMask,
-            "input_boxes": MLFeatureValue(multiArray: inputBoxes),
-            "input_boxes_labels": MLFeatureValue(multiArray: inputBoxesLabels)
+            "text_mask": textMask
         ])
 
         // 3. Run decoder
         print("🧠 Running decoder…")
         let decoderOutput = try decoder.prediction(from: decoderInput)
 
-        guard let masks = decoderOutput.featureValue(for: "var_4027")?.multiArrayValue,
-              let scores = decoderOutput.featureValue(for: "var_3862")?.multiArrayValue else {
+        guard let masks = decoderOutput.featureValue(for: "var_5020")?.multiArrayValue,
+              let scores = decoderOutput.featureValue(for: "var_4806")?.multiArrayValue,
+              let boxes = decoderOutput.featureValue(for: "var_4734")?.multiArrayValue else {
             print("❌ Decoder missing expected output features")
             print("   Available features: \(decoderOutput.featureNames.joined(separator: ", "))")
             throw PipelineError.unexpectedModelOutput
         }
 
-        print("📊 Scores shape: \(scores.shape), dataType: \(scores.dataType.rawValue)")
-        print("📊 Masks shape: \(masks.shape), dataType: \(masks.dataType.rawValue)")
+        print("📊 Scores shape: \(scores.shape), Boxes shape: \(boxes.shape), Masks shape: \(masks.shape)")
 
-        // 4. Filter detections by confidence — use safe .floatValue accessor
-        //    (CoreML may promote Float16 → Float32 at runtime)
-        var confidentIndices: [Int] = []
+        // 4. Filter detections by confidence
+        struct RawDetection {
+            let index: Int
+            let prob: Float
+            let box: CGRect // normalized [0,1] coordinates
+        }
+
+        var rawDetections: [RawDetection] = []
         for i in 0..<200 {
-            let logit = scores[[0, i] as [NSNumber]].floatValue
-            let prob = 1.0 / (1.0 + exp(-logit))
+            let prob = scores[[0, i] as [NSNumber]].floatValue
             if prob >= confidenceThreshold {
-                confidentIndices.append(i)
-                print("🎯 Detection \(i): logit=\(logit), prob=\(prob)")
+                // Extract box — DETR-style [cx, cy, w, h] normalized to [0,1]
+                let cx = CGFloat(boxes[[0, i, 0] as [NSNumber]].floatValue)
+                let cy = CGFloat(boxes[[0, i, 1] as [NSNumber]].floatValue)
+                let w  = CGFloat(boxes[[0, i, 2] as [NSNumber]].floatValue)
+                let h  = CGFloat(boxes[[0, i, 3] as [NSNumber]].floatValue)
+                let box = CGRect(x: cx - w / 2, y: cy - h / 2, width: w, height: h)
+                rawDetections.append(RawDetection(index: i, prob: prob, box: box))
             }
         }
 
-        guard !confidentIndices.isEmpty else {
+        guard !rawDetections.isEmpty else {
             print("⚠️ No detections above threshold \(confidenceThreshold)")
             return nil
         }
 
-        print("✅ Found \(confidentIndices.count) moles")
+        // 5. Sort by confidence and apply NMS to remove overlapping detections
+        rawDetections.sort { $0.prob > $1.prob }
 
-        // 5. Combine masks of all confident detections into one overlay
-        return createCombinedMask(from: masks, indices: confidentIndices, imageSize: image.size)
+        var kept: [RawDetection] = []
+        for det in rawDetections {
+            let dominated = kept.contains { Self.iou($0.box, det.box) > nmsThreshold }
+            if !dominated {
+                kept.append(det)
+            }
+        }
+
+        print("✅ Found \(kept.count) moles (from \(rawDetections.count) candidates after NMS)")
+        for det in kept {
+            print("   🎯 Detection \(det.index): prob=\(String(format: "%.3f", det.prob))")
+        }
+
+        // 6. Render annotated overlay on the original image
+        let detections = kept.map { (index: $0.index, prob: $0.prob, box: $0.box) }
+        return createAnnotatedImage(from: masks, detections: detections, baseImage: image)
     }
 
     /// Clears the cached image embeddings — call when switching to a new image.
@@ -154,20 +174,16 @@ class MoleSegmentor {
     /// BERT-tokenises the prompt "moles" and runs it through the text encoder.
     /// Token IDs: [CLS]=101  mole=16709  ##s=2015  [SEP]=102  + 28×[PAD]=0
     private static func encodeText(with encoder: MLModel) throws -> MLFeatureProvider {
-        let tokenIds: [Int32]      = [101, 16709, 2015, 102] + Array(repeating: 0, count: 28)
-        let attentionMask: [Int32] = [1, 1, 1, 1]            + Array(repeating: 0, count: 28)
+        let tokenIds: [Int32] = [49406, 23529, 49407] + Array(repeating: 0, count: 29)
 
         let inputIds = try MLMultiArray(shape: [1, 32], dataType: .int32)
-        let mask     = try MLMultiArray(shape: [1, 32], dataType: .int32)
 
         for i in 0..<32 {
             inputIds[[0, i] as [NSNumber]] = NSNumber(value: tokenIds[i])
-            mask[[0, i] as [NSNumber]]     = NSNumber(value: attentionMask[i])
         }
 
         let input = try MLDictionaryFeatureProvider(dictionary: [
-            "input_ids":      MLFeatureValue(multiArray: inputIds),
-            "attention_mask": MLFeatureValue(multiArray: mask)
+            "token_ids": MLFeatureValue(multiArray: inputIds)
         ])
 
         let output = try encoder.prediction(from: input)
@@ -191,7 +207,7 @@ class MoleSegmentor {
         let imageArray  = try pixelBufferToMLMultiArray(pixelBuffer, size: size)
 
         let input = try MLDictionaryFeatureProvider(dictionary: [
-            "images": MLFeatureValue(multiArray: imageArray)
+            "image": MLFeatureValue(multiArray: imageArray)
         ])
 
         let output = try visionEncoder.prediction(from: input)
@@ -267,56 +283,110 @@ class MoleSegmentor {
         return array
     }
 
+    // MARK: - NMS
+
+    /// Computes Intersection over Union between two rectangles.
+    private static func iou(_ a: CGRect, _ b: CGRect) -> Float {
+        let intersection = a.intersection(b)
+        if intersection.isNull { return 0 }
+        let interArea = Float(intersection.width * intersection.height)
+        let unionArea = Float(a.width * a.height + b.width * b.height) - interArea
+        return unionArea > 0 ? interArea / unionArea : 0
+    }
+
     // MARK: - Mask Rendering
 
-    /// Combines all confident detection masks into a single semi-transparent red overlay,
-    /// then resizes to match the original image dimensions.
-    private func createCombinedMask(from masks: MLMultiArray, indices: [Int], imageSize: CGSize) -> UIImage? {
-        let h = Self.maskSize  // 288
-        let w = Self.maskSize
-        let hw = h * w
-        var pixels = [UInt8](repeating: 0, count: w * h * 4)
+    /// Distinct colors for each detection (RGB tuples, 0-255).
+    private static let palette: [(UInt8, UInt8, UInt8)] = [
+        (230,  25,  75), // red
+        ( 60, 180,  75), // green
+        (  0, 130, 200), // blue
+        (255, 225,  25), // yellow
+        (245, 130,  48), // orange
+        (145,  30, 180), // purple
+        ( 70, 240, 240), // cyan
+        (240,  50, 230), // magenta
+        (210, 245,  60), // lime
+        (250, 190, 212), // pink
+    ]
 
-        // Use safe .floatValue accessor — works regardless of runtime data type
-        for y in 0..<h {
-            for x in 0..<w {
-                let spatial = y * w + x
-                let pixelIdx = spatial * 4
+    /// Renders the base image with per-detection colored mask overlays,
+    /// bounding boxes, and ID + score labels.
+    private func createAnnotatedImage(
+        from masks: MLMultiArray,
+        detections: [(index: Int, prob: Float, box: CGRect)],
+        baseImage: UIImage
+    ) -> UIImage? {
+        let imageSize = baseImage.size
+        let maskH = Self.maskSize
+        let maskW = Self.maskSize
+        let scaleX = imageSize.width  / CGFloat(maskW)
+        let scaleY = imageSize.height / CGFloat(maskH)
 
-                for detIdx in indices {
-                    let logit = masks[[0, detIdx, y, x] as [NSNumber]].floatValue
-                    if logit > 0 { // sigmoid(0) = 0.5, matching SAM3's binary mask threshold
-                        pixels[pixelIdx]     = 255  // R
-                        pixels[pixelIdx + 1] = 0    // G
-                        pixels[pixelIdx + 2] = 0    // B
-                        pixels[pixelIdx + 3] = 128  // A (semi-transparent)
-                        break
+        // Draw everything using UIKit graphics
+        UIGraphicsBeginImageContextWithOptions(imageSize, true, 0.0)
+        guard let ctx = UIGraphicsGetCurrentContext() else { return nil }
+
+        // Draw the original image as background
+        baseImage.draw(in: CGRect(origin: .zero, size: imageSize))
+
+        let maskAlpha: CGFloat = 0.35
+
+        for (detId, det) in detections.enumerated() {
+            let color = Self.palette[detId % Self.palette.count]
+            let r = CGFloat(color.0) / 255.0
+            let g = CGFloat(color.1) / 255.0
+            let b = CGFloat(color.2) / 255.0
+
+            // Draw semi-transparent mask pixels and track bounds for the bounding box
+            ctx.setFillColor(red: r, green: g, blue: b, alpha: maskAlpha)
+            var minMaskX = maskW, minMaskY = maskH, maxMaskX = 0, maxMaskY = 0
+            for y in 0..<maskH {
+                for x in 0..<maskW {
+                    let logit = masks[[0, det.index, y, x] as [NSNumber]].floatValue
+                    if logit > 0 {
+                        let rect = CGRect(
+                            x: CGFloat(x) * scaleX,
+                            y: CGFloat(y) * scaleY,
+                            width: scaleX + 1,
+                            height: scaleY + 1
+                        )
+                        ctx.fill(rect)
+                        minMaskX = min(minMaskX, x)
+                        minMaskY = min(minMaskY, y)
+                        maxMaskX = max(maxMaskX, x)
+                        maxMaskY = max(maxMaskY, y)
                     }
                 }
             }
+            let boxRect = CGRect(
+                x: CGFloat(minMaskX) * scaleX,
+                y: CGFloat(minMaskY) * scaleY,
+                width: CGFloat(maxMaskX - minMaskX + 1) * scaleX,
+                height: CGFloat(maxMaskY - minMaskY + 1) * scaleY
+            )
+            ctx.setStrokeColor(red: r, green: g, blue: b, alpha: 1.0)
+            ctx.setLineWidth(2.0)
+            ctx.stroke(boxRect)
+
+            // Draw label
+            let label = String(format: "mole %d  %.0f%%", detId + 1, det.prob * 100)
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.boldSystemFont(ofSize: max(imageSize.width / 40, 12)),
+                .foregroundColor: UIColor.white,
+                .backgroundColor: UIColor(red: r, green: g, blue: b, alpha: 0.75),
+            ]
+            let labelSize = (label as NSString).size(withAttributes: attrs)
+            let labelOrigin = CGPoint(
+                x: boxRect.minX,
+                y: max(boxRect.minY - labelSize.height - 2, 0)
+            )
+            (label as NSString).draw(at: labelOrigin, withAttributes: attrs)
         }
 
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue)
-
-        guard let context = CGContext(
-            data: &pixels, width: w, height: h,
-            bitsPerComponent: 8, bytesPerRow: w * 4,
-            space: colorSpace, bitmapInfo: bitmapInfo.rawValue
-        ), let cgMask = context.makeImage() else {
-            return nil
-        }
-
-        // Resize to match the original image
-        let maskImage = UIImage(cgImage: cgMask)
-        guard maskImage.size != imageSize else { return maskImage }
-
-        UIGraphicsBeginImageContextWithOptions(imageSize, false, 0.0)
-        maskImage.draw(in: CGRect(origin: .zero, size: imageSize))
-        let resized = UIGraphicsGetImageFromCurrentImageContext() ?? maskImage
+        let result = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
-
-        return resized
+        return result
     }
 }
 
