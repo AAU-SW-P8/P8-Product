@@ -330,6 +330,10 @@ class MoleSegmentor {
         // Draw overlay (masks, boxes, labels) using UIKit graphics on a transparent background
         UIGraphicsBeginImageContextWithOptions(imageSize, false, 0.0)
         guard let ctx = UIGraphicsGetCurrentContext() else { return nil }
+        
+        // Draw the original image as background
+        baseImage.draw(in: CGRect(origin: .zero, size: imageSize))
+        
         let maskAlpha: CGFloat = 0.35
 
         for (detId, det) in detections.enumerated() {
