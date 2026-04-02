@@ -175,8 +175,8 @@ class MoleSegmentor {
 
     // MARK: - Text Encoding
 
-    /// BERT-tokenises the prompt "moles" and runs it through the text encoder.
-    /// Token IDs: [CLS]=101  mole=16709  ##s=2015  [SEP]=102  + 28×[PAD]=0
+    /// Pre-tokenises the prompt "moles" using the text encoder's tokenizer and runs it through the text encoder.
+    /// Uses a CLIP-style token sequence: 3 non-padding tokens for "moles" plus 29 padding tokens to reach length 32.
     private static func encodeText(with encoder: MLModel) throws -> MLFeatureProvider {
         let tokenIds: [Int32] = [49406, 23529, 49407] + Array(repeating: 0, count: 29)
 
@@ -327,13 +327,9 @@ class MoleSegmentor {
         let scaleX = imageSize.width  / CGFloat(maskW)
         let scaleY = imageSize.height / CGFloat(maskH)
 
-        // Draw everything using UIKit graphics
-        UIGraphicsBeginImageContextWithOptions(imageSize, true, 0.0)
+        // Draw overlay (masks, boxes, labels) using UIKit graphics on a transparent background
+        UIGraphicsBeginImageContextWithOptions(imageSize, false, 0.0)
         guard let ctx = UIGraphicsGetCurrentContext() else { return nil }
-
-        // Draw the original image as background
-        baseImage.draw(in: CGRect(origin: .zero, size: imageSize))
-
         let maskAlpha: CGFloat = 0.35
 
         for (detId, det) in detections.enumerated() {
