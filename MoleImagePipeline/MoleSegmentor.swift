@@ -38,26 +38,30 @@ class MoleSegmentor {
         }
 
         // Load Text Encoder
-        guard let textURL = Bundle.main.url(forResource: "SAM3_TextEncoder_FP16", withExtension: "mlmodelc")
+        guard let textURL = Bundle.main.url(forResource: "SAM3.1_TextEncoder_FP16", withExtension: "mlmodelc")
             ?? Bundle.main.url(forResource: "SAM3.1_TextEncoder_FP16", withExtension: "mlpackage") else {
             throw PipelineError.modelNotFound(name: "SAM3.1_TextEncoder_FP16")
         }
 
         // Load Decoder
-        guard let decoderURL = Bundle.main.url(forResource: "SAM3_Detector_FP16", withExtension: "mlmodelc")
+        guard let decoderURL = Bundle.main.url(forResource: "SAM3.1_Detector_FP16", withExtension: "mlmodelc")
             ?? Bundle.main.url(forResource: "SAM3.1_Detector_FP16", withExtension: "mlpackage") else {
             throw PipelineError.modelNotFound(name: "SAM3.1_Detector_FP16")
         }
 
-        let config = MLModelConfiguration()
-        config.computeUnits = .all
+        let visionConfig = MLModelConfiguration()
+        // Use .cpuAndGPU for the Image Encoder to avoid ANE compilation errors (ANECCompile FAILED)
+        visionConfig.computeUnits = .cpuAndGPU
+
+        let defaultConfig = MLModelConfiguration()
+        defaultConfig.computeUnits = .all
 
         print("📦 Loading SAM3 vision encoder…")
-        self.visionEncoder = try await MLModel.load(contentsOf: visionURL, configuration: config)
+        self.visionEncoder = try await MLModel.load(contentsOf: visionURL, configuration: visionConfig)
         print("📦 Loading SAM3 text encoder…")
-        self.textEncoder = try await MLModel.load(contentsOf: textURL, configuration: config)
+        self.textEncoder = try await MLModel.load(contentsOf: textURL, configuration: defaultConfig)
         print("📦 Loading SAM3 decoder…")
-        self.decoder = try await MLModel.load(contentsOf: decoderURL, configuration: config)
+        self.decoder = try await MLModel.load(contentsOf: decoderURL, configuration: defaultConfig)
 
         // Pre-encode the text prompt "moles" once at init
         print("📝 Encoding text prompt 'moles'…")
