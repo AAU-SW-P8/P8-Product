@@ -7,10 +7,10 @@
 
 import SwiftUI
 
-/// A view that automatically segments moles using SAM3 with the text prompt "moles".
+/// A view that manually segments moles using SAM3 with the text prompt "moles".
 ///
-/// When the view appears, it uses the pre-loaded SAM3 pipeline from SAM3ModelLoader
-/// and immediately runs segmentation on the test image. Detected mole regions
+/// Uses the pre-loaded SAM3 pipeline from SAM3ModelLoader
+/// and runs segmentation on the test image upon user request. Detected mole regions
 /// are shown as a semi-transparent red overlay on top of the original image.
 struct MoleSegmentationTestView: View {
 
@@ -31,13 +31,20 @@ struct MoleSegmentationTestView: View {
     @State private var isProcessing = false
 
     /// Status text shown beneath the image.
-    @State private var statusMessage: String = "Waiting for model…"
+    @State private var statusMessage: String = "Ready"
 
     /// Holds the localised error message when something fails.
     @State private var errorMessage: String?
 
     /// Controls presentation of the error alert.
     @State private var showError = false
+
+    /// Dynamic thresholds for segmentation.
+    @State private var confidenceThreshold: Float = 0.3
+    @State private var nmsThreshold: Float = 1.0
+
+    /// Controls visibility of the settings controls.
+    @State private var showSettings = false
 
     /// Access the global SAM3 model loader
     @ObservedObject private var modelLoader = SAM3ModelLoader.shared
@@ -59,13 +66,13 @@ struct MoleSegmentationTestView: View {
             }
             .navigationTitle("Mole Segmentation")
             .toolbar { toolbarContent }
+            .sheet(isPresented: $showSettings) {
+                settingsSheet
+            }
             .alert("Error", isPresented: $showError) {
                 Button("OK") { showError = false }
             } message: {
                 Text(errorMessage ?? "Unknown error")
-            }
-            .task {
-                await runInitialSegmentation()
             }
         }
     }
@@ -132,52 +139,18 @@ struct MoleSegmentationTestView: View {
             )
         }
         .safeAreaInset(edge: .bottom) {
-            Text(statusMessage)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .padding(.bottom, 4)
+            VStack {
+                Text(statusMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .padding(.bottom, 2)
+            }
         }
     }
 
     // MARK: - Actions
 
-    /// Runs segmentation on the test image using the pre-loaded segmentor.
-    private func runInitialSegmentation() async {
-        guard testImage != nil else { return }
-        
-        // Wait for segmentor if it's still loading (though ContentView should handle this)
-        while modelLoader.segmentor == nil && modelLoader.error == nil {
-            try? await Task.sleep(nanoseconds: 500_000_000)
-        }
-
-        guard let seg = modelLoader.segmentor else {
-            statusMessage = "AI model not ready"
-            return
-        }
-
-        isProcessing = true
-        statusMessage = "Segmenting…"
-
-        do {
-            guard let image = testImage else { return }
-            let mask = try seg.segment(image: image)
-
-            await MainActor.run {
-                maskOverlay = mask
-                statusMessage = mask != nil ? "Done — moles highlighted in red" : "No moles detected"
-                isProcessing = false
-            }
-        } catch {
-            await MainActor.run {
-                errorMessage = "Segmentation failed: \(error.localizedDescription)"
-                showError = true
-                statusMessage = "Error"
-                isProcessing = false
-            }
-        }
-    }
-
-    /// Re-runs segmentation (e.g. after clearing).
+    /// Runs segmentation.
     @MainActor
     private func resegment() {
         guard let segmentor = modelLoader.segmentor, let image = testImage else { return }
@@ -185,15 +158,16 @@ struct MoleSegmentationTestView: View {
         // These UI-related state changes are performed on the main actor.
         isProcessing = true
         statusMessage = "Segmenting…"
-        segmentor.clearCache()
+        // Don't clear cache if we're just re-segmenting the same image with different thresholds.
+        // segmentor.clearCache() 
 
         // Run the model work off the main actor, then hop back to MainActor for UI updates.
         Task.detached {
             do {
-                let mask = try segmentor.segment(image: image)
+                let mask = try segmentor.segment(image: image, confidenceThreshold: self.confidenceThreshold, nmsThreshold: self.nmsThreshold)
                 await MainActor.run {
                     self.maskOverlay = mask
-                    self.statusMessage = mask != nil ? "Done — moles highlighted in red" : "No moles detected"
+                    self.statusMessage = mask != nil ? "Segmentation complete" : "No moles detected"
                     self.isProcessing = false
                 }
             } catch {
@@ -216,6 +190,48 @@ struct MoleSegmentationTestView: View {
     }
 
     // MARK: - Supporting views
+
+    /// A sheet containing controls for confidence and NMS thresholds.
+    private var settingsSheet: some View {
+        NavigationStack {
+            List {
+                Section("Detection Thresholds") {
+                    VStack(alignment: .leading) {
+                        HStack {
+                            Text("Confidence:")
+                            Spacer()
+                            Text(String(format: "%.2f", confidenceThreshold))
+                                .monospacedDigit()
+                        }
+                        Slider(value: $confidenceThreshold, in: 0.00...1.00, step: 0.05)
+                    }
+                    
+                    VStack(alignment: .leading) {
+                        HStack {
+                            Text("NMS Overlap:")
+                            Spacer()
+                            Text(String(format: "%.2f", nmsThreshold))
+                                .monospacedDigit()
+                        }
+                        Slider(value: $nmsThreshold, in: 0.00...1.00, step: 0.05)
+                        Text("Higher values allow more overlapping boxes.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .navigationTitle("Parameters")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        showSettings = false
+                    }
+                }
+            }
+            .presentationDetents([.height(300)])
+        }
+    }
 
     /// Full-screen overlay shown while loading or segmenting.
     private var loadingOverlay: some View {
@@ -254,7 +270,14 @@ struct MoleSegmentationTestView: View {
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .navigationBarTrailing) {
             HStack {
-                Button("Re-segment") { resegment() }
+                Button {
+                    showSettings = true
+                } label: {
+                    Label("Settings", systemImage: "slider.horizontal.3")
+                }
+                .disabled(modelLoader.segmentor == nil || isProcessing)
+
+                Button("Segment") { resegment() }
                     .disabled(modelLoader.segmentor == nil || isProcessing)
                 Button("Clear") { clearSegmentation() }
                     .disabled(maskOverlay == nil)

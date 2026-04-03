@@ -11,6 +11,10 @@ class MoleSegmentor {
 
     // MARK: - Properties
 
+    // Comment/uncomment the desired suffix to switch models
+    // private let modelSuffix = "_FP16"
+    private let modelSuffix = ""
+
     // SAM3 uses three models: Vision Encoder, Text Encoder, and Decoder
     private let visionEncoder: MLModel
     private let textEncoder: MLModel
@@ -31,27 +35,32 @@ class MoleSegmentor {
     // MARK: - Init
 
     init() async throws {
+        let visionModelName = "SAM3.1_ImageEncoder\(modelSuffix)"
+        let textModelName = "SAM3.1_TextEncoder\(modelSuffix)"
+        let decoderModelName = "SAM3.1_Detector\(modelSuffix)"
+
         // Load Vision Encoder
-        guard let visionURL = Bundle.main.url(forResource: "SAM3.1_ImageEncoder_FP16", withExtension: "mlmodelc")
-            ?? Bundle.main.url(forResource: "SAM3.1_ImageEncoder_FP16", withExtension: "mlpackage") else {
-            throw PipelineError.modelNotFound(name: "SAM3.1_ImageEncoder_FP16")
+        guard let visionURL = Bundle.main.url(forResource: visionModelName, withExtension: "mlmodelc")
+            ?? Bundle.main.url(forResource: visionModelName, withExtension: "mlpackage") else {
+            throw PipelineError.modelNotFound(name: visionModelName)
         }
 
         // Load Text Encoder
-        guard let textURL = Bundle.main.url(forResource: "SAM3.1_TextEncoder_FP16", withExtension: "mlmodelc")
-            ?? Bundle.main.url(forResource: "SAM3.1_TextEncoder_FP16", withExtension: "mlpackage") else {
-            throw PipelineError.modelNotFound(name: "SAM3.1_TextEncoder_FP16")
+        guard let textURL = Bundle.main.url(forResource: textModelName, withExtension: "mlmodelc")
+            ?? Bundle.main.url(forResource: textModelName, withExtension: "mlpackage") else {
+            throw PipelineError.modelNotFound(name: textModelName)
         }
 
         // Load Decoder
-        guard let decoderURL = Bundle.main.url(forResource: "SAM3.1_Detector_FP16", withExtension: "mlmodelc")
-            ?? Bundle.main.url(forResource: "SAM3.1_Detector_FP16", withExtension: "mlpackage") else {
-            throw PipelineError.modelNotFound(name: "SAM3.1_Detector_FP16")
+        guard let decoderURL = Bundle.main.url(forResource: decoderModelName, withExtension: "mlmodelc")
+            ?? Bundle.main.url(forResource: decoderModelName, withExtension: "mlpackage") else {
+            throw PipelineError.modelNotFound(name: decoderModelName)
         }
 
         let visionConfig = MLModelConfiguration()
         // Use .cpuAndGPU for the Image Encoder to avoid ANE compilation errors (ANECCompile FAILED)
-        visionConfig.computeUnits = .cpuAndGPU
+        // visionConfig.computeUnits = .cpuAndGPU
+        visionConfig.computeUnits = .all
 
         let defaultConfig = MLModelConfiguration()
         defaultConfig.computeUnits = .all
