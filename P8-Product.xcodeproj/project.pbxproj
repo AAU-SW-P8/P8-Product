@@ -35,39 +35,41 @@
 			target = F1845EED2F59945F00E27D2B /* P8-Product */;
 		};
 		97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */ = {
-		        isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-		        membershipExceptions = (
-		                PipelineTests/PipelineTests.swift,
-		        );
-		        target = 97C2DB192F6AB3F100454255 /* PipelineTests */;
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				PipelineTests/PipelineTests.swift,
+			);
+			target = 97C2DB192F6AB3F100454255 /* PipelineTests */;
 		};
 		97C2DB302F6AB49400454255 /* Exceptions for "MoleImagePipeline" folder in "P8-Product" target */ = {
-		        isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-		        membershipExceptions = (
-		                models/sam3.1-coreml/.gitattributes,
-		                models/sam3.1-coreml-fp16/.gitattributes,
-		        );
-		        target = F1845EED2F59945F00E27D2B /* P8-Product */;
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"models/sam3.1-coreml-fp16/.gitattributes",
+				"models/sam3.1-coreml/.gitattributes",
+			);
+			target = F1845EED2F59945F00E27D2B /* P8-Product */;
 		};
 		97C2DB312F6AB49400454255 /* Exceptions for "MoleImagePipeline" folder in "PipelineTests" target */ = {
-		        isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-		        membershipExceptions = (
-		                models/sam3.1-coreml/.gitattributes,
-		                models/sam3.1-coreml-fp16/.gitattributes,
-		        );
-		        target = 97C2DB192F6AB3F100454255 /* PipelineTests */;
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"models/sam3.1-coreml-fp16/.gitattributes",
+				"models/sam3.1-coreml/.gitattributes",
+			);
+			target = 97C2DB192F6AB3F100454255 /* PipelineTests */;
 		};
-		/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		97C2DAEC2F6AAFA600454255 /* MoleImagePipeline */ = {
-		        isa = PBXFileSystemSynchronizedRootGroup;
-		        exceptions = (
-		                97C2DB302F6AB49400454255 /* Exceptions for "MoleImagePipeline" folder in "P8-Product" target */,
-		                97C2DB312F6AB49400454255 /* Exceptions for "MoleImagePipeline" folder in "PipelineTests" target */,
-		        );
-		        path = MoleImagePipeline;
-		        sourceTree = "<group>";
-		};		97C2DB232F6AB48B00454255 /* Tests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				97C2DB302F6AB49400454255 /* Exceptions for "MoleImagePipeline" folder in "P8-Product" target */,
+				97C2DB312F6AB49400454255 /* Exceptions for "MoleImagePipeline" folder in "PipelineTests" target */,
+			);
+			path = MoleImagePipeline;
+			sourceTree = "<group>";
+		};
+		97C2DB232F6AB48B00454255 /* Tests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				97C2DB272F6AB49400454255 /* Exceptions for "Tests" folder in "P8-Product" target */,
