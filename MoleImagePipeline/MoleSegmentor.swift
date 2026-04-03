@@ -360,7 +360,7 @@ class MoleSegmentor {
         // Draw the original image as background
         baseImage.draw(in: CGRect(origin: .zero, size: imageSize))
         
-        let maskAlpha: CGFloat = 0.35
+        let maskAlpha: CGFloat = 0.5
 
         for (detId, det) in detections.enumerated() {
             let color = Self.palette[detId % Self.palette.count]
@@ -389,6 +389,7 @@ class MoleSegmentor {
                     }
                 }
             }
+
             let boxRect = CGRect(
                 x: CGFloat(minMaskX) * scaleX,
                 y: CGFloat(minMaskY) * scaleY,
@@ -399,17 +400,17 @@ class MoleSegmentor {
             ctx.setLineWidth(2.0)
             ctx.stroke(boxRect)
 
-            // Draw label
-            let label = String(format: "mole %d  %.0f%%", detId + 1, det.prob * 100)
+            // Draw label — matches Python format: "id={obj_id}, p={prob:.2f}"
+            let label = String(format: "id=%d, p=%.2f", detId, det.prob)
             let attrs: [NSAttributedString.Key: Any] = [
-                .font: UIFont.boldSystemFont(ofSize: max(imageSize.width / 40, 12)),
-                .foregroundColor: UIColor.white,
-                .backgroundColor: UIColor(red: r, green: g, blue: b, alpha: 0.75),
+                .font: UIFont.boldSystemFont(ofSize: max(imageSize.width / 60, 10)),
+                .foregroundColor: UIColor(red: r, green: g, blue: b, alpha: 1.0),
+                .backgroundColor: UIColor(white: 1.0, alpha: 0.75),
             ]
             let labelSize = (label as NSString).size(withAttributes: attrs)
             let labelOrigin = CGPoint(
                 x: boxRect.minX,
-                y: max(boxRect.minY - labelSize.height - 2, 0)
+                y: max(boxRect.minY - labelSize.height - 5, 0)
             )
             (label as NSString).draw(at: labelOrigin, withAttributes: attrs)
         }

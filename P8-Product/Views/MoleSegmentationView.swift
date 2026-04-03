@@ -16,8 +16,13 @@ struct MoleSegmentationTestView: View {
 
     // MARK: - State
 
+    @State private var currentZoom = 0.0
+    @State private var totalZoom = 1.0
+    @State private var offset: CGSize = .zero
+    @State private var lastOffset: CGSize = .zero
+
     /// The image to segment. Replace with the image captured by the camera.
-    @State private var testImage: UIImage? = UIImage(named: "Image")
+    @State private var testImage: UIImage? = UIImage(named: "test_mole_image")
 
     /// Combined mask overlay for all detected moles.
     @State private var maskOverlay: UIImage?
@@ -78,7 +83,6 @@ struct MoleSegmentationTestView: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: geometry.size.width, height: geometry.size.height)
-                        .allowsHitTesting(false)
                 } else {
                     // Fallback: show the original image before segmentation completes
                     Image(uiImage: image)
@@ -87,6 +91,45 @@ struct MoleSegmentationTestView: View {
                         .frame(width: geometry.size.width, height: geometry.size.height)
                 }
             }
+            .offset(x: offset.width + lastOffset.width, y: offset.height + lastOffset.height)
+            .scaleEffect(totalZoom + currentZoom)
+            .gesture(
+                MagnificationGesture()
+                    .onChanged { value in
+                        currentZoom = value - 1
+                    }
+                    .onEnded { value in
+                        totalZoom += currentZoom
+                        currentZoom = 0
+                        
+                        if totalZoom < 1.0 {
+                            withAnimation {
+                                totalZoom = 1.0
+                                offset = .zero
+                                lastOffset = .zero
+                            }
+                        } else if totalZoom > 5.0 {
+                            withAnimation {
+                                totalZoom = 5.0
+                            }
+                        }
+                    }
+            )
+            .simultaneousGesture(
+                DragGesture()
+                    .onChanged { value in
+                        if totalZoom + currentZoom > 1.0 {
+                            offset = value.translation
+                        }
+                    }
+                    .onEnded { value in
+                        if totalZoom + currentZoom > 1.0 {
+                            lastOffset.width += offset.width
+                            lastOffset.height += offset.height
+                            offset = .zero
+                        }
+                    }
+            )
         }
         .safeAreaInset(edge: .bottom) {
             Text(statusMessage)
