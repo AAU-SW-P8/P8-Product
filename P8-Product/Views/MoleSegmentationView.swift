@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 /// A view that manually segments moles using SAM3 with the text prompt "moles".
 ///
@@ -13,6 +14,8 @@ import SwiftUI
 /// and runs segmentation on the test image upon user request. Detected mole regions
 /// are shown as a semi-transparent red overlay on top of the original image.
 struct MoleSegmentationTestView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \Person.createdAt) private var people: [Person]
 
     // MARK: - State
 
@@ -26,6 +29,9 @@ struct MoleSegmentationTestView: View {
 
     /// Combined mask overlay for all detected moles.
     @State private var maskOverlay: UIImage?
+    
+    /// Bounding boxes for each detected mole, in the original image's pixel coordinate space.
+    @State private var detectedBoxes: [CGRect] = []
 
     /// `true` while models are loading or segmentation is running.
     @State private var isProcessing = false
@@ -45,6 +51,10 @@ struct MoleSegmentationTestView: View {
 
     /// Controls visibility of the settings controls.
     @State private var showSettings = false
+    
+    @State private var showPersonPicker = false
+    @State private var selectedBoxForMole: CGRect?
+    @State private var showingAddedMoleAlert = false
 
     /// Access the global SAM3 model loader
     @ObservedObject private var modelLoader = SAM3ModelLoader.shared
@@ -74,6 +84,19 @@ struct MoleSegmentationTestView: View {
             } message: {
                 Text(errorMessage ?? "Unknown error")
             }
+            .confirmationDialog("Select Person", isPresented: $showPersonPicker, titleVisibility: .visible) {
+                ForEach(people) { person in
+                    Button(person.name) {
+                        addMole(to: person, from: testImage, in: selectedBoxForMole)
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            }
+            .alert("Success", isPresented: $showingAddedMoleAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Successfully added mole to overview.")
+            }
         }
     }
 
@@ -90,6 +113,48 @@ struct MoleSegmentationTestView: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: geometry.size.width, height: geometry.size.height)
+                        .overlay {
+                            GeometryReader { imageGeo in
+                                let imageAspect = mask.size.width / mask.size.height
+                                let viewAspect = imageGeo.size.width / imageGeo.size.height
+                                
+                                let drawWidth = imageAspect > viewAspect ? imageGeo.size.width : imageGeo.size.height * imageAspect
+                                let drawHeight = imageAspect > viewAspect ? imageGeo.size.width / imageAspect : imageGeo.size.height
+                                
+                                let drawX = (imageGeo.size.width - drawWidth) / 2
+                                let drawY = (imageGeo.size.height - drawHeight) / 2
+                                
+                                let scaleX = drawWidth / mask.size.width
+                                let scaleY = drawHeight / mask.size.height
+                                
+                                ForEach(0..<detectedBoxes.count, id: \.self) { index in
+                                    let box = detectedBoxes[index]
+                                    let rect = CGRect(
+                                        x: drawX + box.minX * scaleX,
+                                        y: drawY + box.minY * scaleY,
+                                        width: box.width * scaleX,
+                                        height: box.height * scaleY
+                                    )
+                                    
+                                    Rectangle()
+                                        .fill(Color.clear)
+                                        .contentShape(Rectangle())
+                                        .frame(width: rect.width, height: rect.height)
+                                        .position(x: rect.midX, y: rect.midY)
+                                        .onLongPressGesture {
+                                            selectedBoxForMole = box
+                                            if people.isEmpty {
+                                                errorMessage = "Please add a person in the Overview first."
+                                                showError = true
+                                            } else if people.count == 1 {
+                                                addMole(to: people[0], from: testImage, in: box)
+                                            } else {
+                                                showPersonPicker = true
+                                            }
+                                        }
+                                }
+                            }
+                        }
                 } else {
                     // Fallback: show the original image before segmentation completes
                     Image(uiImage: image)
@@ -164,10 +229,11 @@ struct MoleSegmentationTestView: View {
         // Run the model work off the main actor, then hop back to MainActor for UI updates.
         Task.detached {
             do {
-                let mask = try segmentor.segment(image: image, confidenceThreshold: self.confidenceThreshold, nmsThreshold: self.nmsThreshold)
+                let result = try segmentor.segment(image: image, confidenceThreshold: self.confidenceThreshold, nmsThreshold: self.nmsThreshold)
                 await MainActor.run {
-                    self.maskOverlay = mask
-                    self.statusMessage = mask != nil ? "Segmentation complete" : "No moles detected"
+                    self.maskOverlay = result?.0
+                    self.detectedBoxes = result?.1 ?? []
+                    self.statusMessage = result != nil ? "Segmentation complete. Long press a mole to add it." : "No moles detected"
                     self.isProcessing = false
                 }
             } catch {
@@ -185,8 +251,54 @@ struct MoleSegmentationTestView: View {
     @MainActor
     private func clearSegmentation() {
         maskOverlay = nil
+        detectedBoxes = []
         statusMessage = "Cleared"
         modelLoader.segmentor?.clearCache()
+    }
+    
+    private func addMole(to person: Person, from image: UIImage?, in box: CGRect?) {
+        guard let image = image, let box = box else { return }
+        
+        // Add some padding around the mole for context
+        let padding: CGFloat = 20.0
+        var cropRect = box.insetBy(dx: -padding, dy: -padding)
+        
+        // Ensure cropRect stays within the image bounds
+        let imageRect = CGRect(origin: .zero, size: image.size)
+        cropRect = cropRect.intersection(imageRect)
+        
+        // Render the cropped image safely handling scale and orientation
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = image.scale
+        let renderer = UIGraphicsImageRenderer(size: cropRect.size, format: format)
+        let croppedImage = renderer.image { _ in
+            image.draw(at: CGPoint(x: -cropRect.origin.x, y: -cropRect.origin.y))
+        }
+        
+        // Save scan and mole, similar to OverviewView
+        let scan = MoleScan(imageData: croppedImage.jpegData(compressionQuality: 0.9))
+        modelContext.insert(scan)
+        
+        let mole = Mole(
+            name: "Mole \(person.moles.count + 1)",
+            bodyPart: "Unassigned",
+            isReminderActive: false,
+            reminderFrequency: nil,
+            nextDueDate: nil,
+            person: person
+        )
+        modelContext.insert(mole)
+        
+        let instance = MoleInstance(
+            diameter: 0,
+            area: 0,
+            mole: mole,
+            moleScan: scan
+        )
+        modelContext.insert(instance)
+        
+        statusMessage = "Added mole to \(person.name)!"
+        showingAddedMoleAlert = true
     }
 
     // MARK: - Supporting views

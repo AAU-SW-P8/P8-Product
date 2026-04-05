@@ -83,7 +83,7 @@ class MoleSegmentor {
     /// Segments moles in the image using the text prompt "moles".
     /// Returns the input image with colored mask overlays, bounding boxes, and
     /// per-detection labels (ID + score), or nil if no moles were detected.
-    func segment(image: UIImage, confidenceThreshold: Float = 0.3, nmsThreshold: Float = 1.0) throws -> UIImage? {
+    func segment(image: UIImage, confidenceThreshold: Float = 0.3, nmsThreshold: Float = 1.0) throws -> (UIImage, [CGRect])? {
         let clock = ContinuousClock()
         
         // 1. Encode image through vision encoder
@@ -355,7 +355,7 @@ class MoleSegmentor {
         from masks: MLMultiArray,
         detections: [(index: Int, prob: Float, box: CGRect)],
         baseImage: UIImage
-    ) -> UIImage? {
+    ) -> (UIImage, [CGRect])? {
         let imageSize = baseImage.size
         let maskH = Self.maskSize
         let maskW = Self.maskSize
@@ -370,6 +370,7 @@ class MoleSegmentor {
         baseImage.draw(in: CGRect(origin: .zero, size: imageSize))
         
         let maskAlpha: CGFloat = 0.5
+        var pixelBoxes: [CGRect] = []
 
         for (detId, det) in detections.enumerated() {
             let color = Self.palette[detId % Self.palette.count]
@@ -405,6 +406,8 @@ class MoleSegmentor {
                 width: CGFloat(maxMaskX - minMaskX + 1) * scaleX,
                 height: CGFloat(maxMaskY - minMaskY + 1) * scaleY
             )
+            pixelBoxes.append(boxRect)
+            
             ctx.setStrokeColor(red: r, green: g, blue: b, alpha: 1.0)
             ctx.setLineWidth(2.0)
             ctx.stroke(boxRect)
@@ -426,7 +429,10 @@ class MoleSegmentor {
 
         let result = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
-        return result
+        if let result = result {
+            return (result, pixelBoxes)
+        }
+        return nil
     }
 }
 
