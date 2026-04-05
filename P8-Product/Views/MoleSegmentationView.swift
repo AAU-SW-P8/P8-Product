@@ -53,7 +53,7 @@ struct MoleSegmentationTestView: View {
     @State private var showSettings = false
     
     @State private var showPersonPicker = false
-    @State private var selectedBoxForMole: CGRect?
+    @State private var selectedPersonForScan: Person?
     @State private var showingAddedMoleAlert = false
 
     /// Access the global SAM3 model loader
@@ -84,10 +84,11 @@ struct MoleSegmentationTestView: View {
             } message: {
                 Text(errorMessage ?? "Unknown error")
             }
-            .confirmationDialog("Select Person", isPresented: $showPersonPicker, titleVisibility: .visible) {
+            .confirmationDialog("Who is this scan for?", isPresented: $showPersonPicker, titleVisibility: .visible) {
                 ForEach(people) { person in
                     Button(person.name) {
-                        addMole(to: person, from: testImage, in: selectedBoxForMole)
+                        selectedPersonForScan = person
+                        resegment()
                     }
                 }
                 Button("Cancel", role: .cancel) {}
@@ -142,14 +143,13 @@ struct MoleSegmentationTestView: View {
                                         .frame(width: rect.width, height: rect.height)
                                         .position(x: rect.midX, y: rect.midY)
                                         .onLongPressGesture {
-                                            selectedBoxForMole = box
-                                            if people.isEmpty {
-                                                errorMessage = "Please add a person in the Overview first."
-                                                showError = true
+                                            if let person = selectedPersonForScan {
+                                                addMole(to: person, from: testImage, in: box)
                                             } else if people.count == 1 {
                                                 addMole(to: people[0], from: testImage, in: box)
                                             } else {
-                                                showPersonPicker = true
+                                                errorMessage = "Please segment again to select a person."
+                                                showError = true
                                             }
                                         }
                                 }
@@ -214,6 +214,18 @@ struct MoleSegmentationTestView: View {
     }
 
     // MARK: - Actions
+    
+    private func startSegmentationFlow() {
+        if people.isEmpty {
+            errorMessage = "Please add a person in the Overview first."
+            showError = true
+        } else if people.count == 1 {
+            selectedPersonForScan = people[0]
+            resegment()
+        } else {
+            showPersonPicker = true
+        }
+    }
 
     /// Runs segmentation.
     @MainActor
@@ -252,6 +264,7 @@ struct MoleSegmentationTestView: View {
     private func clearSegmentation() {
         maskOverlay = nil
         detectedBoxes = []
+        selectedPersonForScan = nil
         statusMessage = "Cleared"
         modelLoader.segmentor?.clearCache()
     }
@@ -389,7 +402,7 @@ struct MoleSegmentationTestView: View {
                 }
                 .disabled(modelLoader.segmentor == nil || isProcessing)
 
-                Button("Segment") { resegment() }
+                Button("Segment") { startSegmentationFlow() }
                     .disabled(modelLoader.segmentor == nil || isProcessing)
                 Button("Clear") { clearSegmentation() }
                     .disabled(maskOverlay == nil)
