@@ -54,7 +54,11 @@ struct MoleSegmentationTestView: View {
     
     @State private var showPersonPicker = false
     @State private var selectedPersonForScan: Person?
+    @State private var selectedBoxForMole: CGRect?
     @State private var showingAddedMoleAlert = false
+    
+    @State private var showMoleActionDialog = false
+    @State private var showExistingMolePicker = false
 
     /// Access the global SAM3 model loader
     @ObservedObject private var modelLoader = SAM3ModelLoader.shared
@@ -93,10 +97,33 @@ struct MoleSegmentationTestView: View {
                 }
                 Button("Cancel", role: .cancel) {}
             }
+            .confirmationDialog("Mole Action", isPresented: $showMoleActionDialog, titleVisibility: .visible) {
+                Button("New Mole") {
+                    if let person = selectedPersonForScan {
+                        addMole(to: person, from: testImage, in: selectedBoxForMole)
+                    }
+                }
+                if let person = selectedPersonForScan, !person.moles.isEmpty {
+                    Button("Existing Mole") {
+                        showExistingMolePicker = true
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            }
+            .confirmationDialog("Select Existing Mole", isPresented: $showExistingMolePicker, titleVisibility: .visible) {
+                if let person = selectedPersonForScan {
+                    ForEach(person.moles) { mole in
+                        Button(mole.name) {
+                            addToExistingMole(mole, from: testImage, in: selectedBoxForMole)
+                        }
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            }
             .alert("Success", isPresented: $showingAddedMoleAlert) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text("Successfully added mole to overview.")
+                Text("Successfully saved scan.")
             }
         }
     }
@@ -143,10 +170,13 @@ struct MoleSegmentationTestView: View {
                                         .frame(width: rect.width, height: rect.height)
                                         .position(x: rect.midX, y: rect.midY)
                                         .onLongPressGesture {
-                                            if let person = selectedPersonForScan {
-                                                addMole(to: person, from: testImage, in: box)
-                                            } else if people.count == 1 {
-                                                addMole(to: people[0], from: testImage, in: box)
+                                            selectedBoxForMole = box
+                                            if selectedPersonForScan == nil && people.count == 1 {
+                                                selectedPersonForScan = people[0]
+                                            }
+                                            
+                                            if selectedPersonForScan != nil {
+                                                showMoleActionDialog = true
                                             } else {
                                                 errorMessage = "Please segment again to select a person."
                                                 showError = true
@@ -311,6 +341,41 @@ struct MoleSegmentationTestView: View {
         modelContext.insert(instance)
         
         statusMessage = "Added mole to \(person.name)!"
+        showingAddedMoleAlert = true
+    }
+
+    private func addToExistingMole(_ mole: Mole, from image: UIImage?, in box: CGRect?) {
+        guard let image = image, let box = box else { return }
+        
+        // Add some padding around the mole for context
+        let padding: CGFloat = 20.0
+        var cropRect = box.insetBy(dx: -padding, dy: -padding)
+        
+        // Ensure cropRect stays within the image bounds
+        let imageRect = CGRect(origin: .zero, size: image.size)
+        cropRect = cropRect.intersection(imageRect)
+        
+        // Render the cropped image safely handling scale and orientation
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = image.scale
+        let renderer = UIGraphicsImageRenderer(size: cropRect.size, format: format)
+        let croppedImage = renderer.image { _ in
+            image.draw(at: CGPoint(x: -cropRect.origin.x, y: -cropRect.origin.y))
+        }
+        
+        // Save scan and associate to existing mole
+        let scan = MoleScan(imageData: croppedImage.jpegData(compressionQuality: 0.9))
+        modelContext.insert(scan)
+        
+        let instance = MoleInstance(
+            diameter: 0,
+            area: 0,
+            mole: mole,
+            moleScan: scan
+        )
+        modelContext.insert(instance)
+        
+        statusMessage = "Added scan to \(mole.name)!"
         showingAddedMoleAlert = true
     }
 
