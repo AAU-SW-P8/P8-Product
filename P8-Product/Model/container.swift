@@ -5,6 +5,7 @@
 
 import Foundation
 import SwiftData
+import UIKit
 
 /// `DataController` handles the initialization of the `ModelContainer`, environment-specific
 /// configurations (e.g., in-memory storage for testing), and safe recovery from database
@@ -12,7 +13,7 @@ import SwiftData
 @MainActor
 class DataController {
     
-    static let shared = DataController()
+    static let shared: DataController = DataController()
     
     /// The managed container that holds the schema and storage configuration.
     let container: ModelContainer
@@ -36,27 +37,29 @@ class DataController {
         }
     }
 
-    // Wipes all data from the persistent container
-    func eraseAllData() throws {
-        // Try iOS 18+ native erase first
-        if #available(iOS 18, *) {
+    // Wipes all data from the persistent container (iOS 18)
+    func eraseAllData() {
+        do {
             try container.erase()
-        } else {
-            // Fallback for earlier iOS versions: manually delete store files
-            try Self.deleteStoreFiles()
+        } catch {
+            print("Failed to erase all data: \(error)")
         }
     }
     
     // Checks if the database is empty and populates it with sample data if necessary.
     // This is typically called only once during the first launch or after a store reset.
     private func checkAndSeed() {
-        let context = container.mainContext
-        let descriptor = FetchDescriptor<Person>()
+        let context: ModelContext = container.mainContext
+        let descriptor: FetchDescriptor<Person> = FetchDescriptor<Person>()
 
         // Only insert if the database is empty
-        if let existing = try? context.fetch(descriptor), existing.isEmpty {
+        if let existing: [Person] = try? context.fetch(descriptor), existing.isEmpty {
             MockData.insertSampleData(into: context)
-            try? context.save()
+            do {
+                try context.save()
+            } catch {
+                print("Failed to seed initial data: \(error)")
+            }
         }
     }
 
@@ -88,10 +91,13 @@ class DataController {
 
     /// The file system URL where the persistent SQLite store is located.
     private static var storeURL: URL {
-        let appSupport = URL.applicationSupportDirectory
-        let directory = appSupport.appending(path: "P8-Product", directoryHint: .isDirectory)
-
-        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let appSupport: URL = URL.applicationSupportDirectory
+        let directory: URL = appSupport.appending(path: "P8-Product", directoryHint: .isDirectory)
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        } catch {
+            fatalError("Failed to create application support directory: \(error)")
+        }
         return directory.appending(path: "default.store")
     }
 
@@ -101,17 +107,83 @@ class DataController {
     /// due to schema mismatches or file corruption. It targets the main store,
     /// the Shared Memory (-shm) file, and the Write-Ahead Log (-wal) file.
     private static func deleteStoreFiles() throws {
-        let storeURL = storeURL
-        let storePath = storeURL.path()
+        let storeURL: URL = storeURL
+        let storePath: String = storeURL.path()
         
-        let relatedURLs = [
+        let relatedURLs: [URL] = [
             storeURL,
             URL(fileURLWithPath: storePath + "-shm"),
             URL(fileURLWithPath: storePath + "-wal")
         ]
 
-        for url in relatedURLs where FileManager.default.fileExists(atPath: url.path()) {
+        for url: URL in relatedURLs where FileManager.default.fileExists(atPath: url.path()) {
             try FileManager.default.removeItem(at: url)
         }
     }
+
+    // MARK: - Business Logic & Persistence
+    
+    /// Creates a new scan, a new mole, and links them together for a specific person.
+    func addMoleAndScan(to person: Person, image: UIImage) {
+        let context: ModelContext = container.mainContext
+        
+        let scan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9))
+        let mole: Mole = Mole(
+            name: "Mole \(person.moles.count + 1)",
+            bodyPart: "Unassigned",
+            isReminderActive: false,
+            reminderFrequency: nil,
+            nextDueDate: nil,
+            person: person
+        )
+        let instance: MoleInstance = MoleInstance(
+            diameter: 0,
+            area: 0,
+            mole: mole,
+            moleScan: scan
+        )
+        
+        context.insert(scan)
+        context.insert(mole)
+        context.insert(instance)
+        
+        do {
+            try context.save()
+        } catch {
+            print("Failed to save new mole and scan: \(error)")
+        }
+    }
+    
+    func delete(_ person: Person) {
+        let context: ModelContext = container.mainContext
+        context.delete(person)
+        do {
+            try context.save()
+        } catch {
+            print("Failed to delete person: \(error)")
+        }
+    }
+    
+    func delete(_ mole: Mole) {
+        let context: ModelContext = container.mainContext
+        context.delete(mole)
+        do {
+            try context.save()
+        } catch {
+            print("Failed to delete mole: \(error)")
+        }
+    }
+    
+    func addPerson(name: String) -> Person {
+        let context: ModelContext = container.mainContext
+        let person: Person = Person(name: name)
+        context.insert(person)
+        do {
+            try context.save()
+        } catch {
+            print("Failed to add person: \(error)")
+        }
+        return person
+    }
+
 }
