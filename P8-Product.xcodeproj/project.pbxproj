@@ -7,10 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		972E93A32F7BC36D00BB8979 /* Local.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 972E93A22F7BC36D00BB8979 /* Local.xcconfig */; };
-		9736F7992F84EFCB0056C022 /* Test.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 9736F7982F84EFCB0056C022 /* Test.xcconfig */; };
-		9736F79A2F84EFCB0056C022 /* Test.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 9736F7982F84EFCB0056C022 /* Test.xcconfig */; };
-		9736F79B2F84EFCB0056C022 /* Test.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 9736F7982F84EFCB0056C022 /* Test.xcconfig */; };
 		97BFEFFA2F7BC99800C9495F /* UITests.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = 97BFEFF92F7BC99800C9495F /* UITests.xctestplan */; };
 		97C2DB152F6AB39500454255 /* Unittests.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = 97C2DB142F6AB39500454255 /* Unittests.xctestplan */; };
 /* End PBXBuildFile section */
@@ -33,9 +29,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		972E93A22F7BC36D00BB8979 /* Local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Local.xcconfig; sourceTree = "<group>"; };
 		972E93A82F7BC67300BB8979 /* P8-ProductUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "P8-ProductUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		9736F7982F84EFCB0056C022 /* Test.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Test.xcconfig; sourceTree = "<group>"; };
 		97BFEFF92F7BC99800C9495F /* UITests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = UITests.xctestplan; sourceTree = "<group>"; };
 		97C2DB142F6AB39500454255 /* Unittests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = Unittests.xctestplan; sourceTree = "<group>"; };
 		97C2DB1A2F6AB3F100454255 /* PipelineTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PipelineTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -115,8 +109,6 @@
 			isa = PBXGroup;
 			children = (
 				97BFEFF92F7BC99800C9495F /* UITests.xctestplan */,
-				972E93A22F7BC36D00BB8979 /* Local.xcconfig */,
-				9736F7982F84EFCB0056C022 /* Test.xcconfig */,
 				97C2DB142F6AB39500454255 /* Unittests.xctestplan */,
 				97C2DB232F6AB48B00454255 /* Tests */,
 				97C2DAEC2F6AAFA600454255 /* MoleImagePipeline */,
@@ -255,7 +247,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9736F79B2F84EFCB0056C022 /* Test.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -263,7 +254,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9736F79A2F84EFCB0056C022 /* Test.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -271,10 +261,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				972E93A32F7BC36D00BB8979 /* Local.xcconfig in Resources */,
 				97C2DB152F6AB39500454255 /* Unittests.xctestplan in Resources */,
 				97BFEFFA2F7BC99800C9495F /* UITests.xctestplan in Resources */,
-				9736F7992F84EFCB0056C022 /* Test.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -565,8 +553,9 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "swp8.P8-Product";
+				PRODUCT_BUNDLE_IDENTIFIER = "swp8.P8-Product.MoleAppTests";
 				"PRODUCT_BUNDLE_IDENTIFIER[sdk=*]" = "swp8.P8-Product";
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphoneos*]" = "swp8.P8-Product.MoleApptest";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -606,8 +595,8 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "swp8.P8-Product";
-				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphoneos*]" = "swp8.P8-Product";
+				PRODUCT_BUNDLE_IDENTIFIER = "swp8.P8-Product.MoleAppTests";
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphoneos*]" = "swp8.P8-Product.MoleApptest";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
