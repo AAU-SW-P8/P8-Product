@@ -87,6 +87,7 @@ struct ImageCarousel: View {
                 }
             }
         }
+        .accessibilityElement(children: .contain)
         .onChange(of: scans.count) {
             if selectedIndex >= scans.count {
                 selectedIndex = max(0, scans.count - 1)
