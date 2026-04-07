@@ -414,6 +414,7 @@
 		};
 		F1845EF72F59946000E27D2B /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 972E93A22F7BC36D00BB8979 /* Local.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -478,6 +479,7 @@
 		};
 		F1845EF82F59946000E27D2B /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 972E93A22F7BC36D00BB8979 /* Local.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -535,7 +537,6 @@
 		};
 		F1845EFA2F59946000E27D2B /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 972E93A22F7BC36D00BB8979 /* Local.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -577,7 +578,6 @@
 		};
 		F1845EFB2F59946000E27D2B /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 972E93A22F7BC36D00BB8979 /* Local.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
