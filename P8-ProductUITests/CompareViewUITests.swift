@@ -177,4 +177,151 @@ final class CompareViewUITests: XCTestCase {
         XCTAssertFalse(metricPicker.exists,
                         "Single-scan mole should not show metric picker")
     }
+
+    // MARK: - Mock Container Data Verification
+    //
+    // The following tests assert that every value seeded by `MockData.insertSampleData`
+    // is surfaced correctly in CompareView. The mock data contains:
+    //   • Person "Alex"   → Mole "Left Arm Mole" (Left Arm) with 3 scans
+    //                                  diameters 4.2 / 4.8 / 5.0 mm
+    //                                  areas     13.8 / 15.4 / 16.0 mm²
+    //                       Mole "Back Mole"     (Back) with 1 scan
+    //                                  diameter  3.6 mm, area 10.1 mm²
+    //   • Person "Jordan" → Mole "Face Mole"     (Face) with 1 scan
+    //                                  diameter  2.9 mm, area 6.6 mm²
+    //
+    // For the multi-scan mole, scans are sorted ascending by capture date,
+    // so the carousel's first frame corresponds to the oldest scan
+    // (60 days ago: diameter 5.0 mm, area 16.0 mm²).
+
+    func testPersonPickerContainsAllMockedPeople() {
+        personPickerButton.tap()
+
+        XCTAssertTrue(app.buttons["Alex"].waitForExistence(timeout: 3),
+                       "Person picker should contain Alex from mock data")
+        XCTAssertTrue(app.buttons["Jordan"].exists,
+                       "Person picker should contain Jordan from mock data")
+    }
+
+    func testMolePickerContainsAllMockedMolesForAlex() {
+        personPickerButton.tap()
+        app.buttons["Alex"].tap()
+
+        molePickerButton.tap()
+
+        XCTAssertTrue(app.buttons["Left Arm Mole"].waitForExistence(timeout: 3),
+                       "Alex's mole picker should contain Left Arm Mole")
+        XCTAssertTrue(app.buttons["Back Mole"].exists,
+                       "Alex's mole picker should contain Back Mole")
+    }
+
+    func testMolePickerShowsBodyPartSectionsForAlex() {
+        personPickerButton.tap()
+        app.buttons["Alex"].tap()
+
+        molePickerButton.tap()
+
+        // Body parts in mock data for Alex are "Left Arm" and "Back".
+        // SwiftUI Menu sections render their titles as static text.
+        XCTAssertTrue(app.staticTexts["Left Arm"].waitForExistence(timeout: 3),
+                       "Mole picker should show 'Left Arm' body part section")
+        XCTAssertTrue(app.staticTexts["Back"].exists,
+                       "Mole picker should show 'Back' body part section")
+    }
+
+    func testMolePickerContainsAllMockedMolesForJordan() {
+        personPickerButton.tap()
+        app.buttons["Jordan"].tap()
+
+        // Jordan only has one mole, so the mole picker label is "Select Mole".
+        molePickerButton.tap()
+
+        XCTAssertTrue(app.buttons["Face Mole"].waitForExistence(timeout: 3),
+                       "Jordan's mole picker should contain Face Mole")
+        XCTAssertTrue(app.staticTexts["Face"].exists,
+                       "Mole picker should show 'Face' body part section for Jordan")
+    }
+
+    func testLeftArmMoleShowsFirstScanDiameterAndArea() {
+        // Sorted by capture date, the first scan for Left Arm Mole is alexScan4
+        // (60 days ago) with diameter 5.0 mm and area 16.0 mm².
+        personPickerButton.tap()
+        app.buttons["Alex"].tap()
+
+        molePickerButton.tap()
+        app.buttons["Left Arm Mole"].tap()
+
+        XCTAssertTrue(app.otherElements["dualCarouselContainer"].waitForExistence(timeout: 5))
+
+        XCTAssertTrue(app.staticTexts["Diameter: 5.0 mm"].firstMatch.waitForExistence(timeout: 3),
+                       "Carousel should display diameter 5.0 mm for the first Left Arm scan")
+        XCTAssertTrue(app.staticTexts["Area: 16.0 mm²"].firstMatch.exists,
+                       "Carousel should display area 16.0 mm² for the first Left Arm scan")
+    }
+
+    func testBackMoleShowsCorrectDiameterAndArea() {
+        // Back Mole has a single scan with diameter 3.6 mm and area 10.1 mm².
+        personPickerButton.tap()
+        app.buttons["Alex"].tap()
+
+        molePickerButton.tap()
+        app.buttons["Back Mole"].tap()
+
+        XCTAssertTrue(app.staticTexts["Diameter: 3.6 mm"].firstMatch.waitForExistence(timeout: 5),
+                       "Carousel should display diameter 3.6 mm for Back Mole")
+        XCTAssertTrue(app.staticTexts["Area: 10.1 mm²"].firstMatch.exists,
+                       "Carousel should display area 10.1 mm² for Back Mole")
+    }
+
+    func testFaceMoleShowsCorrectDiameterAndAreaForJordan() {
+        // Face Mole has a single scan with diameter 2.9 mm and area 6.6 mm².
+        personPickerButton.tap()
+        app.buttons["Jordan"].tap()
+
+        molePickerButton.tap()
+        app.buttons["Face Mole"].tap()
+
+        XCTAssertTrue(app.staticTexts["Diameter: 2.9 mm"].firstMatch.waitForExistence(timeout: 5),
+                       "Carousel should display diameter 2.9 mm for Face Mole")
+        XCTAssertTrue(app.staticTexts["Area: 6.6 mm²"].firstMatch.exists,
+                       "Carousel should display area 6.6 mm² for Face Mole")
+    }
+
+    func testLeftArmMoleAreaTrendEvolutionMatchesMockData() {
+        // Areas sorted by date: 16.0 → 13.8 → 15.4 → evolution = 15.4 - 16.0 = -0.6 mm²
+        personPickerButton.tap()
+        app.buttons["Alex"].tap()
+
+        molePickerButton.tap()
+        app.buttons["Left Arm Mole"].tap()
+
+        XCTAssertTrue(app.staticTexts["Area Trend"].waitForExistence(timeout: 5),
+                       "Chart should default to Area Trend")
+        XCTAssertTrue(app.staticTexts["-0.6 mm²"].exists,
+                       "Area Trend evolution should be -0.6 mm² for the seeded Left Arm scans")
+    }
+
+    func testLeftArmMoleDiameterTrendEvolutionMatchesMockData() {
+        // Diameters sorted by date: 5.0 → 4.2 → 4.8 → evolution = 4.8 - 5.0 = -0.2 mm
+        personPickerButton.tap()
+        app.buttons["Alex"].tap()
+
+        molePickerButton.tap()
+        app.buttons["Left Arm Mole"].tap()
+
+        let picker = app.segmentedControls["metricPicker"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 5))
+        picker.buttons["Diameter"].tap()
+
+        XCTAssertTrue(app.staticTexts["Diameter Trend"].waitForExistence(timeout: 3),
+                       "Chart should switch to Diameter Trend")
+        XCTAssertTrue(app.staticTexts["-0.2 mm"].exists,
+                       "Diameter Trend evolution should be -0.2 mm for the seeded Left Arm scans")
+    }
+
+    // Note: per-point chart annotations are not reliably queryable from XCUI
+    // because Swift Charts hosts annotation views inside an opaque backing
+    // element. Per-point data flow is instead verified by the unit tests in
+    // `Tests/PipelineTests/ChartViewDataTests.swift`, which exercise
+    // `ChartView.makeChartData(for:metric:)` directly.
 }

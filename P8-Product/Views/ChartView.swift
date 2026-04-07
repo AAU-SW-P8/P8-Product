@@ -34,16 +34,23 @@ enum ChartMetric: String, CaseIterable, Identifiable {
 }
 
 struct ChartView: View {
-    private struct DataPoint: Identifiable {
+    struct DataPoint: Identifiable, Equatable {
         let id = UUID()
         let date: Date
         let value: Double
+
+        static func == (lhs: DataPoint, rhs: DataPoint) -> Bool {
+            lhs.date == rhs.date && lhs.value == rhs.value
+        }
     }
 
     let mole: Mole
     let metric: ChartMetric
 
-    private var chartData: [DataPoint] {
+    /// Builds the sorted-ascending sequence of data points the chart consumes
+    /// for a given mole and metric. Extracted as a `static` helper so unit tests
+    /// can verify the data flow without instantiating the SwiftUI view.
+    static func makeChartData(for mole: Mole, metric: ChartMetric) -> [DataPoint] {
         mole.instances
             .compactMap { instance in
                 guard let scan = instance.moleScan else { return nil }
@@ -57,6 +64,10 @@ struct ChartView: View {
                 return DataPoint(date: scan.captureDate, value: value)
             }
             .sorted { $0.date < $1.date }
+    }
+
+    private var chartData: [DataPoint] {
+        Self.makeChartData(for: mole, metric: metric)
     }
 
     private var evolution: Double {
@@ -102,7 +113,7 @@ struct ChartView: View {
                     .interpolationMethod(.catmullRom)
                     .foregroundStyle(.blue)
                     .symbol(Circle())
-                    
+
                     PointMark(
                         x: .value("Date", point.date),
                         y: .value(metric.title, point.value)
@@ -113,7 +124,7 @@ struct ChartView: View {
                         Text(formattedMetricValue(point.value))
                             .font(.caption)
                             .foregroundStyle(.primary)
-                    }   
+                    }
                 }
             }
             .chartXAxis {
