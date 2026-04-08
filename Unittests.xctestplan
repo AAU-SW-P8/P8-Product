@@ -18,6 +18,13 @@
         "identifier" : "97C2DB192F6AB3F100454255",
         "name" : "PipelineTests"
       }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:P8-Product.xcodeproj",
+        "identifier" : "9740A1032F867F300077935D",
+        "name" : "ReminderOverview"
+      }
     }
   ],
   "version" : 1
