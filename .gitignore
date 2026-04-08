@@ -65,3 +65,4 @@ fastlane/test_output
 
 *.DS_Store
 Local.xcconfig
+P8-Product.xcodeproj/project.xcworkspace/xcuserdata/simonthordal.xcuserdatad/UserInterfaceState.xcuserstate
