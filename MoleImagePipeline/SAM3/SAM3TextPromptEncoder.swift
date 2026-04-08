@@ -22,7 +22,7 @@ final class SAM3TextPromptEncoder {
     private static let molesToken:       Int32 = 23529  // "moles"
     private static let endOfTextToken:   Int32 = 49407  // <|endoftext|>
     private static let paddingToken:     Int32 = 0
-    private static let sequenceLength = 32
+    private static let sequenceLength: Int = 32
 
     /// The pre-computed text encoder output, ready to be passed to the decoder.
     let features: MLFeatureProvider
@@ -31,20 +31,20 @@ final class SAM3TextPromptEncoder {
     /// rejects the input or if the output cannot be constructed.
     init(encoder: MLModel) throws {
         let promptTokens: [Int32] = [Self.startOfTextToken, Self.molesToken, Self.endOfTextToken]
-        let paddingCount = Self.sequenceLength - promptTokens.count
-        let tokenIds = promptTokens + Array(repeating: Self.paddingToken, count: paddingCount)
+        let paddingCount: Int = Self.sequenceLength - promptTokens.count
+        let tokenIds: [Int32] = promptTokens + Array(repeating: Self.paddingToken, count: paddingCount)
 
-        let inputIds = try MLMultiArray(shape: [1, NSNumber(value: Self.sequenceLength)], dataType: .int32)
-        for i in 0..<Self.sequenceLength {
+        let inputIds: MLMultiArray = try MLMultiArray(shape: [1, NSNumber(value: Self.sequenceLength)], dataType: .int32)
+        for i: Int in 0..<Self.sequenceLength {
             inputIds[[0, i] as [NSNumber]] = NSNumber(value: tokenIds[i])
         }
 
-        let input = try MLDictionaryFeatureProvider(dictionary: [
+        let input: MLDictionaryFeatureProvider = try MLDictionaryFeatureProvider(dictionary: [
             SAM3FeatureNames.TextEncoder.tokenIdsInput: MLFeatureValue(multiArray: inputIds)
         ])
 
         print("📝 Encoding text prompt 'moles'…")
-        let output = try encoder.prediction(from: input)
+        let output: MLFeatureProvider = try encoder.prediction(from: input)
         print("📝 Text encoder output features: \(output.featureNames.joined(separator: ", "))")
         self.features = output
     }

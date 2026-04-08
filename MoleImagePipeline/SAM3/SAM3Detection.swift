@@ -35,15 +35,15 @@ enum SAM3Detection {
     static func filterByConfidence(_ output: SAM3DecoderOutput, threshold: Float) -> [RawDetection] {
         var detections: [RawDetection] = []
         for i in 0..<output.detectionCount {
-            let prob = output.scores[[0, i] as [NSNumber]].floatValue
+            let prob: Float = output.scores[[0, i] as [NSNumber]].floatValue
             guard prob >= threshold else { continue }
 
             // DETR-style cx,cy,w,h normalized to [0,1].
-            let cx = CGFloat(output.boxes[[0, i, 0] as [NSNumber]].floatValue)
-            let cy = CGFloat(output.boxes[[0, i, 1] as [NSNumber]].floatValue)
-            let w  = CGFloat(output.boxes[[0, i, 2] as [NSNumber]].floatValue)
-            let h  = CGFloat(output.boxes[[0, i, 3] as [NSNumber]].floatValue)
-            let box = CGRect(x: cx - w / 2, y: cy - h / 2, width: w, height: h)
+            let cx: CGFloat = CGFloat(output.boxes[[0, i, 0] as [NSNumber]].floatValue)
+            let cy: CGFloat = CGFloat(output.boxes[[0, i, 1] as [NSNumber]].floatValue)
+            let w: CGFloat  = CGFloat(output.boxes[[0, i, 2] as [NSNumber]].floatValue)
+            let h: CGFloat  = CGFloat(output.boxes[[0, i, 3] as [NSNumber]].floatValue)
+            let box: CGRect = CGRect(x: cx - w / 2, y: cy - h / 2, width: w, height: h)
             detections.append(RawDetection(index: i, prob: prob, box: box))
         }
         return detections
@@ -57,10 +57,10 @@ enum SAM3Detection {
     ///   strictly exceeds 1), which matches the historical default in this
     ///   pipeline. Use `~0.5` if you want actual deduplication.
     static func nonMaxSuppression(_ detections: [RawDetection], iouThreshold: Float) -> [RawDetection] {
-        let sorted = detections.sorted { $0.prob > $1.prob }
+        let sorted: [RawDetection] = detections.sorted { $0.prob > $1.prob }
         var kept: [RawDetection] = []
-        for det in sorted {
-            let dominated = kept.contains { intersectionOverUnion($0.box, det.box) > iouThreshold }
+        for det: RawDetection in sorted {
+            let dominated: Bool = kept.contains { intersectionOverUnion($0.box, det.box) > iouThreshold }
             if !dominated { kept.append(det) }
         }
         return kept
@@ -69,10 +69,10 @@ enum SAM3Detection {
     /// Standard Intersection-over-Union of two axis-aligned rectangles.
     /// Returns `0` for disjoint rectangles or degenerate (zero-area) inputs.
     static func intersectionOverUnion(_ a: CGRect, _ b: CGRect) -> Float {
-        let intersection = a.intersection(b)
+        let intersection: CGRect = a.intersection(b)
         if intersection.isNull { return 0 }
-        let interArea = Float(intersection.width * intersection.height)
-        let unionArea = Float(a.width * a.height + b.width * b.height) - interArea
+        let interArea: Float = Float(intersection.width * intersection.height)
+        let unionArea: Float = Float(a.width * a.height + b.width * b.height) - interArea
         return unionArea > 0 ? interArea / unionArea : 0
     }
 }

@@ -31,18 +31,18 @@ final class SAM3VisionEncoder {
     ///   `UIImage` instances loaded from the same source will not share a
     ///   cache entry. Call `clearCache()` whenever the displayed image changes.
     func encode(_ image: UIImage) throws -> MLFeatureProvider {
-        let imageHash = image.hashValue
-        if let cached = cachedOutput, cachedImageHash == imageHash {
+        let imageHash: Int = image.hashValue
+        if let cached: MLFeatureProvider = cachedOutput, cachedImageHash == imageHash {
             print("📦 Using cached vision embeddings")
             return cached
         }
 
-        let imageTensor = try preprocessor.preprocess(image)
-        let input = try MLDictionaryFeatureProvider(dictionary: [
+        let imageTensor: MLMultiArray = try preprocessor.preprocess(image)
+        let input: MLDictionaryFeatureProvider = try MLDictionaryFeatureProvider(dictionary: [
             SAM3FeatureNames.VisionEncoder.imageInput: MLFeatureValue(multiArray: imageTensor)
         ])
 
-        let output = try model.prediction(from: input)
+        let output: MLFeatureProvider = try model.prediction(from: input)
         print("🖼️ Vision encoder output features: \(output.featureNames.joined(separator: ", "))")
         cachedOutput = output
         cachedImageHash = imageHash

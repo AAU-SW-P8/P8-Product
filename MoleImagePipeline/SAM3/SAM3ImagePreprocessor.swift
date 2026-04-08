@@ -23,9 +23,9 @@ import UIKit
 final class SAM3ImagePreprocessor {
 
     /// Side length (in pixels) of the square input the vision encoder expects.
-    static let inputSize = 1008
+    static let inputSize: Int = 1008
 
-    private let ciContext = CIContext()
+    private let ciContext: CIContext = CIContext()
 
     /// Preprocesses an image into the Float16 tensor consumed by the vision encoder.
     ///
@@ -36,8 +36,8 @@ final class SAM3ImagePreprocessor {
     func preprocess(_ image: UIImage) throws -> MLMultiArray {
         guard let cgImage = image.cgImage else { throw PipelineError.invalidImage }
 
-        let size = Self.inputSize
-        let pixelBuffer = try makeResizedPixelBuffer(from: cgImage, size: size)
+        let size: Int = Self.inputSize
+        let pixelBuffer: CVPixelBuffer = try makeResizedPixelBuffer(from: cgImage, size: size)
         return try makeNormalizedTensor(from: pixelBuffer, size: size)
     }
 
@@ -46,10 +46,10 @@ final class SAM3ImagePreprocessor {
     /// The resize is non-uniform — anything that isn't already square will be
     /// stretched. This matches the SAM 3.1 reference implementation.
     private func makeResizedPixelBuffer(from cgImage: CGImage, size: Int) throws -> CVPixelBuffer {
-        let originalCI = CIImage(cgImage: cgImage)
-        let scaleX = CGFloat(size) / originalCI.extent.width
-        let scaleY = CGFloat(size) / originalCI.extent.height
-        let resizedCI = originalCI.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
+        let originalCI: CIImage = CIImage(cgImage: cgImage)
+        let scaleX: CGFloat = CGFloat(size) / originalCI.extent.width
+        let scaleY: CGFloat = CGFloat(size) / originalCI.extent.height
+        let resizedCI: CIImage = originalCI.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
 
         let bufferAttributes: [String: Any] = [
             kCVPixelBufferCGImageCompatibilityKey as String: true,
@@ -63,7 +63,7 @@ final class SAM3ImagePreprocessor {
                             bufferAttributes as CFDictionary,
                             &pixelBuffer)
 
-        guard let buffer = pixelBuffer else {
+        guard let buffer: CVPixelBuffer = pixelBuffer else {
             print("❌ CVPixelBufferCreate failed for size \(size)×\(size)")
             throw PipelineError.renderFailed
         }
@@ -77,32 +77,32 @@ final class SAM3ImagePreprocessor {
     /// SAM 3.1 expects `Normalize(mean=[0.5,0.5,0.5], std=[0.5,0.5,0.5])`,
     /// which simplifies to `pixel/127.5 - 1`.
     private func makeNormalizedTensor(from pixelBuffer: CVPixelBuffer, size: Int) throws -> MLMultiArray {
-        let array = try MLMultiArray(shape: [1, 3, size as NSNumber, size as NSNumber], dataType: .float16)
+        let array: MLMultiArray = try MLMultiArray(shape: [1, 3, size as NSNumber, size as NSNumber], dataType: .float16)
 
         CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
 
-        guard let baseAddress = CVPixelBufferGetBaseAddress(pixelBuffer) else {
+        guard let baseAddress: UnsafeMutableRawPointer = CVPixelBufferGetBaseAddress(pixelBuffer) else {
             print("❌ CVPixelBufferGetBaseAddress returned nil")
             throw PipelineError.renderFailed
         }
 
-        let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
-        let bytes = baseAddress.assumingMemoryBound(to: UInt8.self)
-        let hw = size * size
+        let bytesPerRow: Int = CVPixelBufferGetBytesPerRow(pixelBuffer)
+        let bytes: UnsafePointer<UInt8> = baseAddress.assumingMemoryBound(to: UInt8.self)
+        let hw: Int = size * size
 
         // Direct Float16 pointer write — we own this array, so the binding is safe.
-        let dataPtr = array.dataPointer.bindMemory(to: Float16.self, capacity: 3 * hw)
+        let dataPtr: UnsafeMutablePointer<Float16> = array.dataPointer.bindMemory(to: Float16.self, capacity: 3 * hw)
 
-        for y in 0..<size {
-            for x in 0..<size {
-                let pixelOffset = y * bytesPerRow + x * 4
+        for y: Int in 0..<size {
+            for x: Int in 0..<size {
+                let pixelOffset: Int = y * bytesPerRow + x * 4
                 // BGRA → RGB, normalized to [-1, 1].
-                let b = Float(bytes[pixelOffset])     / 127.5 - 1.0
-                let g = Float(bytes[pixelOffset + 1]) / 127.5 - 1.0
-                let r = Float(bytes[pixelOffset + 2]) / 127.5 - 1.0
+                let b: Float = Float(bytes[pixelOffset])     / 127.5 - 1.0
+                let g: Float = Float(bytes[pixelOffset + 1]) / 127.5 - 1.0
+                let r: Float = Float(bytes[pixelOffset + 2]) / 127.5 - 1.0
 
-                let spatial = y * size + x
+                let spatial: Int = y * size + x
                 dataPtr[0 * hw + spatial] = Float16(r)
                 dataPtr[1 * hw + spatial] = Float16(g)
                 dataPtr[2 * hw + spatial] = Float16(b)
