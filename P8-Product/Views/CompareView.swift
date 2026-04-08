@@ -6,24 +6,33 @@
 import SwiftUI
 import SwiftData
 
-struct CompareView: View {
+public struct CompareView: View {
     @Query(sort: \Person.createdAt) private var people: [Person]
 
-    @State private var selectedPerson: Person?
-    @State private var selectedMole: Mole?
-    @State private var selectedMetric: ChartMetric = .area
-    @State private var selectedIndexTop = 0
-    @State private var selectedIndexBottom = 0
+    @State private var appState = CompareAppState(dataController: .shared)
+
+    public init() {}
+
+    public var body: some View {
+        CompareContentView (appState: appState, people: people)
+    }
+}
+
+
+private struct CompareContentView: View {
+
+    @Bindable var appState: CompareAppState
+    var people: [Person]
 
     private var scans: [MoleScan] {
-        guard let mole = selectedMole else { return [] }
+        guard let mole = appState.selectedMole else { return [] }
         return mole.instances
             .compactMap(\.moleScan)
             .sorted { $0.captureDate < $1.captureDate }
     }
 
     private var selectedPersonHasAnyScans: Bool {
-        guard let selectedPerson else { return false }
+        guard let selectedPerson = appState.selectedPerson else { return false }
         return selectedPerson.moles.contains { mole in
             mole.instances.contains { $0.moleScan != nil }
         }
@@ -65,24 +74,24 @@ struct CompareView: View {
                     Image(systemName: "photo")
                         .font(.system(size: 36))
                         .foregroundColor(.gray.opacity(0.4))
-                    if selectedPerson == nil {
+                    if appState.selectedPerson == nil {
                         Text("Select a person")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .accessibilityIdentifier("selectPersonPrompt")
                     } 
                     else if !selectedPersonHasAnyScans {
-                        Text("You haven't captured any moles for \(selectedPerson!.name) yet")
+                        Text("You haven't captured any moles for \(appState.selectedPerson!.name) yet")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .accessibilityIdentifier("makeScanBeforeCompareMessage")
-                    } else if selectedMole == nil {
+                    } else if appState.selectedMole == nil {
                         Text("Select a mole")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .accessibilityIdentifier("selectMolePrompt")
                     } else {
-                        Text("No scans for \(selectedMole!.name)")
+                        Text("No scans for \(appState.selectedMole!.name)")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .accessibilityIdentifier("noScansMessage")
@@ -92,10 +101,10 @@ struct CompareView: View {
                     ScrollView {
                         if scans.count > 1 {
                             HStack(spacing: 0) {
-                                ImageCarousel(scans: scans, mole: selectedMole, selectedIndex: $selectedIndexTop)
+                                ImageCarousel(scans: scans, mole: appState.selectedMole, selectedIndex: $appState.selectedIndexTop)
                                     .accessibilityIdentifier("topCarousel")
                                 Divider()
-                                ImageCarousel(scans: scans, mole: selectedMole, selectedIndex: $selectedIndexBottom)
+                                ImageCarousel(scans: scans, mole: appState.selectedMole, selectedIndex: $appState.selectedIndexBottom)
                                     .accessibilityIdentifier("bottomCarousel")
                             }
                             .accessibilityElement(children: .contain)
@@ -117,7 +126,7 @@ struct CompareView: View {
                             Text("Choose a metric evolution:")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
-                            Picker("Metric", selection: $selectedMetric) {
+                            Picker("Metric", selection: $appState.selectedMetric) {
                                 ForEach(ChartMetric.allCases) { metric in
                                     Text(metric.title).tag(metric)
                                 }
@@ -128,9 +137,9 @@ struct CompareView: View {
                             .accessibilityIdentifier("metricPicker")
 
 
-                            if let selectedMole {
-                                ChartView(mole: selectedMole, metric: selectedMetric)
-                            }
+                            
+                            ChartView(mole: appState.selectedMole, metric: appState.selectedMetric)
+                            
                             }
                             .padding(.vertical, 12)
                             .background(
@@ -145,29 +154,28 @@ struct CompareView: View {
                             .padding(.top, 8)
                         } else {
                             HStack(spacing: 0) {
-                                //ImageCarousel(scans: scans, selectedIndex: $selectedIndexTop)
                                 Divider()
-                                ImageCarousel(scans: scans, mole: selectedMole, selectedIndex: $selectedIndexBottom)
+                                ImageCarousel(scans: scans, mole: appState.selectedMole, selectedIndex: $appState.selectedIndexBottom)
                             }
                         }
                     }
                 }
             }
         }
-        .onChange(of: selectedPerson) {
-            selectedMole = nil
-            selectedIndexTop = 0
-            selectedIndexBottom = 0
+        .onChange(of: appState.selectedPerson) {
+            appState.selectedMole = nil
+            appState.selectedIndexTop = 0
+            appState.selectedIndexBottom = 0
         }
-        .onChange(of: selectedMole) {
-            selectedIndexTop = 0
-            selectedIndexBottom = 0
+        .onChange(of: appState.selectedMole) {
+            appState.selectedIndexTop = 0
+            appState.selectedIndexBottom = 0
         }
     }
 
     private var selectorBar: some View {
         HStack {
-            Picker("Person", selection: $selectedPerson) {
+            Picker("Person", selection: $appState.selectedPerson) {
                 Text("Select Person").tag(nil as Person?)
                 ForEach(people) { person in
                     Text(person.name).tag(person as Person?)
@@ -176,16 +184,16 @@ struct CompareView: View {
             .pickerStyle(.menu)
             .accessibilityIdentifier("personPicker")
 
-            if let person = selectedPerson, !person.moles.isEmpty {
+            if let person = appState.selectedPerson, !person.moles.isEmpty {
                 Menu {
                     let grouped = Dictionary(grouping: person.moles, by: \.bodyPart)
                     ForEach(grouped.keys.sorted(), id: \.self) { bodyPart in
                         Section(bodyPart) {
                             ForEach(grouped[bodyPart]!) { mole in
                                 Button {
-                                    selectedMole = mole
+                                    appState.selectedMole = mole
                                 } label: {
-                                    if selectedMole == mole {
+                                    if appState.selectedMole == mole {
                                         Label(mole.name, systemImage: "checkmark")
                                     } else {
                                         Text(mole.name)
@@ -196,11 +204,11 @@ struct CompareView: View {
                     }
                 } label: {
                     HStack(spacing: 4) {
-                        Text(selectedMole?.name ?? "Select Mole")
+                        Text(appState.selectedMole?.name ?? "Select Mole")
                         Image(systemName: "chevron.up.chevron.down")
                             .font(.caption2)
                     }
-                    .foregroundColor(selectedMole != nil ? .primary : .secondary)
+                    .foregroundColor(appState.selectedMole != nil ? .primary : .secondary)
                 }
                 .accessibilityIdentifier("molePicker")
             }

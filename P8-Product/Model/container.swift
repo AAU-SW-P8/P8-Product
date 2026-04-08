@@ -20,9 +20,14 @@ class DataController {
 
     /// Initializes the data stack, attempting to load the persistent store or resetting it if loading fails.
     init() {
+        let shouldSeedInitialData = !ProcessInfo.processInfo.arguments.contains("-disableMockData")
+            && ProcessInfo.processInfo.environment["DISABLE_MOCK_DATA"] != "1"
+
         do {
             container = try Self.makePersistentContainer()
-            checkAndSeed()
+            if shouldSeedInitialData {
+                checkAndSeed()
+            }
         } catch {
             // Fallback: If the schema changed, the container fails to build.
             // We CANNOT call container.erase() here because we don't have a container.
@@ -30,7 +35,9 @@ class DataController {
             do {
                 try Self.deleteStoreFiles()
                 container = try Self.makePersistentContainer()
-                checkAndSeed()
+                if shouldSeedInitialData {
+                    checkAndSeed()
+                }
             } catch {
                 fatalError("Could not initialize SwiftData after resetting the local store: \(error)")
             }
