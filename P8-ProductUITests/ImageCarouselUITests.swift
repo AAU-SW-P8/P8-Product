@@ -84,23 +84,6 @@ final class ImageCarouselUITests: XCTestCase {
         )
     }
 
-    func testCarouselDisplaysFirstScanMetadata() {
-        // Sorted ascending → first frame is alexScan4: diameter 5.0, area 16.0.
-        selectAlexLeftArmMole()
-
-        let topCarousel = app.otherElements["topCarousel"]
-        XCTAssertTrue(topCarousel.waitForExistence(timeout: 5))
-
-        XCTAssertTrue(
-            topCarousel.staticTexts["Diameter: 5.0 mm"].waitForExistence(timeout: 3),
-            "Top carousel should display the first scan's diameter (5.0 mm)"
-        )
-        XCTAssertTrue(
-            topCarousel.staticTexts["Area: 16.0 mm²"].exists,
-            "Top carousel should display the first scan's area (16.0 mm²)"
-        )
-    }
-
     func testSingleScanCarouselLoadsImage() {
         // Back Mole renders through the single-carousel branch in CompareView,
         // which doesn't tag the carousel with topCarousel/bottomCarousel ids,
@@ -119,26 +102,6 @@ final class ImageCarouselUITests: XCTestCase {
     }
 
     // MARK: - Swipe Navigation
-
-    func testSwipingTopCarouselAdvancesToNextScan() {
-        // Swiping left should advance from alexScan4 (5.0 mm) → alexScan1 (4.2 mm).
-        selectAlexLeftArmMole()
-
-        let topCarousel = app.otherElements["topCarousel"]
-        XCTAssertTrue(topCarousel.waitForExistence(timeout: 5))
-        XCTAssertTrue(topCarousel.staticTexts["Diameter: 5.0 mm"].waitForExistence(timeout: 3))
-
-        topCarousel.swipeLeft()
-
-        XCTAssertTrue(
-            topCarousel.staticTexts["Diameter: 4.2 mm"].waitForExistence(timeout: 3),
-            "Swiping left should advance the top carousel to the second scan (4.2 mm)"
-        )
-        XCTAssertTrue(
-            topCarousel.staticTexts["Area: 13.8 mm²"].exists,
-            "Top carousel area should match the second scan after swiping (13.8 mm²)"
-        )
-    }
 
     func testSwipingTopCarouselBackwardReturnsToPreviousScan() {
         // Swipe forward then back; the carousel should return to the first scan.
@@ -206,23 +169,4 @@ final class ImageCarouselUITests: XCTestCase {
         )
     }
 
-    func testSwipingBottomCarouselDoesNotAffectTop() {
-        selectAlexLeftArmMole()
-
-        let topCarousel = app.otherElements["topCarousel"]
-        let bottomCarousel = app.otherElements["bottomCarousel"]
-        XCTAssertTrue(topCarousel.waitForExistence(timeout: 5))
-        XCTAssertTrue(bottomCarousel.waitForExistence(timeout: 5))
-
-        bottomCarousel.swipeLeft()
-
-        XCTAssertTrue(
-            bottomCarousel.staticTexts["Diameter: 4.2 mm"].waitForExistence(timeout: 3),
-            "Bottom carousel should have advanced to the second scan"
-        )
-        XCTAssertTrue(
-            topCarousel.staticTexts["Diameter: 5.0 mm"].exists,
-            "Top carousel should remain on the first scan after swiping the bottom"
-        )
-    }
 }

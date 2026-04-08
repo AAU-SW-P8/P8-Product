@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		97BFEFFA2F7BC99800C9495F /* UITests.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = 97BFEFF92F7BC99800C9495F /* UITests.xctestplan */; };
 		97C2DB152F6AB39500454255 /* Unittests.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = 97C2DB142F6AB39500454255 /* Unittests.xctestplan */; };
+		97D066412F8657A700FB4C0B /* Alltests.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = 97D066402F8657A700FB4C0B /* Alltests.xctestplan */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -33,6 +34,7 @@
 		97BFEFF92F7BC99800C9495F /* UITests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = UITests.xctestplan; sourceTree = "<group>"; };
 		97C2DB142F6AB39500454255 /* Unittests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = Unittests.xctestplan; sourceTree = "<group>"; };
 		97C2DB1A2F6AB3F100454255 /* PipelineTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PipelineTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		97D066402F8657A700FB4C0B /* Alltests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = Alltests.xctestplan; sourceTree = "<group>"; };
 		F1845EEE2F59945F00E27D2B /* P8-Product.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "P8-Product.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -108,6 +110,7 @@
 		F1845EE52F59945F00E27D2B = {
 			isa = PBXGroup;
 			children = (
+				97D066402F8657A700FB4C0B /* Alltests.xctestplan */,
 				97BFEFF92F7BC99800C9495F /* UITests.xctestplan */,
 				97C2DB142F6AB39500454255 /* Unittests.xctestplan */,
 				97C2DB232F6AB48B00454255 /* Tests */,
@@ -263,6 +266,7 @@
 			files = (
 				97C2DB152F6AB39500454255 /* Unittests.xctestplan in Resources */,
 				97BFEFFA2F7BC99800C9495F /* UITests.xctestplan in Resources */,
+				97D066412F8657A700FB4C0B /* Alltests.xctestplan in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

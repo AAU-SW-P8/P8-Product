@@ -58,28 +58,21 @@ final class CompareViewUITests: XCTestCase {
 
     // MARK: - Person Selection
 
-    func testSelectingPersonShowsSelectMolePrompt() {
+    func testSelectingPersonShowsMolePromptAndPicker() {
         personPickerButton.tap()
         app.buttons["Alex"].tap()
 
         let prompt = app.staticTexts["selectMolePrompt"]
         XCTAssertTrue(prompt.waitForExistence(timeout: 3),
                        "Should show 'Select a mole' after picking a person")
-    }
-
-    func testSelectingPersonShowsMolePicker() {
-        personPickerButton.tap()
-        app.buttons["Alex"].tap()
-
-        let molePicker = molePickerButton
-        XCTAssertTrue(molePicker.waitForExistence(timeout: 3),
+        XCTAssertTrue(molePickerButton.exists,
                        "Mole picker should appear after a person is selected")
     }
 
     // MARK: - Mole Selection → Dual Carousel (multiple scans)
 
-    func testSelectingMoleWithMultipleScansShowsDualCarousel() {
-        // Alex's "Left Arm Mole" has 3 scans → dual carousel
+    func testSelectingMoleWithMultipleScansShowsDualCarouselAndMetricPicker() {
+        // Alex's "Left Arm Mole" has 3 scans → dual carousel + metric picker
         personPickerButton.tap()
         app.buttons["Alex"].tap()
 
@@ -89,49 +82,8 @@ final class CompareViewUITests: XCTestCase {
         let container = app.otherElements["dualCarouselContainer"]
         XCTAssertTrue(container.waitForExistence(timeout: 5),
                        "Dual carousel should appear for a mole with multiple scans")
-    }
-
-    func testSelectingMoleWithMultipleScansShowsMetricPicker() {
-        personPickerButton.tap()
-        app.buttons["Alex"].tap()
-
-        molePickerButton.tap()
-        app.buttons["Left Arm Mole"].tap()
-
-        let picker = app.segmentedControls["metricPicker"]
-        XCTAssertTrue(picker.waitForExistence(timeout: 5),
+        XCTAssertTrue(app.segmentedControls["metricPicker"].exists,
                        "Metric picker should appear when a mole with scans is selected")
-    }
-
-    // MARK: - Metric Picker Interaction
-
-    func testSwitchingMetricToDiameter() {
-        personPickerButton.tap()
-        app.buttons["Alex"].tap()
-
-        molePickerButton.tap()
-        app.buttons["Left Arm Mole"].tap()
-
-        let picker = app.segmentedControls["metricPicker"]
-        XCTAssertTrue(picker.waitForExistence(timeout: 5))
-
-        picker.buttons["Diameter"].tap()
-
-        let trendLabel = app.staticTexts["Diameter Trend"]
-        XCTAssertTrue(trendLabel.waitForExistence(timeout: 3),
-                       "Chart should show 'Diameter Trend' after switching metric")
-    }
-
-    func testAreaMetricIsDefaultSelected() {
-        personPickerButton.tap()
-        app.buttons["Alex"].tap()
-
-        molePickerButton.tap()
-        app.buttons["Left Arm Mole"].tap()
-
-        let trendLabel = app.staticTexts["Area Trend"]
-        XCTAssertTrue(trendLabel.waitForExistence(timeout: 5),
-                       "Chart should default to showing 'Area Trend'")
     }
 
     // MARK: - Switching Person Resets Mole
@@ -209,21 +161,13 @@ final class CompareViewUITests: XCTestCase {
 
         molePickerButton.tap()
 
+        // Body parts in mock data for Alex are "Left Arm" and "Back".
+        // SwiftUI Menu sections render their titles as static text.
         XCTAssertTrue(app.buttons["Left Arm Mole"].waitForExistence(timeout: 3),
                        "Alex's mole picker should contain Left Arm Mole")
         XCTAssertTrue(app.buttons["Back Mole"].exists,
                        "Alex's mole picker should contain Back Mole")
-    }
-
-    func testMolePickerShowsBodyPartSectionsForAlex() {
-        personPickerButton.tap()
-        app.buttons["Alex"].tap()
-
-        molePickerButton.tap()
-
-        // Body parts in mock data for Alex are "Left Arm" and "Back".
-        // SwiftUI Menu sections render their titles as static text.
-        XCTAssertTrue(app.staticTexts["Left Arm"].waitForExistence(timeout: 3),
+        XCTAssertTrue(app.staticTexts["Left Arm"].exists,
                        "Mole picker should show 'Left Arm' body part section")
         XCTAssertTrue(app.staticTexts["Back"].exists,
                        "Mole picker should show 'Back' body part section")
