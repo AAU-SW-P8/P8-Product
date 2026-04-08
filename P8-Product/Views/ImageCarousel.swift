@@ -5,16 +5,30 @@
 
 import SwiftUI
 
+
+/**
+    A horizontally scrollable carousel of mole scan images, with pagination dots and metadata display.
+    
+    This view takes an array of `MoleScan` objects and displays their images in a paginated scroll view. The user can swipe left or right to navigate through the scans, and the currently selected scan's capture date and instance measurements are shown below the carousel. Tapping on a pagination dot will animate the carousel to the corresponding scan.
+    
+    The view also includes logic to ensure that the selected index remains valid if the number of scans changes, and it provides static helper methods for determining the safe index and selected scan/instance based on the current state.
+
+    - Parameters:
+        - scans: An array of `MoleScan` objects to display in the carousel.
+        - mole: An optional `Mole` object to filter the displayed instances. If nil, the first instance of each scan will be shown.
+        - selectedIndex: A binding to the currently selected index in the carousel, which will update as the user scrolls or taps on pagination dots.
+        - height: The height of the carousel images, defaulting to 200 points.
+*/
 struct ImageCarousel: View {
     let scans: [MoleScan]
     var mole: Mole? = nil
     @Binding var selectedIndex: Int
     var height: CGFloat = 200
-
+    /// The safe index to use for display, ensuring it stays within bounds of the scans array.
     private var safeIndex: Int {
         Self.safeIndex(for: scans, requested: selectedIndex)
     }
-
+    /// The currently selected scan based on the safe index, or nil if there are no scans.
     private var selectedScan: MoleScan? {
         Self.selectedScan(in: scans, at: selectedIndex)
     }
