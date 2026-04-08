@@ -88,7 +88,7 @@ final class SAM3ImagePreprocessor {
         }
 
         let bytesPerRow: Int = CVPixelBufferGetBytesPerRow(pixelBuffer)
-        let bytes: UnsafePointer<UInt8> = baseAddress.assumingMemoryBound(to: UInt8.self)
+        let bytes: UnsafeMutablePointer<UInt8> = baseAddress.assumingMemoryBound(to: UInt8.self)
         let hw: Int = size * size
 
         // Direct Float16 pointer write — we own this array, so the binding is safe.
