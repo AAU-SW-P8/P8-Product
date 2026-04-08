@@ -9,7 +9,7 @@ import SwiftData
 public struct CompareView: View {
     @Query(sort: \Person.createdAt) private var people: [Person]
 
-    @State private var appState = CompareAppState(dataController: .shared)
+    @State private var appState = CompareAppState()
 
     public init() {}
 
@@ -137,9 +137,9 @@ private struct CompareContentView: View {
                             .accessibilityIdentifier("metricPicker")
 
 
-                            
-                            ChartView(mole: appState.selectedMole, metric: appState.selectedMetric)
-                            
+                                if let selectedMole = appState.selectedMole{
+                                    ChartView(mole: selectedMole, metric: appState.selectedMetric)
+                                }
                             }
                             .padding(.vertical, 12)
                             .background(
@@ -162,20 +162,17 @@ private struct CompareContentView: View {
                 }
             }
         }
-        .onChange(of: appState.selectedPerson) {
-            appState.selectedMole = nil
-            appState.selectedIndexTop = 0
-            appState.selectedIndexBottom = 0
-        }
-        .onChange(of: appState.selectedMole) {
-            appState.selectedIndexTop = 0
-            appState.selectedIndexBottom = 0
-        }
     }
 
     private var selectorBar: some View {
         HStack {
-            Picker("Person", selection: $appState.selectedPerson) {
+            Picker(
+                "Person",
+                selection: Binding(
+                    get: { appState.selectedPerson },
+                    set: { appState.selectPerson($0) }
+                )
+            ) {
                 Text("Select Person").tag(nil as Person?)
                 ForEach(people) { person in
                     Text(person.name).tag(person as Person?)
@@ -191,7 +188,7 @@ private struct CompareContentView: View {
                         Section(bodyPart) {
                             ForEach(grouped[bodyPart]!) { mole in
                                 Button {
-                                    appState.selectedMole = mole
+                                    appState.selectMole(mole)
                                 } label: {
                                     if appState.selectedMole == mole {
                                         Label(mole.name, systemImage: "checkmark")
