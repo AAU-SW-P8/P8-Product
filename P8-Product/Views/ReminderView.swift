@@ -43,7 +43,7 @@ struct ReminderView: View {
                         .opacity(reminderEnabled ? 1.0 : 0.4)
                         .onChange(of: defaultFrequency) { _, newValue in
                             selectedPerson?.defaultReminderFrequency = newValue
-                            updateDefaultFrequencyForFollowDefaultMoles(to: newValue)
+                            updateDefaultFrequencyForFollowDefaultMoles()
                         }
                     }
 
@@ -85,23 +85,20 @@ struct ReminderView: View {
                 .listStyle(.plain)
             }
             .onAppear {
-                if let firstPerson = persons.first, selectedPerson == nil {
-                    selectedPerson = firstPerson
-                    reminderEnabled = firstPerson.defaultReminderEnabled
-                    defaultFrequency = displayFrequency(for: firstPerson)
+                if selectedPerson == nil {
+                    selectedPerson = persons.first
                 }
+                syncSelectionState()
             }
             .onChange(of: persons) { _, newValue in
                 if selectedPerson == nil, let first = newValue.first {
                     selectedPerson = first
-                    reminderEnabled = first.defaultReminderEnabled
-                    defaultFrequency = displayFrequency(for: first)
                 }
+                syncSelectionState()
             }
             .onChange(of: selectedPerson) { _, newValue in
-                guard let person = newValue else { return }
-                reminderEnabled = person.defaultReminderEnabled
-                defaultFrequency = displayFrequency(for: person)
+                guard newValue != nil else { return }
+                syncSelectionState()
             }
             .navigationTitle("Reminder")
         }
@@ -299,9 +296,15 @@ struct ReminderView: View {
         mole.nextDueDate = max(Date(), nextDueDate ?? Date())
     }
 
-    private func updateDefaultFrequencyForFollowDefaultMoles(to frequencyLabel: String) {
+    private func updateDefaultFrequencyForFollowDefaultMoles() {
         for mole in selectedPersonMoles where mole.followDefault ?? true {
             updateReminder(for: mole, frequencyLabel: "Default")
         }
+    }
+
+    private func syncSelectionState() {
+        guard let person = selectedPerson else { return }
+        reminderEnabled = person.defaultReminderEnabled
+        defaultFrequency = displayFrequency(for: person)
     }
 }
