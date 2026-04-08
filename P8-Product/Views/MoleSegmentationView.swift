@@ -8,11 +8,11 @@
 import SwiftUI
 import SwiftData
 
-/// A view that manually segments moles using SAM3 with the text prompt "moles".
+/// A view that segments moles using SAM3 with the text prompt "moles".
 ///
 /// Uses the pre-loaded SAM3 pipeline from SAM3ModelLoader
-/// and runs segmentation on the test image upon user request. Detected mole regions
-/// are shown as a semi-transparent red overlay on top of the original image.
+/// and runs segmentation on an image upon user request. Detected mole regions
+/// are shown as a semi-transparent overlays on top of the original image.
 struct MoleSegmentationTestView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Person.createdAt) private var people: [Person]
