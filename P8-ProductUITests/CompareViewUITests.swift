@@ -65,7 +65,24 @@ final class CompareViewUITests: XCTestCase {
         let prompt = app.staticTexts["selectMolePrompt"]
         XCTAssertTrue(prompt.waitForExistence(timeout: 3),
                        "Should show 'Select a mole' after picking a person")
-        XCTAssertTrue(molePickerButton.exists,
+    }
+
+    func testSelectingPersonWithNoScansShowsMakeScanMessage() {
+        // Taylor only has one mole with no scans in the mock data.
+        personPickerButton.tap()
+        app.buttons["Taylor"].tap()
+
+        let message = app.staticTexts["makeScanBeforeCompareMessage"]
+        XCTAssertTrue(message.waitForExistence(timeout: 3),
+                       "Should prompt to make a scan if selected person has no scans")
+    }
+
+    func testSelectingPersonShowsMolePicker() {
+        personPickerButton.tap()
+        app.buttons["Alex"].tap()
+
+        let molePicker = molePickerButton
+        XCTAssertTrue(molePicker.waitForExistence(timeout: 3),
                        "Mole picker should appear after a person is selected")
     }
 

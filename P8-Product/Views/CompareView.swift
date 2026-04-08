@@ -22,6 +22,13 @@ struct CompareView: View {
             .sorted { $0.captureDate < $1.captureDate }
     }
 
+    private var selectedPersonHasAnyScans: Bool {
+        guard let selectedPerson else { return false }
+        return selectedPerson.moles.contains { mole in
+            mole.instances.contains { $0.moleScan != nil }
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             Text("Compare")
@@ -63,6 +70,12 @@ struct CompareView: View {
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .accessibilityIdentifier("selectPersonPrompt")
+                    } 
+                    else if !selectedPersonHasAnyScans {
+                        Text("You haven't captured any moles for \(selectedPerson!.name) yet")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .accessibilityIdentifier("makeScanBeforeCompareMessage")
                     } else if selectedMole == nil {
                         Text("Select a mole")
                             .font(.subheadline)
