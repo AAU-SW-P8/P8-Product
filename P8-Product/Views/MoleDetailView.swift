@@ -37,9 +37,9 @@ struct MoleDetailView: View {
         }
         .navigationTitle(mole.name)
         .navigationBarTitleDisplayMode(.inline)
-        .onChange(of: scans.count) {
-            if selectedIndex >= scans.count {
-                selectedIndex = max(0, scans.count - 1)
+        .onChange(of: scans.count) { _, newValue in
+            if selectedIndex >= newValue {
+                selectedIndex = max(0, newValue - 1)
             }
         }
     }

@@ -1,9 +1,10 @@
 //
-//  PipelineTests.swift
-//  PipelineTests
+//  ChartDataTests.swift
+//  ChartDataTests
 //
-//  Created by Simon Thordal on 3/18/26.
+//  Created by Simon Thordal on 08/04/2026.
 //
+
 
 import Testing
 import Foundation
@@ -11,7 +12,7 @@ import SwiftData
 @testable import P8_Product
 
 @MainActor
-struct PipelineTests {
+struct ChartDataTests {
 
     // MARK: - ChartView.makeChartData
     //
