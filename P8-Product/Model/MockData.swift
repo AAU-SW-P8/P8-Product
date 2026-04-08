@@ -22,6 +22,7 @@ struct MockData {
         // Create root Person objects
         let person1 = Person(name: "Alex", createdAt: daysAgo(30, from: today))
         let person2 = Person(name: "Jordan", createdAt: daysAgo(15, from: today))
+        let person3 = Person(name: "Taylor", createdAt: daysAgo(5, from: today))
 
         // Create Mole objects for Alex
         let alexLeftArmMole = Mole(
@@ -113,6 +114,7 @@ struct MockData {
         // Insert Objects
         context.insert(person1)
         context.insert(person2)
+        context.insert(person3)
         context.insert(alexLeftArmMole)
         context.insert(alexBackMole)
         context.insert(jordanFaceMole)
