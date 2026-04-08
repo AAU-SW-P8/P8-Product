@@ -265,13 +265,15 @@ struct MoleSegmentationTestView: View {
         // These UI-related state changes are performed on the main actor.
         isProcessing = true
         statusMessage = "Segmenting…"
+        let confidenceThreshold = self.confidenceThreshold
+        let nmsThreshold = self.nmsThreshold
         // Don't clear cache if we're just re-segmenting the same image with different thresholds.
         // segmentor.clearCache() 
 
         // Run the model work off the main actor, then hop back to MainActor for UI updates.
         Task.detached {
             do {
-                let result = try segmentor.segment(image: image, confidenceThreshold: self.confidenceThreshold, nmsThreshold: self.nmsThreshold)
+                let result = try await segmentor.segment(image: image, confidenceThreshold: confidenceThreshold, nmsThreshold: nmsThreshold)
                 await MainActor.run {
                     self.maskOverlay = result?.0
                     self.detectedBoxes = result?.1 ?? []

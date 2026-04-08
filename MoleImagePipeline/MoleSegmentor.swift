@@ -11,7 +11,10 @@ class MoleSegmentor {
 
     // MARK: - Properties
 
-    // SAM3 uses three models: Vision Encoder, Text Encoder, and Decoder
+    // SAM3 uses three models:
+    //  - Vision Encoder: Encodes the image into a vector representation the model can understand
+    //  - Text Encoder: Encodes text prompt ("moles") into text embedding (vector)
+    //  - Decode: Combines the two embeddings and produces masks, boxes and scores
     private let visionEncoder: MLModel
     private let textEncoder: MLModel
     private let decoder: MLModel
@@ -207,13 +210,22 @@ class MoleSegmentor {
     // MARK: - Text Encoding
 
     /// Pre-tokenises the prompt "moles" using the text encoder's tokenizer and runs it through the text encoder.
-    /// Uses a CLIP-style token sequence: 3 non-padding tokens for "moles" plus 29 padding tokens to reach length 32.
+    /// SAM 3.1 uses a CLIP tokenizer with a fixed sequence length of 32 tokens. The prompt itself only needs
+    /// 3 tokens (<start>, "moles", <end>); the remaining slots are filled with the padding token.
     private static func encodeText(with encoder: MLModel) throws -> MLFeatureProvider {
-        let tokenIds: [Int32] = [49406, 23529, 49407] + Array(repeating: 0, count: 29)
+        // CLIP tokenizer vocabulary IDs
+        let startOfTextToken: Int32 = 49406  // <|startoftext|>
+        let molesToken:       Int32 = 23529  // "moles"
+        let endOfTextToken:   Int32 = 49407  // <|endoftext|>
+        let paddingToken:     Int32 = 0
 
-        let inputIds = try MLMultiArray(shape: [1, 32], dataType: .int32)
+        let sequenceLength = 32
+        let promptTokens: [Int32] = [startOfTextToken, molesToken, endOfTextToken]
+        let paddingCount = sequenceLength - promptTokens.count
+        let tokenIds: [Int32] = promptTokens + Array(repeating: paddingToken, count: paddingCount)
 
-        for i in 0..<32 {
+        let inputIds = try MLMultiArray(shape: [1, NSNumber(value: sequenceLength)], dataType: .int32)
+        for i in 0..<sequenceLength {
             inputIds[[0, i] as [NSNumber]] = NSNumber(value: tokenIds[i])
         }
 
