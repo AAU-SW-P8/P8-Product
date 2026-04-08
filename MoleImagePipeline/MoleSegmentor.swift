@@ -2,30 +2,23 @@
 //  MoleSegmentor.swift
 //  P8-Product
 //
-//  Created by Simon Thordal on 3/16/26.
+//  Created by Adomas Ciplys on 08/04/26.
 //
 //  Top-level orchestrator for the SAM 3.1 mole segmentation pipeline.
-//  All heavy lifting (model loading, preprocessing, tokenization, decoding,
-//  post-processing, rendering) lives in dedicated types under SAM3/ and
-//  Rendering/. This file is intentionally kept thin so the high-level flow
-//  reads top-to-bottom in `segment(image:confidenceThreshold:nmsThreshold:)`.
+//  All heavy lifting lives in dedicated types under SAM3/ and Rendering/
 //
 
 import CoreML
 import UIKit
 
-/// Detects and segments moles in a photo using the SAM 3.1 grounded
-/// segmentation pipeline.
+/// Detects and segments moles in a photo using SAM 3.1
 ///
 /// The pipeline is composed of three CoreML models:
 ///   1. **Vision encoder** — turns the image into FPN feature maps.
 ///   2. **Text encoder** — turns the prompt `"moles"` into a text embedding
-///      (this is pre-encoded once at init since the prompt never changes).
 ///   3. **Decoder** — fuses the two and produces masks, boxes, and scores.
 ///
-/// `MoleSegmentor` glues these stages together, applies confidence filtering
-/// and non-maximum suppression, and hands the result to `SegmentationRenderer`
-/// for visualization.
+/// `MoleSegmentor`
 class MoleSegmentor {
 
     // MARK: - Components
@@ -37,25 +30,21 @@ class MoleSegmentor {
 
     // MARK: - Init
 
-    /// Loads the three SAM 3.1 models from the app bundle and pre-encodes
-    /// the fixed `"moles"` text prompt.
+    /// Loads the three SAM 3.1 models from the app bundle and pre-encodes the fixed `"moles"` text prompt.
+    /// This is `async` because compiling the vision encoder on first launch can take several seconds.
     ///
-    /// This is `async` because compiling the vision encoder on first launch
-    /// can take several seconds.
-    ///
-    /// - Throws: `PipelineError.modelNotFound` if any model resource is
-    ///   missing, or any error CoreML raises while loading or running the
-    ///   text encoder.
+    /// - Throws: `PipelineError.modelNotFound` if any model resource is missing,
+    ///     or any error CoreML raises while loading or running the text encoder.
     init() async throws {
         let models = try await SAM3Models.load()
-
+        
         let preprocessor = SAM3ImagePreprocessor()
         self.visionEncoder = SAM3VisionEncoder(model: models.visionEncoder, preprocessor: preprocessor)
         self.decoder = SAM3Decoder(model: models.decoder)
         self.textPrompt = try SAM3TextPromptEncoder(encoder: models.textEncoder)
         self.renderer = SegmentationRenderer()
 
-        print("✅ SAM3 models loaded and text encoded")
+        print("SAM3 models loaded and text encoded")
     }
 
     // MARK: - Public API
@@ -64,10 +53,8 @@ class MoleSegmentor {
     ///
     /// - Parameters:
     ///   - image: The full-resolution photo to segment.
-    ///   - confidenceThreshold: Minimum decoder probability for a detection
-    ///     to be kept. Defaults to `0.3`.
-    ///   - nmsThreshold: IoU threshold above which overlapping detections
-    ///     are suppressed. The default of `1.0` effectively disables NMS;
+    ///   - confidenceThreshold: Minimum decoder probability for a detection to be kept. Defaults to `0.3`.
+    ///   - nmsThreshold: IoU threshold above which overlapping detections are suppressed. The default of `1.0` effectively disables NMS;
     ///     pass ~`0.5` for actual deduplication.
     /// - Returns: An annotated image (mask overlays + boxes + labels) and
     ///   the per-detection bounding boxes in pixel coordinates, or `nil` if
@@ -76,33 +63,33 @@ class MoleSegmentor {
         let clock = ContinuousClock()
 
         // 1. Encode image (cached on repeat calls with the same UIImage instance).
-        print("🖼️ Encoding image…")
+        print("Encoding image…")
         var visionOutput: MLFeatureProvider!
         let encodeTime = try clock.measure {
             visionOutput = try visionEncoder.encode(image)
         }
-        print("⏱️ Encoding time: \(encodeTime)")
+        print("Encoding time: \(encodeTime)")
 
         // 2. Run the grounded mask decoder.
         var decoderOutput: SAM3DecoderOutput!
         let decodeTime = try clock.measure {
             decoderOutput = try decoder.run(visionFeatures: visionOutput, textFeatures: textPrompt.features)
         }
-        print("⏱️ Decoder execution time: \(decodeTime)")
+        print("Decoder execution time: \(decodeTime)")
 
         // 3. Filter by confidence.
         var detections = SAM3Detection.filterByConfidence(decoderOutput, threshold: confidenceThreshold)
         guard !detections.isEmpty else {
-            print("⚠️ No detections above threshold \(confidenceThreshold)")
+            print("No detections above threshold \(confidenceThreshold)")
             return nil
         }
 
         // 4. Drop overlapping detections.
         let beforeNms = detections.count
         detections = SAM3Detection.nonMaxSuppression(detections, iouThreshold: nmsThreshold)
-        print("✅ Found \(detections.count) moles (from \(beforeNms) candidates after NMS)")
+        print("Found \(detections.count) moles (from \(beforeNms) candidates after NMS)")
         for det in detections {
-            print("   🎯 Detection \(det.index): prob=\(String(format: "%.3f", det.prob))")
+            print("Detection \(det.index): prob=\(String(format: "%.3f", det.prob))")
         }
 
         // 5. Draw the annotated overlay.
