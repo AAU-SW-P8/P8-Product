@@ -49,6 +49,11 @@ class DataController {
     // Checks if the database is empty and populates it with sample data if necessary.
     // This is typically called only once during the first launch or after a store reset.
     private func checkAndSeed() {
+        // Allow UI tests to start with an empty store
+        if ProcessInfo.processInfo.arguments.contains("-UITest_EmptyStore") {
+            return
+        }
+
         let context: ModelContext = container.mainContext
         let descriptor: FetchDescriptor<Person> = FetchDescriptor<Person>()
 
@@ -74,9 +79,12 @@ class DataController {
         ])
 
         // Detect if the app is running in a Continuous Integration (CI) environment
-        // or during a unit/UI test run.
+        // or during a unit/UI test run. UI tests launch the app as a separate
+        // process that does not inherit `XCTestConfigurationFilePath`, so we also
+        // honor an explicit launch argument to force an in-memory store.
         let isTesting = ProcessInfo.processInfo.environment["CI"] == "true" ||
-                        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+                        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil ||
+                        ProcessInfo.processInfo.arguments.contains("-UITest_EmptyStore")
 
         let config: ModelConfiguration
         if isTesting {

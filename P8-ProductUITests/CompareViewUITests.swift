@@ -43,6 +43,29 @@ final class CompareViewUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Compare"].waitForExistence(timeout: 3))
     }
 
+    // MARK: - Empty Store
+
+    func testEmptyStateShownWhenNoPeopleExist() {
+        // Re-launch with the empty-store flag so the seeded mock data is skipped.
+        app.terminate()
+        app.launchArguments.append("-UITest_EmptyStore")
+        app.launch()
+        app.tabBars.buttons["Compare"].tap()
+
+        XCTAssertTrue(
+            app.staticTexts["emptyStateTitle"].waitForExistence(timeout: 3),
+            "Empty state title should appear when there are no people"
+        )
+        XCTAssertTrue(
+            app.staticTexts["emptyStateMessage"].exists,
+            "Empty state message should appear when there are no people"
+        )
+        XCTAssertFalse(
+            app.otherElements["selectorBar"].exists,
+            "Selector bar should be hidden when people is empty"
+        )
+    }
+
     // MARK: - Initial State (no selection)
 
     func testInitialStateShowsSelectPersonPrompt() {
