@@ -17,6 +17,7 @@ final class Mole {
     var name: String
     var bodyPart: String
     var isReminderActive: Bool
+    var followDefaultReminderEnabled: Bool?
     var followDefault: Bool?
     var reminderFrequency: Frequency?
     var nextDueDate: Date?
@@ -41,6 +42,7 @@ final class Mole {
         name: String,
         bodyPart: String,
         isReminderActive: Bool,
+        followDefaultReminderEnabled: Bool = true,
         followDefault: Bool = true,
         reminderFrequency: Frequency?,
         nextDueDate: Date?,
@@ -49,6 +51,7 @@ final class Mole {
         self.name = name
         self.bodyPart = bodyPart
         self.isReminderActive = isReminderActive
+        self.followDefaultReminderEnabled = followDefaultReminderEnabled
         self.followDefault = followDefault
         self.reminderFrequency = reminderFrequency
         self.nextDueDate = nextDueDate
