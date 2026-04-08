@@ -12,21 +12,15 @@ struct ImageCarousel: View {
     var height: CGFloat = 200
 
     private var safeIndex: Int {
-        guard !scans.isEmpty else { return 0 }
-        return min(selectedIndex, scans.count - 1)
+        Self.safeIndex(for: scans, requested: selectedIndex)
     }
 
     private var selectedScan: MoleScan? {
-        guard !scans.isEmpty else { return nil }
-        return scans[safeIndex]
+        Self.selectedScan(in: scans, at: selectedIndex)
     }
 
     private var selectedInstance: MoleInstance? {
-        guard let selectedScan else { return nil }
-        if let selectedMole = mole {
-            return selectedScan.instances.first(where: { $0.mole?.id == selectedMole.id })
-        }
-        return selectedScan.instances.first
+        Self.selectedInstance(in: scans, at: selectedIndex, for: mole)
     }
 
     var body: some View {
@@ -93,6 +87,31 @@ struct ImageCarousel: View {
                 selectedIndex = max(0, scans.count - 1)
             }
         }
+    }
+
+    // MARK: - Selection helpers
+    //
+    // These are static and take their inputs explicitly so the unit tests in
+    // PipelineTests can verify image-to-scan binding without having to render
+    // the SwiftUI view. The instance-level computed properties above delegate
+    // to these so the view's behaviour stays in lockstep with what is tested.
+
+    static func safeIndex(for scans: [MoleScan], requested: Int) -> Int {
+        guard !scans.isEmpty else { return 0 }
+        return min(max(requested, 0), scans.count - 1)
+    }
+
+    static func selectedScan(in scans: [MoleScan], at index: Int) -> MoleScan? {
+        guard !scans.isEmpty else { return nil }
+        return scans[safeIndex(for: scans, requested: index)]
+    }
+
+    static func selectedInstance(in scans: [MoleScan], at index: Int, for mole: Mole?) -> MoleInstance? {
+        guard let scan = selectedScan(in: scans, at: index) else { return nil }
+        if let mole {
+            return scan.instances.first(where: { $0.mole?.id == mole.id })
+        }
+        return scan.instances.first
     }
 
     private var dots: some View {
