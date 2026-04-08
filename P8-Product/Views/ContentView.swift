@@ -12,10 +12,10 @@ struct ContentView: View {
     
     var body: some View {
         Group {
-            if modelLoader.isLoading || modelLoader.segmentor == nil {
-                loadingView
-            } else if let error = modelLoader.error {
+            if let error = modelLoader.error {
                 errorView(error)
+            } else if  modelLoader.isLoading || modelLoader.segmentor == nil {
+                loadingView
             } else {
                 mainTabView
             }

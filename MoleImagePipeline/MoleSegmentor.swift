@@ -11,10 +11,6 @@ class MoleSegmentor {
 
     // MARK: - Properties
 
-    // Comment/uncomment the desired suffix to switch models
-    // private let modelSuffix = "_FP16"
-    private let modelSuffix = ""
-
     // SAM3 uses three models: Vision Encoder, Text Encoder, and Decoder
     private let visionEncoder: MLModel
     private let textEncoder: MLModel
@@ -35,9 +31,9 @@ class MoleSegmentor {
     // MARK: - Init
 
     init() async throws {
-        let visionModelName = "SAM3.1_ImageEncoder\(modelSuffix)"
-        let textModelName = "SAM3.1_TextEncoder\(modelSuffix)"
-        let decoderModelName = "SAM3.1_Detector\(modelSuffix)"
+        let visionModelName = "SAM3.1_ImageEncoder_FP16"
+        let textModelName = "SAM3.1_TextEncoder_FP16"
+        let decoderModelName = "SAM3.1_Detector_FP16"
 
         // Load Vision Encoder
         guard let visionURL = Bundle.main.url(forResource: visionModelName, withExtension: "mlmodelc")
@@ -59,8 +55,8 @@ class MoleSegmentor {
 
         let visionConfig = MLModelConfiguration()
         // Use .cpuAndGPU for the Image Encoder to avoid ANE compilation errors (ANECCompile FAILED)
-        // visionConfig.computeUnits = .cpuAndGPU
-        visionConfig.computeUnits = .all
+        // and to prevent multi-minute ANE compile hangs on low-RAM devices (e.g. iPhone 12 mini, 4 GB).
+        visionConfig.computeUnits = .cpuAndGPU
 
         let defaultConfig = MLModelConfiguration()
         defaultConfig.computeUnits = .all
@@ -369,62 +365,107 @@ class MoleSegmentor {
         // Draw the original image as background
         baseImage.draw(in: CGRect(origin: .zero, size: imageSize))
         
-        let maskAlpha: CGFloat = 0.5
+        // Smooth upscaling: build a small tinted RGBA image per detection, then
+        // let UIKit draw it scaled to the full image with high-quality interpolation.
+        ctx.interpolationQuality = .high
+
+        let maskAlphaMax: Float = 0.5  // peak overlay opacity
         var pixelBoxes: [CGRect] = []
+
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue)
+        let bytesPerRow = maskW * 4
+        var rgbaBuffer = [UInt8](repeating: 0, count: maskW * maskH * 4)
 
         for (detId, det) in detections.enumerated() {
             let color = Self.palette[detId % Self.palette.count]
-            let r = CGFloat(color.0) / 255.0
-            let g = CGFloat(color.1) / 255.0
-            let b = CGFloat(color.2) / 255.0
+            let rByte = Float(color.0)
+            let gByte = Float(color.1)
+            let bByte = Float(color.2)
 
-            // Draw semi-transparent mask pixels and track bounds for the bounding box
-            ctx.setFillColor(red: r, green: g, blue: b, alpha: maskAlpha)
             var minMaskX = maskW, minMaskY = maskH, maxMaskX = 0, maxMaskY = 0
+            var anyPixel = false
+
             for y in 0..<maskH {
                 for x in 0..<maskW {
                     let logit = masks[[0, det.index, y, x] as [NSNumber]].floatValue
+                    // Sigmoid turns the raw logit into a soft [0,1] probability, so the
+                    // edge naturally fades instead of being a hard step.
+                    let prob = 1.0 / (1.0 + exp(-logit))
+                    let alpha = prob * maskAlphaMax  // 0…maskAlphaMax
+                    let a8 = UInt8(max(0, min(255, alpha * 255)))
+
+                    // Premultiplied RGB (required by premultipliedLast).
+                    let offset = (y * maskW + x) * 4
+                    rgbaBuffer[offset]     = UInt8(rByte * alpha)
+                    rgbaBuffer[offset + 1] = UInt8(gByte * alpha)
+                    rgbaBuffer[offset + 2] = UInt8(bByte * alpha)
+                    rgbaBuffer[offset + 3] = a8
+
                     if logit > 0 {
-                        let rect = CGRect(
-                            x: CGFloat(x) * scaleX,
-                            y: CGFloat(y) * scaleY,
-                            width: scaleX + 1,
-                            height: scaleY + 1
-                        )
-                        ctx.fill(rect)
                         minMaskX = min(minMaskX, x)
                         minMaskY = min(minMaskY, y)
                         maxMaskX = max(maxMaskX, x)
                         maxMaskY = max(maxMaskY, y)
+                        anyPixel = true
                     }
                 }
             }
 
-            let boxRect = CGRect(
-                x: CGFloat(minMaskX) * scaleX,
-                y: CGFloat(minMaskY) * scaleY,
-                width: CGFloat(maxMaskX - minMaskX + 1) * scaleX,
-                height: CGFloat(maxMaskY - minMaskY + 1) * scaleY
-            )
-            pixelBoxes.append(boxRect)
-            
-            ctx.setStrokeColor(red: r, green: g, blue: b, alpha: 1.0)
-            ctx.setLineWidth(2.0)
-            ctx.stroke(boxRect)
+            // Build a CGImage from the small tinted buffer and draw it scaled up.
+            let data = Data(rgbaBuffer)
+            if let provider = CGDataProvider(data: data as CFData),
+               let maskCG = CGImage(
+                    width: maskW,
+                    height: maskH,
+                    bitsPerComponent: 8,
+                    bitsPerPixel: 32,
+                    bytesPerRow: bytesPerRow,
+                    space: colorSpace,
+                    bitmapInfo: bitmapInfo,
+                    provider: provider,
+                    decode: nil,
+                    shouldInterpolate: true,
+                    intent: .defaultIntent
+               ) {
+                let maskUI = UIImage(cgImage: maskCG)
+                maskUI.draw(in: CGRect(origin: .zero, size: imageSize),
+                            blendMode: .normal,
+                            alpha: 1.0)
+            }
 
-            // Draw label — matches Python format: "id={obj_id}, p={prob:.2f}"
-            let label = String(format: "id=%d, p=%.2f", detId, det.prob)
-            let attrs: [NSAttributedString.Key: Any] = [
-                .font: UIFont.boldSystemFont(ofSize: max(imageSize.width / 60, 10)),
-                .foregroundColor: UIColor(red: r, green: g, blue: b, alpha: 1.0),
-                .backgroundColor: UIColor(white: 1.0, alpha: 0.75),
-            ]
-            let labelSize = (label as NSString).size(withAttributes: attrs)
-            let labelOrigin = CGPoint(
-                x: boxRect.minX,
-                y: max(boxRect.minY - labelSize.height - 5, 0)
-            )
-            (label as NSString).draw(at: labelOrigin, withAttributes: attrs)
+            if anyPixel {
+                let boxRect = CGRect(
+                    x: CGFloat(minMaskX) * scaleX,
+                    y: CGFloat(minMaskY) * scaleY,
+                    width: CGFloat(maxMaskX - minMaskX + 1) * scaleX,
+                    height: CGFloat(maxMaskY - minMaskY + 1) * scaleY
+                )
+                pixelBoxes.append(boxRect)
+
+                let r = CGFloat(color.0) / 255.0
+                let g = CGFloat(color.1) / 255.0
+                let b = CGFloat(color.2) / 255.0
+
+                ctx.setStrokeColor(red: r, green: g, blue: b, alpha: 1.0)
+                // Scale stroke width to image size so boxes don't look chunky on high-res photos.
+                ctx.setLineWidth(max(imageSize.width / 2000, 1.0))
+                ctx.stroke(boxRect)
+
+                // Draw label — "id={obj_id}, p={prob:.2f}"
+                let label = String(format: "id=%d, p=%.2f", detId, det.prob)
+                let attrs: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.boldSystemFont(ofSize: max(imageSize.width / 60, 10)),
+                    .foregroundColor: UIColor(red: r, green: g, blue: b, alpha: 1.0),
+                    .backgroundColor: UIColor(white: 1.0, alpha: 0.75),
+                ]
+                let labelSize = (label as NSString).size(withAttributes: attrs)
+                let labelOrigin = CGPoint(
+                    x: boxRect.minX,
+                    y: max(boxRect.minY - labelSize.height - 5, 0)
+                )
+                (label as NSString).draw(at: labelOrigin, withAttributes: attrs)
+            }
         }
 
         let result = UIGraphicsGetImageFromCurrentImageContext()
