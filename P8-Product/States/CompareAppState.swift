@@ -20,12 +20,18 @@ import SwiftData
 @MainActor
 @Observable
 class CompareAppState {
+    @ObservationIgnored private let selectionState = SelectionState.shared
+
     // MARK: - Persistent Data Selection
-    var selectedPerson: Person?
     var selectedMole: Mole?
     var selectedMetric: ChartMetric = .area
     var selectedIndexTop: Int = 0
     var selectedIndexBottom: Int = 0
+
+    var selectedPerson: Person? {
+        get { selectionState.selectedPerson }
+        set { selectionState.selectedPerson = newValue }
+    }
 
     init() {}
 

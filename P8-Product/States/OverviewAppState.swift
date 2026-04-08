@@ -5,8 +5,13 @@ import UIKit
 @MainActor
 @Observable
 class OverviewAppState {
+    @ObservationIgnored private let selectionState = SelectionState.shared
+
     // MARK: - Persistent Data Selection
-    var selectedPerson: Person?
+    var selectedPerson: Person? {
+        get { selectionState.selectedPerson }
+        set { selectionState.selectedPerson = newValue }
+    }
     
     // MARK: - UI Flow State
     var showingAddPerson: Bool = false
