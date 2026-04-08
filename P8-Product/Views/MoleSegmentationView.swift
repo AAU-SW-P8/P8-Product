@@ -39,11 +39,10 @@ struct MoleSegmentationTestView: View {
     /// Status text shown beneath the image.
     @State private var statusMessage: String = "Ready"
 
-    /// Holds the localised error message when something fails.
-    @State private var errorMessage: String?
-
-    /// Controls presentation of the error alert.
-    @State private var showError = false
+    /// Unified alert state — one source of truth so the view only needs a single `.alert` modifier.
+    /// SwiftUI doesn't reliably support multiple `.alert` modifiers on the same view chain, so we
+    /// represent "error" and "success" as cases of an `Identifiable` enum and drive one alert from it.
+    @State private var activeAlert: AlertState?
 
     /// Dynamic thresholds for segmentation.
     @State private var confidenceThreshold: Float = 0.3
@@ -55,8 +54,7 @@ struct MoleSegmentationTestView: View {
     @State private var showPersonPicker = false
     @State private var selectedPersonForScan: Person?
     @State private var selectedBoxForMole: CGRect?
-    @State private var showingAddedMoleAlert = false
-    
+
     @State private var showMoleActionDialog = false
     @State private var showExistingMolePicker = false
 
@@ -82,11 +80,6 @@ struct MoleSegmentationTestView: View {
             .toolbar { toolbarContent }
             .sheet(isPresented: $showSettings) {
                 settingsSheet
-            }
-            .alert("Error", isPresented: $showError) {
-                Button("OK") { showError = false }
-            } message: {
-                Text(errorMessage ?? "Unknown error")
             }
             .confirmationDialog("Who is this scan for?", isPresented: $showPersonPicker, titleVisibility: .visible) {
                 ForEach(people) { person in
@@ -120,10 +113,12 @@ struct MoleSegmentationTestView: View {
                 }
                 Button("Cancel", role: .cancel) {}
             }
-            .alert("Success", isPresented: $showingAddedMoleAlert) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text("Successfully saved scan.")
+            .alert(item: $activeAlert) { alert in
+                Alert(
+                    title: Text(alert.title),
+                    message: Text(alert.message),
+                    dismissButton: .default(Text("OK"))
+                )
             }
         }
     }
@@ -178,8 +173,7 @@ struct MoleSegmentationTestView: View {
                                             if selectedPersonForScan != nil {
                                                 showMoleActionDialog = true
                                             } else {
-                                                errorMessage = "Please segment again to select a person."
-                                                showError = true
+                                                activeAlert = .error("Please segment again to select a person.")
                                             }
                                         }
                                 }
@@ -247,8 +241,7 @@ struct MoleSegmentationTestView: View {
     
     private func startSegmentationFlow() {
         if people.isEmpty {
-            errorMessage = "Please add a person in the Overview first."
-            showError = true
+            activeAlert = .error("Please add a person in the Overview first.")
         } else if people.count == 1 {
             selectedPersonForScan = people[0]
             resegment()
@@ -282,8 +275,7 @@ struct MoleSegmentationTestView: View {
                 }
             } catch {
                 await MainActor.run {
-                    self.errorMessage = "Segmentation failed: \(error.localizedDescription)"
-                    self.showError = true
+                    self.activeAlert = .error("Segmentation failed: \(error.localizedDescription)")
                     self.statusMessage = "Error"
                     self.isProcessing = false
                 }
@@ -343,7 +335,7 @@ struct MoleSegmentationTestView: View {
         modelContext.insert(instance)
         
         statusMessage = "Added mole to \(person.name)!"
-        showingAddedMoleAlert = true
+        activeAlert = .success("Successfully saved scan.")
     }
 
     private func addToExistingMole(_ mole: Mole, from image: UIImage?, in box: CGRect?) {
@@ -378,7 +370,38 @@ struct MoleSegmentationTestView: View {
         modelContext.insert(instance)
         
         statusMessage = "Added scan to \(mole.name)!"
-        showingAddedMoleAlert = true
+        activeAlert = .success("Successfully saved scan.")
+    }
+
+    // MARK: - Alert state
+
+    /// Drives the single `.alert` modifier on the view. Using `Identifiable` lets us
+    /// present and dismiss the alert via one binding, which avoids SwiftUI's
+    /// unreliable behavior when multiple `.alert` modifiers are stacked on the same view.
+    private enum AlertState: Identifiable {
+        case error(String)
+        case success(String)
+
+        /// A stable identifier so SwiftUI can tell cases apart when the state changes.
+        var id: String {
+            switch self {
+            case .error(let message):   return "error:\(message)"
+            case .success(let message): return "success:\(message)"
+            }
+        }
+
+        var title: String {
+            switch self {
+            case .error:   return "Error"
+            case .success: return "Success"
+            }
+        }
+
+        var message: String {
+            switch self {
+            case .error(let message), .success(let message): return message
+            }
+        }
     }
 
     // MARK: - Supporting views
