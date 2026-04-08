@@ -7,7 +7,7 @@ import Foundation
 import SwiftData
 
 enum Frequency: String, Codable {
-    case monthly, quarterly, yearly
+    case weekly, monthly, quarterly
 }
 
 @Model
@@ -17,6 +17,7 @@ final class Mole {
     var name: String
     var bodyPart: String
     var isReminderActive: Bool
+    var followDefault: Bool?
     var reminderFrequency: Frequency?
     var nextDueDate: Date?
     
