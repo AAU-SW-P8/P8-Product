@@ -39,27 +39,31 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		7AD89F892F87B66800A2C5F0 /* Exceptions for "Tests" folder in "P8-ProductUITests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				UITests/CompareViewUITests.swift,
+				UITests/ImageCarouselUITests.swift,
+				UITests/P8_ProductUITests.swift,
+				UITests/P8_ProductUITestsLaunchTests.swift,
+			);
+			target = 972E93A72F7BC67300BB8979 /* P8-ProductUITests */;
+		};
 		97C2DB272F6AB49400454255 /* Exceptions for "Tests" folder in "P8-Product" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				PipelineTests/SAM3DecoderTests.swift,
-				PipelineTests/SAM3DetectionTests.swift,
-				PipelineTests/SAM3FeatureNamesTests.swift,
-				PipelineTests/SAM3ImagePreprocessorTests.swift,
-				PipelineTests/SAM3ModelsTests.swift,
-				PipelineTests/TestHelpers.swift,
+				PipelineTests.swift,
+				UITests/CompareViewUITests.swift,
+				UITests/ImageCarouselUITests.swift,
+				UITests/P8_ProductUITests.swift,
+				UITests/P8_ProductUITestsLaunchTests.swift,
 			);
 			target = F1845EED2F59945F00E27D2B /* P8-Product */;
 		};
 		97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				PipelineTests/SAM3DecoderTests.swift,
-				PipelineTests/SAM3DetectionTests.swift,
-				PipelineTests/SAM3FeatureNamesTests.swift,
-				PipelineTests/SAM3ImagePreprocessorTests.swift,
-				PipelineTests/SAM3ModelsTests.swift,
-				PipelineTests/TestHelpers.swift,
+				PipelineTests.swift,
 			);
 			target = 97C2DB192F6AB3F100454255 /* PipelineTests */;
 		};
@@ -80,11 +84,6 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		972E93A92F7BC67300BB8979 /* P8-ProductUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "P8-ProductUITests";
-			sourceTree = "<group>";
-		};
 		97C2DAEC2F6AAFA600454255 /* MoleImagePipeline */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -99,6 +98,7 @@
 			exceptions = (
 				97C2DB272F6AB49400454255 /* Exceptions for "Tests" folder in "P8-Product" target */,
 				97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */,
+				7AD89F892F87B66800A2C5F0 /* Exceptions for "Tests" folder in "P8-ProductUITests" target */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -144,7 +144,6 @@
 				97C2DB232F6AB48B00454255 /* Tests */,
 				97C2DAEC2F6AAFA600454255 /* MoleImagePipeline */,
 				F1845EF02F59945F00E27D2B /* P8-Product */,
-				972E93A92F7BC67300BB8979 /* P8-ProductUITests */,
 				F1845EEF2F59945F00E27D2B /* Products */,
 			);
 			sourceTree = "<group>";
@@ -174,9 +173,6 @@
 			);
 			dependencies = (
 				972E93AF2F7BC67300BB8979 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				972E93A92F7BC67300BB8979 /* P8-ProductUITests */,
 			);
 			name = "P8-ProductUITests";
 			packageProductDependencies = (
@@ -403,13 +399,10 @@
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/P8-Product.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/P8-Product";
 				XROS_DEPLOYMENT_TARGET = 26.2;
@@ -433,13 +426,10 @@
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/P8-Product.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/P8-Product";
 				XROS_DEPLOYMENT_TARGET = 26.2;
