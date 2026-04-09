@@ -125,10 +125,10 @@ class DataController {
     
     /// Creates a new scan, a new mole, and links them together for a specific person.
     func addMoleAndScan(to person: Person, image: UIImage) {
-        let context: ModelContext = container.mainContext
+        let context = container.mainContext
         
         let scan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9))
-        let mole: Mole = Mole(
+        let mole = Mole(
             name: "Mole \(person.moles.count + 1)",
             bodyPart: "Unassigned",
             isReminderActive: false,
@@ -136,10 +136,10 @@ class DataController {
             nextDueDate: nil,
             person: person
         )
-        let instance: MoleInstance = MoleInstance(
+        let instance = MoleInstance(
             diameter: 0,
             area: 0,
-            mole: mole,
+            mole: mole, 
             moleScan: scan
         )
         
@@ -154,6 +154,34 @@ class DataController {
         }
     }
     
+    /**
+        Adds a new scan to an existing mole by creating a new `MoleScan` and linking it with a new `MoleInstance`.
+        - Parameters:
+            - mole: The existing `Mole` to which the new scan will be linked.
+            - image: The `UIImage` representing the new scan to be added.
+    */
+    func addToExistingMole(mole: Mole, image: UIImage) {
+        let context = container.mainContext
+        
+        // Create the scan and the linking instance
+        let scan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9))
+        let instance = MoleInstance(
+            diameter: 0,
+            area: 0,
+            mole: mole,
+            moleScan: scan
+        )
+
+        context.insert(scan)
+        context.insert(instance)
+
+        do {
+            try context.save()
+        } catch {
+            print("Failed to save scan to existing mole: \(error)")
+        }
+    }
+
     func delete(_ person: Person) {
         let context: ModelContext = container.mainContext
         context.delete(person)
