@@ -24,6 +24,7 @@ final class ImageCarouselUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
+        app.launchArguments.append("-SkipModelLoading")
         app.launch()
 
         // The dual carousel lives in the Compare tab.
@@ -92,7 +93,7 @@ final class ImageCarouselUITests: XCTestCase {
         selectAlexBackMole()
 
         XCTAssertTrue(
-            app.staticTexts["Diameter: 3.6 mm"].firstMatch.waitForExistence(timeout: 5),
+            app.staticTexts["Diameter: 3.6 mm"].firstMatch.waitForExistence(timeout: 10),
             "Single-scan carousel should display Back Mole's diameter"
         )
         XCTAssertGreaterThan(

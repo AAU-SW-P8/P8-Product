@@ -44,26 +44,38 @@
 			membershipExceptions = (
 				UITests/CompareViewUITests.swift,
 				UITests/ImageCarouselUITests.swift,
-				UITests/P8_ProductUITests.swift,
-				UITests/P8_ProductUITestsLaunchTests.swift,
+				UITests/ProductUITests.swift,
+				UITests/ProductUITestsLaunchTests.swift,
 			);
 			target = 972E93A72F7BC67300BB8979 /* P8-ProductUITests */;
 		};
 		97C2DB272F6AB49400454255 /* Exceptions for "Tests" folder in "P8-Product" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				PipelineTests.swift,
+				ChartViewTest.swift,
+				SAMPipelineTests/SAM3DecoderTests.swift,
+				SAMPipelineTests/SAM3DetectionTests.swift,
+				SAMPipelineTests/SAM3FeatureNamesTests.swift,
+				SAMPipelineTests/SAM3ImagePreprocessorTests.swift,
+				SAMPipelineTests/SAM3ModelsTests.swift,
+				SAMPipelineTests/TestHelpers.swift,
 				UITests/CompareViewUITests.swift,
 				UITests/ImageCarouselUITests.swift,
-				UITests/P8_ProductUITests.swift,
-				UITests/P8_ProductUITestsLaunchTests.swift,
+				UITests/ProductUITests.swift,
+				UITests/ProductUITestsLaunchTests.swift,
 			);
 			target = F1845EED2F59945F00E27D2B /* P8-Product */;
 		};
 		97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				PipelineTests.swift,
+				ChartViewTest.swift,
+				SAMPipelineTests/SAM3DecoderTests.swift,
+				SAMPipelineTests/SAM3DetectionTests.swift,
+				SAMPipelineTests/SAM3FeatureNamesTests.swift,
+				SAMPipelineTests/SAM3ImagePreprocessorTests.swift,
+				SAMPipelineTests/SAM3ModelsTests.swift,
+				SAMPipelineTests/TestHelpers.swift,
 			);
 			target = 97C2DB192F6AB3F100454255 /* PipelineTests */;
 		};
@@ -339,7 +351,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = YN4R45KS47;
+				DEVELOPMENT_TEAM = 484SQATWRN;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "test.P8-ProductUITests";
@@ -363,7 +375,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = YN4R45KS47;
+				DEVELOPMENT_TEAM = 484SQATWRN;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "test.P8-ProductUITests";
@@ -565,7 +577,7 @@
 				CODE_SIGN_ENTITLEMENTS = "P8-Product/P8-Product.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = JE5R9S88TC;
+				DEVELOPMENT_TEAM = 484SQATWRN;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = SPOT;
@@ -606,7 +618,7 @@
 				CODE_SIGN_ENTITLEMENTS = "P8-Product/P8-Product.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = JE5R9S88TC;
+				DEVELOPMENT_TEAM = 484SQATWRN;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = SPOT;

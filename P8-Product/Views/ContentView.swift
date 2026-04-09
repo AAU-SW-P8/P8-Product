@@ -9,10 +9,16 @@ import UIKit
 
 struct ContentView: View {
     @StateObject private var modelLoader = SAM3ModelLoader.shared
-    
+
+    private var skipModelLoading: Bool {
+        ProcessInfo.processInfo.arguments.contains("-SkipModelLoading")
+    }
+
     var body: some View {
         Group {
-            if let error = modelLoader.error {
+            if skipModelLoading {
+                mainTabView
+            } else if let error = modelLoader.error {
                 errorView(error)
             } else if  modelLoader.isLoading || modelLoader.segmentor == nil {
                 loadingView
@@ -21,6 +27,7 @@ struct ContentView: View {
             }
         }
         .task {
+            guard !skipModelLoading else { return }
             await modelLoader.loadModel()
         }
     }

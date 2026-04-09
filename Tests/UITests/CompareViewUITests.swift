@@ -15,6 +15,7 @@ final class CompareViewUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
+        app.launchArguments.append("-SkipModelLoading")
         app.launch()
 
         // Navigate to the Compare tab
@@ -49,6 +50,7 @@ final class CompareViewUITests: XCTestCase {
         // Re-launch with the empty-store flag so the seeded mock data is skipped.
         app.terminate()
         app.launchArguments.append("-UITest_EmptyStore")
+        app.launchArguments.append("-SkipModelLoading")
         app.launch()
         app.tabBars.buttons["Compare"].tap()
 
