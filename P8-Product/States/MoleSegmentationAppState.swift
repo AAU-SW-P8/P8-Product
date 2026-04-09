@@ -9,16 +9,16 @@ class MoleSegmentationAppState {
     var maskOverlay: UIImage?
     var detectedBoxes: [CGRect] = []
     
-    var isProcessing = false
+    var isProcessing: Bool = false
     var statusMessage: String = "Ready"
     var confidenceThreshold: Float = 0.3
     var nmsThreshold: Float = 1.0
     
     // MARK: - UI Flow Flags
-    var showSettings = false
-    var showPersonPicker = false
-    var showMoleActionDialog = false
-    var showExistingMolePicker = false
+    var showSettings: Bool = false
+    var showPersonPicker: Bool = false
+    var showMoleActionDialog: Bool = false
+    var showExistingMolePicker: Bool = false
     
     // MARK: - Selection State
     var selectedPersonForScan: Person?
@@ -27,7 +27,7 @@ class MoleSegmentationAppState {
     
     // Dependencies
     private let dataController: DataController
-    private let modelLoader = SAM3ModelLoader.shared
+    private let modelLoader: SAM3ModelLoader = SAM3ModelLoader.shared
     
     init(dataController: DataController = .shared) {
         self.dataController = dataController
@@ -47,13 +47,13 @@ class MoleSegmentationAppState {
     }
     
     func resegment() {
-        guard let segmentor = modelLoader.segmentor, let image = testImage else { return }
+        guard let segmentor: SAM3Segmentor = modelLoader.segmentor, let image = testImage else { return }
 
         isProcessing = true
         statusMessage = "Segmenting…"
         
-        let conf = confidenceThreshold
-        let nms = nmsThreshold
+        let conf: Float = confidenceThreshold
+        let nms: Float = nmsThreshold
         
         Task.detached {
             do {
@@ -85,8 +85,8 @@ class MoleSegmentationAppState {
     // MARK: - Data Saving Logic
     
     func handleNewMoleSelection() {
-        guard let person = selectedPersonForScan, let image = testImage, let box = selectedBoxForMole else { return }
-        if let cropped = cropImage(image, to: box) {
+        guard let person: Person = selectedPersonForScan, let image: UIImage = testImage, let box: CGRect = selectedBoxForMole else { return }
+        if let cropped: UIImage = cropImage(image, to: box) {
             dataController.addMoleAndScan(to: person, image: cropped)
             statusMessage = "Added mole to \(person.name)!"
             activeAlert = .success("Successfully saved scan.")
@@ -94,10 +94,10 @@ class MoleSegmentationAppState {
     }
     
     func handleExistingMoleSelection(mole: Mole) {
-        guard let image = testImage, let box = selectedBoxForMole else { return }
+        guard let image: UIImage = testImage, let box: CGRect = selectedBoxForMole else { return }
         
         // 1. Crop the image here in the AppState
-        if let cropped = cropImage(image, to: box) {
+        if let cropped: UIImage = cropImage(image, to: box) {
             
             // 2. Pass the finished image to the DataController
             dataController.addToExistingMole(mole: mole, image: cropped)
@@ -115,9 +115,9 @@ class MoleSegmentationAppState {
         let imageRect = CGRect(origin: .zero, size: image.size)
         cropRect = cropRect.intersection(imageRect)
         
-        let format = UIGraphicsImageRendererFormat()
+        let format: UIGraphicsImageRendererFormat = UIGraphicsImageRendererFormat()
         format.scale = image.scale
-        let renderer = UIGraphicsImageRenderer(size: cropRect.size, format: format)
+        let renderer: UIGraphicsImageRenderer = UIGraphicsImageRenderer(size: cropRect.size, format: format)
         return renderer.image { _ in
             image.draw(at: CGPoint(x: -cropRect.origin.x, y: -cropRect.origin.y))
         }

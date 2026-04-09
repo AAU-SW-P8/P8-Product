@@ -125,10 +125,10 @@ class DataController {
     
     /// Creates a new scan, a new mole, and links them together for a specific person.
     func addMoleAndScan(to person: Person, image: UIImage) {
-        let context = container.mainContext
+        let context: ModelContext = container.mainContext
         
-        let scan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9))
-        let mole = Mole(
+        let scan: MoleScan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9))
+        let mole: Mole = Mole(
             name: "Mole \(person.moles.count + 1)",
             bodyPart: "Unassigned",
             isReminderActive: false,
@@ -136,7 +136,7 @@ class DataController {
             nextDueDate: nil,
             person: person
         )
-        let instance = MoleInstance(
+        let instance: MoleInstance = MoleInstance(
             diameter: 0,
             area: 0,
             mole: mole, 
@@ -161,11 +161,11 @@ class DataController {
             - image: The `UIImage` representing the new scan to be added.
     */
     func addToExistingMole(mole: Mole, image: UIImage) {
-        let context = container.mainContext
+        let context: ModelContext = container.mainContext
         
         // Create the scan and the linking instance
-        let scan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9))
-        let instance = MoleInstance(
+        let scan: MoleScan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9))
+        let instance: MoleInstance = MoleInstance(
             diameter: 0,
             area: 0,
             mole: mole,

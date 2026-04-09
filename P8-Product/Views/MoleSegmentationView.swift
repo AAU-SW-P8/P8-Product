@@ -13,15 +13,15 @@ struct MoleSegmentationTestView: View {
     @State private var AppState: MoleSegmentationAppState = MoleSegmentationAppState()
 
     // MARK: - UI-Only State (Gestures)
-    @State private var currentZoom = 0.0
-    @State private var totalZoom = 1.0
+    @State private var currentZoom: Double = 0.0
+    @State private var totalZoom: Double = 1.0
     @State private var offset: CGSize = .zero
     @State private var lastOffset: CGSize = .zero
 
     var body: some View {
         NavigationStack {
             ZStack {
-                if let image = AppState.testImage {
+                if let image: UIImage = AppState.testImage {
                     imageContent(image: image)
                 } else {
                     noImagePlaceholder
@@ -48,13 +48,13 @@ struct MoleSegmentationTestView: View {
             }
             .confirmationDialog("Mole Action", isPresented: $AppState.showMoleActionDialog) {
                 Button("New Mole") { AppState.handleNewMoleSelection() }
-                if let person = AppState.selectedPersonForScan, !person.moles.isEmpty {
+                if let person: Person = AppState.selectedPersonForScan, !person.moles.isEmpty {
                     Button("Existing Mole") { AppState.showExistingMolePicker = true }
                 }
                 Button("Cancel", role: .cancel) {}
             }
             .confirmationDialog("Select Existing Mole", isPresented: $AppState.showExistingMolePicker) {
-                if let person = AppState.selectedPersonForScan {
+                if let person: Person = AppState.selectedPersonForScan {
                     ForEach(person.moles) { mole in
                         Button(mole.name) { AppState.handleExistingMoleSelection(mole: mole) }
                     }
@@ -74,7 +74,7 @@ struct MoleSegmentationTestView: View {
     private func imageContent(image: UIImage) -> some View {
         GeometryReader { geometry in
             ZStack {
-                if let mask = AppState.maskOverlay {
+                if let mask: UIImage = AppState.maskOverlay {
                     // Render the fully composited annotated image returned by MoleSegmentor
                     Image(uiImage: mask)
                         .resizable()
@@ -82,21 +82,21 @@ struct MoleSegmentationTestView: View {
                         .frame(width: geometry.size.width, height: geometry.size.height)
                         .overlay {
                             GeometryReader { imageGeo in
-                                let imageAspect = mask.size.width / mask.size.height
-                                let viewAspect = imageGeo.size.width / imageGeo.size.height
-                                
-                                let drawWidth = imageAspect > viewAspect ? imageGeo.size.width : imageGeo.size.height * imageAspect
-                                let drawHeight = imageAspect > viewAspect ? imageGeo.size.width / imageAspect : imageGeo.size.height
-                                
-                                let drawX = (imageGeo.size.width - drawWidth) / 2
-                                let drawY = (imageGeo.size.height - drawHeight) / 2
-                                
-                                let scaleX = drawWidth / mask.size.width
-                                let scaleY = drawHeight / mask.size.height
-                                
+                                let imageAspect: Double = mask.size.width / mask.size.height
+                                let viewAspect: Double = imageGeo.size.width / imageGeo.size.height
+
+                                let drawWidth: Double = imageAspect > viewAspect ? imageGeo.size.width : imageGeo.size.height * imageAspect
+                                let drawHeight: Double = imageAspect > viewAspect ? imageGeo.size.width / imageAspect : imageGeo.size.height
+
+                                let drawX: Double = (imageGeo.size.width - drawWidth) / 2
+                                let drawY: Double = (imageGeo.size.height - drawHeight) / 2
+
+                                let scaleX: Double = drawWidth / mask.size.width
+                                let scaleY: Double = drawHeight / mask.size.height
+
                                 ForEach(0..<AppState.detectedBoxes.count, id: \.self) { index in
-                                    let box = AppState.detectedBoxes[index]
-                                    let rect = CGRect(
+                                    let box: CGRect = AppState.detectedBoxes[index]
+                                    let rect: CGRect = CGRect(
                                         x: drawX + box.minX * scaleX,
                                         y: drawY + box.minY * scaleY,
                                         width: box.width * scaleX,
