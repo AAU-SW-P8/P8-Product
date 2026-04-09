@@ -1,0 +1,31 @@
+{
+  "configurations" : [
+    {
+      "id" : "2FE142ED-D51A-4650-82A8-FB92955C6EB0",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:P8-Product.xcodeproj",
+        "identifier" : "972E93A72F7BC67300BB8979",
+        "name" : "P8-ProductUITests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:P8-Product.xcodeproj",
+        "identifier" : "97C2DB192F6AB3F100454255",
+        "name" : "PipelineTests"
+      }
+    }
+  ],
+  "version" : 1
+}

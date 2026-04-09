@@ -62,7 +62,6 @@ fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
 
-
 # Core ML compiled models and large binary files
 *.mlmodelc
 **/weights/weight.bin

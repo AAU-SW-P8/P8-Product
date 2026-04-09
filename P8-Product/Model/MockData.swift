@@ -7,7 +7,7 @@
 
 import Foundation
 import SwiftData
-import UIKit
+import SwiftUI
 
 /// A utility structure used to populate the application with sample data.
 /// This is primarily used for debugging, SwiftUI previews, and initial database seeding
@@ -22,6 +22,7 @@ struct MockData {
         // Create root Person objects
         let person1 = Person(name: "Alex", createdAt: daysAgo(30, from: today))
         let person2 = Person(name: "Jordan", createdAt: daysAgo(15, from: today))
+        let person3 = Person(name: "Taylor", createdAt: daysAgo(5, from: today))
 
         // Create Mole objects for Alex
         let alexLeftArmMole = Mole(
@@ -65,6 +66,12 @@ struct MockData {
             captureDate: daysAgo(10, from: today),
             imageData: UIImage(systemName: "circle.dotted")?.pngData()
         )
+
+        let alexScan4 = MoleScan(
+            captureDate: daysAgo(60, from: today),
+            imageData: UIImage(systemName: "circle.dashed")?.pngData()
+        )
+
         let jordanScan1 = MoleScan(
             captureDate: daysAgo(2, from: today),
             imageData: UIImage(systemName: "face.smiling")?.pngData()
@@ -83,6 +90,14 @@ struct MockData {
             mole: alexLeftArmMole,
             moleScan: alexScan2
         )
+    
+        let alexLeftArmInstance3 = MoleInstance(
+            diameter: 5.0,
+            area: 16.0,
+            mole: alexLeftArmMole,
+            moleScan: alexScan4
+        )
+
         let alexBackInstance = MoleInstance(
             diameter: 3.6,
             area: 10.1,
@@ -99,15 +114,18 @@ struct MockData {
         // Insert Objects
         context.insert(person1)
         context.insert(person2)
+        context.insert(person3)
         context.insert(alexLeftArmMole)
         context.insert(alexBackMole)
         context.insert(jordanFaceMole)
         context.insert(alexScan1)
         context.insert(alexScan2)
         context.insert(alexScan3)
+        context.insert(alexScan4)
         context.insert(jordanScan1)
         context.insert(alexLeftArmInstance1)
         context.insert(alexLeftArmInstance2)
+        context.insert(alexLeftArmInstance3)
         context.insert(alexBackInstance)
         context.insert(jordanFaceInstance)
     }
