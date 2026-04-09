@@ -72,7 +72,7 @@ jobs:
         with:
           name: test-results
           path: |
-            /Users/runner/Library/Developer/Xcode/DerivedData/**/Logs/Test/*.xcresult
+            ~/Library/Developer/Xcode/DerivedData/**/Logs/Test/*.xcresult
       
       - name: Extract videos from xcresult
         if: always()
@@ -80,7 +80,7 @@ jobs:
           set +e
           mkdir -p ~/Desktop/test-videos
 
-          for result in $(find /Users/runner/Library/Developer/Xcode/DerivedData -name "*.xcresult" 2>/dev/null); do
+          for result in $(find ~/Library/Developer/Xcode/DerivedData -name "*.xcresult" 2>/dev/null); do
             echo "=== Processing: $result ==="
 
             # Step 1: Get the top-level invocation record (legacy format)
@@ -140,4 +140,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: test-videos
-          path: ~/Desktop/test-videos/**/*.mp4
+          path: ~/Desktop/test-videos/**
+          if-no-files-found: warn
