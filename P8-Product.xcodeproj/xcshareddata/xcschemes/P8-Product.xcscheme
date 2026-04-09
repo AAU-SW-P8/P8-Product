@@ -30,7 +30,13 @@
       shouldUseLaunchSchemeArgsEnv = "YES">
       <TestPlans>
          <TestPlanReference
-            reference = "container:Unittests.xctestplan"
+            reference = "container:Unittests.xctestplan">
+         </TestPlanReference>
+         <TestPlanReference
+            reference = "container:UITests.xctestplan">
+         </TestPlanReference>
+         <TestPlanReference
+            reference = "container:Alltests.xctestplan"
             default = "YES">
          </TestPlanReference>
       </TestPlans>
@@ -109,6 +115,17 @@
                BlueprintIdentifier = "9740A1032F867F300077935D"
                BuildableName = "ReminderOverview.xctest"
                BlueprintName = "ReminderOverview"
+               ReferencedContainer = "container:P8-Product.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "972E93A72F7BC67300BB8979"
+               BuildableName = "P8-ProductUITests.xctest"
+               BlueprintName = "P8-ProductUITests"
                ReferencedContainer = "container:P8-Product.xcodeproj">
             </BuildableReference>
          </TestableReference>
