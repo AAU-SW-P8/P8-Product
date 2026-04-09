@@ -20,7 +20,7 @@ import SwiftData
 @MainActor
 @Observable
 class CompareAppState {
-    /// 
+    /// Shared selection state for the currently selected person, which is observed across multiple views to maintain a consistent selection.
     @ObservationIgnored private let selectionState = SelectionState.shared
 
     // MARK: - Persistent Data Selection
