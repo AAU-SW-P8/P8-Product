@@ -123,7 +123,7 @@ private struct CompareContentView: View {
                 } else {
                     ScrollView {
                         if scans.count > 1 {
-                            // Dual carousels for top and bottom
+                            // Dual carousels for left and right comparison when multiple scans are available
                             HStack(spacing: 0) {
                                 ImageCarousel(scans: scans, mole: appState.selectedMole, selectedIndex: $appState.selectedIndexTop)
                                     .accessibilityIdentifier("leftCarousel")
@@ -176,9 +176,21 @@ private struct CompareContentView: View {
                         } else {
                             // If only one scan is available, just show a single carousel without the chart, since we can't show evolution with only one data point.
                             HStack(spacing: 0) {
-                                Divider()
                                 ImageCarousel(scans: scans, mole: appState.selectedMole, selectedIndex: $appState.selectedIndexBottom)
+                                    .frame(maxWidth: 420)
+                                    .accessibilityIdentifier("singleCarousel")
                             }
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .fill(Color(.secondarySystemBackground))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                            )
+                            .padding(.horizontal)
+                            .padding(.top, 8)
                         }
                     }
                 }

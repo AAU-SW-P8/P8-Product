@@ -3,7 +3,16 @@ import XCTest
 
 final class Helpers {
 
-	static func personPickerButton(in app: XCUIApplication) -> XCUIElement {
+	static func personPickerButton(
+		in app: XCUIApplication,
+		file: StaticString = #filePath,
+		line: UInt = #line
+	) -> XCUIElement {
+		let identifiedButton = app.buttons["personPicker"]
+		if identifiedButton.exists {
+			return identifiedButton
+		}
+
 		let labels = ["Person", "Alex", "Jordan", "Taylor"]
 
 		for label in labels {
@@ -15,7 +24,8 @@ final class Helpers {
 			}
 		}
 
-		return app.buttons.firstMatch
+		XCTFail("Could not find person picker by accessibility identifier or known labels.", file: file, line: line)
+		return identifiedButton
 	}
 
 	static func molePickerButton(in app: XCUIApplication) -> XCUIElement {

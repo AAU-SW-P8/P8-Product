@@ -26,7 +26,8 @@ final class CompareViewUITests: XCTestCase {
     // MARK: - Navigation & Title
 
     func testCompareTabShowsTitle() {
-        XCTAssertTrue(app.staticTexts["Compare"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Compare"].waitForExistence(timeout: 3),
+                      "Compare tab should show title 'Compare'")
     }
 
     // MARK: - Empty Store
