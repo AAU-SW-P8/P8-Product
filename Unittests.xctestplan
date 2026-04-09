@@ -15,8 +15,8 @@
     {
       "target" : {
         "containerPath" : "container:P8-Product.xcodeproj",
-        "identifier" : "9740A15A2F8688710077935D",
-        "name" : "ChartDataTests"
+        "identifier" : "97C2DB192F6AB3F100454255",
+        "name" : "PipelineTests"
       }
     }
   ],

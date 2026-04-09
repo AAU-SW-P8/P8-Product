@@ -85,17 +85,6 @@
                ReferencedContainer = "container:P8-Product.xcodeproj">
             </BuildableReference>
          </TestableReference>
-         <TestableReference
-            skipped = "NO"
-            parallelizable = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "9740A15A2F8688710077935D"
-               BuildableName = "ChartDataTests.xctest"
-               BlueprintName = "ChartDataTests"
-               ReferencedContainer = "container:P8-Product.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

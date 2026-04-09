@@ -91,7 +91,7 @@ final class CompareViewUITests: XCTestCase {
     }
 
     func testSelectingPersonWithNoScansShowsMakeScanMessage() {
-        // Taylor has no moles with no scans in the mock data.
+        // Taylor only has one mole with no scans in the mock data.
         personPickerButton.tap()
         app.buttons["Taylor"].tap()
 
@@ -306,6 +306,6 @@ final class CompareViewUITests: XCTestCase {
     // Note: per-point chart annotations are not reliably queryable from XCUI
     // because Swift Charts hosts annotation views inside an opaque backing
     // element. Per-point data flow is instead verified by the unit tests in
-    // `Tests/PipelineTests/ChartDataTests.swift`, which exercise
+    // `Tests/PipelineTests/ChartViewDataTests.swift`, which exercise
     // `ChartView.makeChartData(for:metric:)` directly.
 }
