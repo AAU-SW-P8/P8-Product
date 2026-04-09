@@ -30,14 +30,24 @@
 		97C2DB272F6AB49400454255 /* Exceptions for "Tests" folder in "P8-Product" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				PipelineTests/PipelineTests.swift,
+				PipelineTests/SAM3DecoderTests.swift,
+				PipelineTests/SAM3DetectionTests.swift,
+				PipelineTests/SAM3FeatureNamesTests.swift,
+				PipelineTests/SAM3ImagePreprocessorTests.swift,
+				PipelineTests/SAM3ModelsTests.swift,
+				PipelineTests/TestHelpers.swift,
 			);
 			target = F1845EED2F59945F00E27D2B /* P8-Product */;
 		};
 		97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				PipelineTests/PipelineTests.swift,
+				PipelineTests/SAM3DecoderTests.swift,
+				PipelineTests/SAM3DetectionTests.swift,
+				PipelineTests/SAM3FeatureNamesTests.swift,
+				PipelineTests/SAM3ImagePreprocessorTests.swift,
+				PipelineTests/SAM3ModelsTests.swift,
+				PipelineTests/TestHelpers.swift,
 			);
 			target = 97C2DB192F6AB3F100454255 /* PipelineTests */;
 		};
