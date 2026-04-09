@@ -29,7 +29,7 @@ class MoleSegmentationAppState {
     private let dataController: DataController
     private let modelLoader: SAM3ModelLoader = SAM3ModelLoader.shared
     
-    init(dataController: DataController = .shared) {
+    init(dataController: DataController) {
         self.dataController = dataController
     }
     
@@ -47,7 +47,7 @@ class MoleSegmentationAppState {
     }
     
     func resegment() {
-        guard let segmentor: SAM3Segmentor = modelLoader.segmentor, let image = testImage else { return }
+        guard let segmentor = modelLoader.segmentor, let image = testImage else { return }
 
         isProcessing = true
         statusMessage = "Segmenting…"

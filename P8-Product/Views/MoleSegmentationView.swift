@@ -10,7 +10,7 @@ import SwiftData
 struct MoleSegmentationTestView: View {
     @Query(sort: \Person.createdAt)
     private var people: [Person]
-    @State private var AppState: MoleSegmentationAppState = MoleSegmentationAppState()
+    @State private var AppState: MoleSegmentationAppState = MoleSegmentationAppState(dataController: .shared)
 
     // MARK: - UI-Only State (Gestures)
     @State private var currentZoom: Double = 0.0
