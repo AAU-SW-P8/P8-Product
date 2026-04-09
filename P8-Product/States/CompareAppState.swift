@@ -20,6 +20,7 @@ import SwiftData
 @MainActor
 @Observable
 class CompareAppState {
+    /// 
     @ObservationIgnored private let selectionState = SelectionState.shared
 
     // MARK: - Persistent Data Selection

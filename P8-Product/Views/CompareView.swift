@@ -126,10 +126,10 @@ private struct CompareContentView: View {
                             // Dual carousels for top and bottom
                             HStack(spacing: 0) {
                                 ImageCarousel(scans: scans, mole: appState.selectedMole, selectedIndex: $appState.selectedIndexTop)
-                                    .accessibilityIdentifier("topCarousel")
+                                    .accessibilityIdentifier("leftCarousel")
                                 Divider()
                                 ImageCarousel(scans: scans, mole: appState.selectedMole, selectedIndex: $appState.selectedIndexBottom)
-                                    .accessibilityIdentifier("bottomCarousel")
+                                    .accessibilityIdentifier("rightCarousel")
                             }
                             .accessibilityElement(children: .contain)
                             .accessibilityIdentifier("dualCarouselContainer")
