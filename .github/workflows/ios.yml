@@ -73,16 +73,67 @@ jobs:
           name: test-results
           path: |
             /Users/runner/Library/Developer/Xcode/DerivedData/**/Logs/Test/*.xcresult
+      
       - name: Extract videos from xcresult
         if: always()
         run: |
-            mkdir -p ~/Desktop/test-videos
-            for result in $(find /Users/runner/Library/Developer/Xcode/DerivedData -name "*.xcresult"); do
-              xcrun xcresulttool export object --legacy \
-                --path "$result" \
-                --output-path ~/Desktop/test-videos/$(basename $result .xcresult) \
-                --type directory || true
+          set +e
+          mkdir -p ~/Desktop/test-videos
+
+          for result in $(find /Users/runner/Library/Developer/Xcode/DerivedData -name "*.xcresult" 2>/dev/null); do
+            echo "=== Processing: $result ==="
+
+            # Step 1: Get the top-level invocation record (legacy format)
+            top_json=$(xcrun xcresulttool get --legacy --path "$result" --format json 2>/dev/null)
+
+            # Step 2: Extract testsRef IDs from each action
+            tests_ref_ids=$(echo "$top_json" | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          for action in data.get('actions', {}).get('_values', []):
+              ref = action.get('actionResult', {}).get('testsRef', {}).get('id', {}).get('_value')
+              if ref:
+                  print(ref)
+          " 2>/dev/null)
+
+            for tests_ref in $tests_ref_ids; do
+              # Step 3: Get the full test results tree for this ref
+              tests_json=$(xcrun xcresulttool get --legacy \
+                --path "$result" --id "$tests_ref" --format json 2>/dev/null)
+
+              # Step 4: Recursively find all .mp4 attachment payload refs
+              echo "$tests_json" | python3 -c "
+          import json, sys
+
+          def find_mp4_refs(obj):
+              if isinstance(obj, dict):
+                  type_name = obj.get('_type', {}).get('_name', '')
+                  if type_name == 'ActionTestAttachment':
+                      fn = obj.get('filename', {}).get('_value', '')
+                      ref = obj.get('payloadRef', {}).get('id', {}).get('_value', '')
+                      if fn.endswith('.mp4') and ref:
+                          print(f'{ref}\t{fn}')
+                  for v in obj.values():
+                      find_mp4_refs(v)
+              elif isinstance(obj, list):
+                  for item in obj:
+                      find_mp4_refs(item)
+
+          data = json.load(sys.stdin)
+          find_mp4_refs(data)
+          " 2>/dev/null | while IFS=$'\t' read -r ref_id filename; do
+                echo "  Exporting: $filename ($ref_id)"
+                xcrun xcresulttool export --legacy \
+                  --path "$result" \
+                  --id "$ref_id" \
+                  --type file \
+                  --output-path ~/Desktop/test-videos/"$filename" 2>/dev/null || true
+              done
             done
+          done
+
+          echo "=== Videos found ==="
+          find ~/Desktop/test-videos -name "*.mp4" -ls 2>/dev/null || echo "No videos found"
 
       - name: Upload test videos
         if: always()
