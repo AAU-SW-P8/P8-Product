@@ -73,3 +73,20 @@ jobs:
           name: test-results
           path: |
             /Users/runner/Library/Developer/Xcode/DerivedData/**/Logs/Test/*.xcresult
+      - name: Extract videos from xcresult
+        if: always()
+        run: |
+            mkdir -p ~/Desktop/test-videos
+            for result in $(find /Users/runner/Library/Developer/Xcode/DerivedData -name "*.xcresult"); do
+              xcrun xcresulttool export object --legacy \
+                --path "$result" \
+                --output-path ~/Desktop/test-videos/$(basename $result .xcresult) \
+                --type directory || true
+            done
+
+      - name: Upload test videos
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-videos
+          path: ~/Desktop/test-videos/**/*.mp4
