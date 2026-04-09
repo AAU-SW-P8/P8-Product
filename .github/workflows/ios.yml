@@ -27,32 +27,6 @@ jobs:
           echo $default | cat >default
           echo Using default scheme: $default
 
-      - name: Resolve Simulator
-        id: sim
-        run: |
-          if [ -f default ]; then scheme=$(cat default); else scheme="P8-Product"; fi
-
-          # Dump raw output for debugging
-          echo "--- Available destinations ---"
-          xcodebuild -scheme "$scheme" -showdestinations 2>&1 | grep 'iOS Simulator' | grep 'iPhone' || true
-          echo "---"
-
-          # Extract the UUID using grep -oE (more robust than sed)
-          device_id=$(xcodebuild -scheme "$scheme" -showdestinations 2>&1 \
-            | grep 'platform:iOS Simulator' \
-            | grep 'name:iPhone' \
-            | head -1 \
-            | grep -oE 'id:[0-9A-Fa-f-]+' \
-            | cut -d: -f2)
-
-          if [ -z "$device_id" ]; then
-            echo "ERROR: Could not resolve a simulator device ID"
-            exit 1
-          fi
-
-          echo "Resolved simulator ID: $device_id"
-          echo "device_id=$device_id" >> "$GITHUB_OUTPUT"
-
       - name: Build
         env:
           scheme: ${{ 'default' }}
@@ -60,7 +34,7 @@ jobs:
           if [ $scheme = default ]; then scheme=$(cat default); fi
           if [ "`ls -A | grep -i \\.xcworkspace\$`" ]; then filetype_parameter="workspace" && file_to_build="`ls -A | grep -i \\.xcworkspace\$`"; else filetype_parameter="project" && file_to_build="`ls -A | grep -i \\.xcodeproj\$`"; fi
           file_to_build=`echo $file_to_build | awk '{$1=$1;print}'`
-          xcodebuild build-for-testing -scheme "$scheme" -"$filetype_parameter" "$file_to_build" -destination "id=${{ steps.sim.outputs.device_id }}"
+          xcodebuild build-for-testing -scheme "$scheme" -"$filetype_parameter" "$file_to_build" -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=latest'
 
       - name: Test (All Test Plans)
         env:
@@ -89,5 +63,5 @@ jobs:
           -scheme "$scheme" \
           -"$filetype_parameter" "$file_to_build" \
           -testPlan "$plan" \
-          -destination "id=${{ steps.sim.outputs.device_id }}"
+          -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=latest'
           done
