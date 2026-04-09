@@ -4,8 +4,7 @@
 //
 //  Wraps the SAM 3.1 vision encoder model with a one-image cache so that
 //  multiple segmentations on the same photo do not pay the encoding cost
-//  twice. The cache key is `UIImage.hashValue`, which is identity-based —
-//  callers must call `clearCache()` when switching to a fresh photo.
+//  twice.
 //
 
 import CoreML
@@ -25,7 +24,6 @@ final class SAM3VisionEncoder {
     }
 
     /// Encodes the given image, returning the cached output if the same image
-    /// (by `hashValue`) was encoded previously.
     ///
     /// - Important: `UIImage.hashValue` is identity-based, so two distinct
     ///   `UIImage` instances loaded from the same source will not share a
@@ -33,7 +31,7 @@ final class SAM3VisionEncoder {
     func encode(_ image: UIImage) throws -> MLFeatureProvider {
         let imageHash: Int = image.hashValue
         if let cached: MLFeatureProvider = cachedOutput, cachedImageHash == imageHash {
-            print("📦 Using cached vision embeddings")
+            print("Using cached vision embeddings")
             return cached
         }
 
