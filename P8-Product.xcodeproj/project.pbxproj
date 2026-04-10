@@ -46,6 +46,7 @@
 				UITests/ImageCarouselUITests.swift,
 				UITests/ProductUITests.swift,
 				UITests/ProductUITestsLaunchTests.swift,
+				UITests/TabStateUITests.swift,
 			);
 			target = 972E93A72F7BC67300BB8979 /* P8-ProductUITests */;
 		};
@@ -60,9 +61,11 @@
 				SAMPipelineTests/SAM3ModelsTests.swift,
 				SAMPipelineTests/TestHelpers.swift,
 				UITests/CompareViewUITests.swift,
+				UITests/Helpers.swift,
 				UITests/ImageCarouselUITests.swift,
 				UITests/ProductUITests.swift,
 				UITests/ProductUITestsLaunchTests.swift,
+				UITests/TabStateUITests.swift,
 			);
 			target = F1845EED2F59945F00E27D2B /* P8-Product */;
 		};
@@ -75,7 +78,6 @@
 				SAMPipelineTests/SAM3FeatureNamesTests.swift,
 				SAMPipelineTests/SAM3ImagePreprocessorTests.swift,
 				SAMPipelineTests/SAM3ModelsTests.swift,
-				SAMPipelineTests/TestHelpers.swift,
 			);
 			target = 97C2DB192F6AB3F100454255 /* PipelineTests */;
 		};

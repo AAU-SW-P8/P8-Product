@@ -86,8 +86,8 @@ struct ImageCarousel: View {
 
                 if let selectedInstance {
                     VStack(spacing: 2) {
-                        Text("Diameter: \(selectedInstance.diameter, specifier: "%.1f") mm")
-                        Text("Area: \(selectedInstance.area, specifier: "%.1f") mm²")
+                          Text("Diameter: \(Double(selectedInstance.diameter), specifier: "%.1f") mm")
+                        Text("Area: \(Double(selectedInstance.area), specifier: "%.1f") mm²")
                     }
                     .font(.caption2)
                     .fontWeight(.semibold)

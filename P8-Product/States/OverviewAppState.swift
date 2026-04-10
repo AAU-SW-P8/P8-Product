@@ -5,8 +5,14 @@ import UIKit
 @MainActor
 @Observable
 class OverviewAppState {
+    // The selected person is shared across the app through SelectionState, so that both Overview and Compare views stay in sync without needing to pass the selection through the view hierarchy.
+    @ObservationIgnored private let selectionState = SelectionState.shared
+
     // MARK: - Persistent Data Selection
-    var selectedPerson: Person?
+    var selectedPerson: Person? {
+        get { selectionState.selectedPerson }
+        set { selectionState.selectedPerson = newValue }
+    }
     
     // MARK: - UI Flow State
     var showingAddPerson: Bool = false
