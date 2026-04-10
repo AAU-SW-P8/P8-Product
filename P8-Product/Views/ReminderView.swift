@@ -26,68 +26,77 @@ struct ReminderView: View {
             VStack(spacing: 0) {
                 personSelectorView
                 Divider()
-                
-                List {
-                    // A toggle for enabling or disabling reminders for the selected person
-                    Section("Default Reminder Enabled") {
-                        Toggle("Reminder Enabled", isOn: $reminderEnabled)
-                            .onChange(of: reminderEnabled) { _, newValue in
-                                selectedPerson?.defaultReminderEnabled = newValue
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 20) {
+                        sectionContainer(title: "Default Reminder Enabled") {
+                            Toggle("Reminder Enabled", isOn: $reminderEnabled)
+                                .onChange(of: reminderEnabled) { _, newValue in
+                                    selectedPerson?.defaultReminderEnabled = newValue
+                                }
+                        }
+
+                        sectionContainer(title: "Default Reminder Frequency") {
+                            Picker("Frequency", selection: $defaultFrequency) {
+                                Text("Weekly").tag("Weekly")
+                                Text("Monthly").tag("Monthly")
+                                Text("Quarterly").tag("Quarterly")
                             }
-                    }
-                    // A picker for selecting the default reminder frequency for the selected person
-                    Section("Default Reminder Frequency") {
-                        Picker("Frequency", selection: $defaultFrequency) {
-                            Text("Weekly").tag("Weekly")
-                            Text("Monthly").tag("Monthly")
-                            Text("Quarterly").tag("Quarterly")
+                            .pickerStyle(.menu)
+                            .disabled(!reminderEnabled)
+                            .opacity(reminderEnabled ? 1.0 : 0.4)
+                            .onChange(of: defaultFrequency) { _, newValue in
+                                selectedPerson?.defaultReminderFrequency = newValue
+                                updateDefaultFrequencyForFollowDefaultMoles()
+                            }
                         }
-                        .pickerStyle(.menu)
-                        .disabled(!reminderEnabled)
-                        .opacity(reminderEnabled ? 1.0 : 0.4)
-                        .onChange(of: defaultFrequency) { _, newValue in
-                            selectedPerson?.defaultReminderFrequency = newValue
-                            updateDefaultFrequencyForFollowDefaultMoles()
-                        }
-                    }
-                    // List of the upcoming check-ins sorted by the next due date
-                    Section("Upcoming Check-ins") {
-                        if selectedPersonMoles.isEmpty {
-                            Text("No moles for this person")
-                                .foregroundColor(.gray)
-                        } else {
-                            ForEach(selectedPersonMoles) { mole in
-                                VStack(alignment: .leading, spacing: 8) {
-                                    HStack {
-                                        Text("Mole \(mole.name)")
-                                        Spacer()
-                                        if let dueDate = mole.nextDueDate {
-                                            Text(dueDate, format: .dateTime.month().day().hour().minute())
-                                        } else {
-                                            Text("No date set")
+
+                        sectionContainer(title: "Upcoming Check-ins") {
+                            if selectedPersonMoles.isEmpty {
+                                Text("No moles for this person")
+                                    .foregroundColor(.gray)
+                            } else {
+                                VStack(spacing: 16) {
+                                    ForEach(selectedPersonMoles) { mole in
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            HStack {
+                                                Text("Mole \(mole.name)")
+                                                Spacer()
+                                                if let dueDate = mole.nextDueDate {
+                                                    Text(dueDate, format: .dateTime.month().day().hour().minute())
+                                                } else {
+                                                    Text("No date set")
+                                                }
+                                            }
+
+                                            Text("Reminder")
+                                                .font(.subheadline.weight(.semibold))
+                                            reminderModeSelector(for: mole)
+
+                                            HStack {
+                                                Text("Reminder Frequency")
+                                                    .font(.subheadline.weight(.semibold))
+                                                Picker("Frequency", selection: frequencyBinding(for: mole)) {
+                                                    Text("Default").tag("Default")
+                                                    Text("Weekly").tag("Weekly")
+                                                    Text("Monthly").tag("Monthly")
+                                                    Text("Quarterly").tag("Quarterly")
+                                                }
+                                                .pickerStyle(.menu)
+                                                .disabled(!effectiveReminderEnabled(for: mole))
+                                                .opacity(effectiveReminderEnabled(for: mole) ? 1.0 : 0.4)
+                                            }
                                         }
+                                        .padding()
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .background(Color(.systemBackground))
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
                                     }
-
-                                    Text("Reminder")
-                                        .font(.subheadline.weight(.semibold))
-                                    reminderModeSelector(for: mole)
-
-                                    // Individual reminder frequency picker, only enabled if the reminder is active for this mole
-                                    Picker("Frequency", selection: frequencyBinding(for: mole)) {
-                                        Text("Default").tag("Default")
-                                        Text("Weekly").tag("Weekly")
-                                        Text("Monthly").tag("Monthly")
-                                        Text("Quarterly").tag("Quarterly")
-                                    }
-                                    .pickerStyle(.menu)
-                                    .disabled(!effectiveReminderEnabled(for: mole))
-                                    .opacity(effectiveReminderEnabled(for: mole) ? 1.0 : 0.4)
                                 }
                             }
                         }
                     }
+                    .padding()
                 }
-                .listStyle(.plain)
             }
             .onAppear {
                 if selectedPerson == nil {
@@ -105,7 +114,6 @@ struct ReminderView: View {
                 guard newValue != nil else { return }
                 syncSelectionState()
             }
-            .navigationTitle("Reminder")
         }
     }
     
@@ -116,45 +124,72 @@ struct ReminderView: View {
      It shows the name of the currently selected person and has left/right buttons to switch between them.
      */
     private var personSelectorView: some View {
-        HStack {
-            Button(action: selectPreviousPerson) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 30, weight: .bold))
-                    .foregroundColor(.primary)
-                    .frame(width: 44, height: 44)
+        VStack(spacing: 0) {
+            HStack {
+                Text("Reminder")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                Spacer()
             }
-            .disabled(selectedPerson == persons.first)
-            .opacity(selectedPerson == persons.first ? 0.3 : 1.0)
+            .padding(.horizontal)
+            .padding(.top)
+            .padding(.bottom, 4)
+            .background(Color(.systemGray6))
             
-            ZStack {
-                if let person = selectedPerson {
-                    Text(person.name)
-                        .font(.system(size: 18, weight: .semibold))
-                        .lineLimit(1)
+            HStack {
+                Button(action: selectPreviousPerson) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 30, weight: .bold))
                         .foregroundColor(.primary)
-                        .background(Color(.systemGray6))
-                        .id(person)
-                        .transition(.asymmetric(
-                            insertion: .move(edge: slideEdge).combined(with: .opacity),
-                            removal: .move(edge: slideEdge == .leading ? .trailing : .leading).combined(with: .opacity)
-                        ))
+                        .frame(width: 44, height: 44)
                 }
+                .disabled(selectedPerson == persons.first)
+                .opacity(selectedPerson == persons.first ? 0.3 : 1.0)
+
+                ZStack {
+                    if let person = selectedPerson {
+                        Text(person.name)
+                            .font(.system(size: 18, weight: .semibold))
+                            .lineLimit(1)
+                            .foregroundColor(.primary)
+                            .background(Color(.systemGray6))
+                            .id(person)
+                            .transition(.asymmetric(
+                                insertion: .move(edge: slideEdge).combined(with: .opacity),
+                                removal: .move(edge: slideEdge == .leading ? .trailing : .leading).combined(with: .opacity)
+                            ))
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .clipped()
+                
+                Button(action: selectNextPerson) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 30, weight: .bold))
+                        .foregroundColor(.primary)
+                        .frame(width: 44, height: 44)
+                }
+                .disabled(selectedPerson == persons.last)
+                .opacity(selectedPerson == persons.last ? 0.3 : 1.0)
             }
-            .frame(maxWidth: .infinity)
-            .clipped()
-            
-            Button(action: selectNextPerson) {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 30, weight: .bold))
-                    .foregroundColor(.primary)
-                    .frame(width: 44, height: 44)
-            }
-            .disabled(selectedPerson == persons.last)
-            .opacity(selectedPerson == persons.last ? 0.3 : 1.0)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 8)
+            .background(Color(.systemGray6))
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 8)
+    }
+
+
+
+    private func sectionContainer<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.headline)
+            content()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
         .background(Color(.systemGray6))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
     
     // MARK: -Helper Functions

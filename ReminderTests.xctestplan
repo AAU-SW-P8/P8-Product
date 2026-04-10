@@ -1,0 +1,18 @@
+{
+  "configurations" : [
+    {
+      "id" : "4D888383-9E73-42DE-AC45-205D9709511C",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+
+  ],
+  "version" : 1
+}

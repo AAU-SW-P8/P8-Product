@@ -117,6 +117,182 @@ struct ReminderOverviewTest {
         #expect(sorted.map(\.name) == ["First", "Third", "Second"])
     }
 
+    @Test("Reminder mode Enabled sets override and activates reminder")
+    func reminderModeEnabledSetsOverrideAndActive() {
+        let mole = Mole(
+            name: "Mode Mole",
+            bodyPart: "Arm",
+            isReminderActive: false,
+            reminderFrequency: nil,
+            nextDueDate: nil
+        )
+        mole.followDefaultReminderEnabled = true
+
+        applyReminderMode(mole: mole, newValue: "Enabled")
+
+        #expect(mole.followDefaultReminderEnabled == false)
+        #expect(mole.isReminderActive == true)
+    }
+
+    @Test("Reminder mode Disabled sets override and deactivates reminder")
+    func reminderModeDisabledSetsOverrideAndInactive() {
+        let mole = Mole(
+            name: "Mode Mole",
+            bodyPart: "Arm",
+            isReminderActive: true,
+            reminderFrequency: nil,
+            nextDueDate: nil
+        )
+        mole.followDefaultReminderEnabled = true
+
+        applyReminderMode(mole: mole, newValue: "Disabled")
+
+        #expect(mole.followDefaultReminderEnabled == false)
+        #expect(mole.isReminderActive == false)
+    }
+
+    @Test("Reminder mode Follow Default enables follow-default flag")
+    func reminderModeFollowDefaultEnablesFollowDefaultFlag() {
+        let mole = Mole(
+            name: "Mode Mole",
+            bodyPart: "Arm",
+            isReminderActive: false,
+            reminderFrequency: nil,
+            nextDueDate: nil
+        )
+        mole.followDefaultReminderEnabled = false
+
+        applyReminderMode(mole: mole, newValue: "Follow Default")
+
+        #expect(mole.followDefaultReminderEnabled == true)
+    }
+
+    @Test("Effective reminder enabled follows person default when configured")
+    func effectiveReminderEnabledUsesPersonDefaultWhenFollowingDefault() {
+        let mole = Mole(
+            name: "Mole 1",
+            bodyPart: "Arm",
+            isReminderActive: false,
+            reminderFrequency: nil,
+            nextDueDate: nil
+        )
+        mole.followDefaultReminderEnabled = true
+
+        let enabled = effectiveReminderEnabled(mole: mole, reminderEnabled: false)
+
+        #expect(enabled == false)
+    }
+
+    @Test("Effective reminder enabled uses mole override when not following default")
+    func effectiveReminderEnabledUsesMoleOverrideWhenNotFollowingDefault() {
+        let mole = Mole(
+            name: "Mole 1",
+            bodyPart: "Arm",
+            isReminderActive: true,
+            reminderFrequency: nil,
+            nextDueDate: nil
+        )
+        mole.followDefaultReminderEnabled = false
+
+        let enabled = effectiveReminderEnabled(mole: mole, reminderEnabled: false)
+
+        #expect(enabled == true)
+    }
+
+    @Test("Default frequency update only reapplies to follow-default moles")
+    func defaultFrequencyReappliesOnlyToFollowDefaultMoles() {
+        let person = Person(name: "Alex", defaultReminderFrequency: "Quarterly")
+        let lastCheckIn = Date(timeIntervalSinceNow: -3 * 24 * 60 * 60)
+
+        let followDefaultMole = makeMole(lastCheckIn: lastCheckIn)
+        followDefaultMole.followDefault = true
+        followDefaultMole.reminderFrequency = nil
+
+        let customMole = makeMole(lastCheckIn: lastCheckIn)
+        customMole.followDefault = false
+        customMole.reminderFrequency = .weekly
+
+        let beforeCustomDue = customMole.nextDueDate
+
+        applyDefaultFrequencyForFollowDefaultMoles(
+            moles: [followDefaultMole, customMole],
+            selectedPerson: person,
+            now: Date()
+        )
+
+        #expect(followDefaultMole.nextDueDate != nil)
+        #expect(customMole.reminderFrequency == .weekly)
+        #expect(customMole.nextDueDate == beforeCustomDue)
+    }
+
+    @Test("Selecting previous person moves one step when possible")
+    func selectPreviousPersonMovesOneStep() {
+        let first = Person(name: "A")
+        let second = Person(name: "B")
+        let third = Person(name: "C")
+        let people = [first, second, third]
+
+        let result = selectPreviousPerson(current: second, persons: people)
+
+        #expect(result.selectedPerson?.name == "A")
+        #expect(result.slideEdge == "leading")
+    }
+
+    @Test("Selecting next person moves one step when possible")
+    func selectNextPersonMovesOneStep() {
+        let first = Person(name: "A")
+        let second = Person(name: "B")
+        let third = Person(name: "C")
+        let people = [first, second, third]
+
+        let result = selectNextPerson(current: second, persons: people)
+
+        #expect(result.selectedPerson?.name == "C")
+        #expect(result.slideEdge == "trailing")
+    }
+
+    @Test("Sync state copies selected person's defaults")
+    func syncSelectionStateCopiesDefaults() {
+        let person = Person(
+            name: "Alex",
+            defaultReminderFrequency: "Monthly",
+            defaultReminderEnabled: false
+        )
+
+        let synced = syncSelectionState(selectedPerson: person)
+
+        #expect(synced?.reminderEnabled == false)
+        #expect(synced?.defaultFrequency == "Monthly")
+    }
+
+    @Test("Mole display frequency returns Default when following default")
+    func moleDisplayFrequencyUsesDefaultLabelWhenFollowingDefault() {
+        let mole = Mole(
+            name: "Mole 1",
+            bodyPart: "Arm",
+            isReminderActive: true,
+            reminderFrequency: .monthly,
+            nextDueDate: nil
+        )
+        mole.followDefault = true
+
+        #expect(displayFrequency(for: mole) == "Default")
+    }
+
+    @Test("Mole display frequency maps enum values")
+    func moleDisplayFrequencyMapsEnumValues() {
+        let weekly = Mole(name: "W", bodyPart: "Arm", isReminderActive: true, reminderFrequency: .weekly, nextDueDate: nil)
+        weekly.followDefault = false
+        let monthly = Mole(name: "M", bodyPart: "Arm", isReminderActive: true, reminderFrequency: .monthly, nextDueDate: nil)
+        monthly.followDefault = false
+        let quarterly = Mole(name: "Q", bodyPart: "Arm", isReminderActive: true, reminderFrequency: .quarterly, nextDueDate: nil)
+        quarterly.followDefault = false
+
+        #expect(displayFrequency(for: weekly) == "Weekly")
+        #expect(displayFrequency(for: monthly) == "Monthly")
+        #expect(displayFrequency(for: quarterly) == "Quarterly")
+    }
+
     private func makeMole(lastCheckIn: Date) -> Mole {
         let scan = MoleScan(captureDate: lastCheckIn)
         let instance = MoleInstance(diameter: 2, area: 4, moleScan: scan)
@@ -172,6 +348,66 @@ struct ReminderOverviewTest {
         mole.nextDueDate = max(now, nextDueDate ?? now)
     }
 
+    /// Mirrors ReminderView's reminder mode update side effects.
+    private func applyReminderMode(mole: Mole, newValue: String) {
+        switch newValue {
+        case "Enabled":
+            mole.followDefaultReminderEnabled = false
+            mole.isReminderActive = true
+        case "Disabled":
+            mole.followDefaultReminderEnabled = false
+            mole.isReminderActive = false
+        default:
+            mole.followDefaultReminderEnabled = true
+        }
+    }
+
+    /// Mirrors ReminderView's effective reminder enabled logic.
+    private func effectiveReminderEnabled(mole: Mole, reminderEnabled: Bool) -> Bool {
+        if mole.followDefaultReminderEnabled ?? true {
+            return reminderEnabled
+        }
+        return mole.isReminderActive
+    }
+
+    /// Mirrors ReminderView's default-frequency propagation for follow-default moles.
+    private func applyDefaultFrequencyForFollowDefaultMoles(
+        moles: [Mole],
+        selectedPerson: Person?,
+        now: Date
+    ) {
+        for mole in moles where mole.followDefault ?? true {
+            applyReminderUpdate(
+                mole: mole,
+                selectedPerson: selectedPerson,
+                frequencyLabel: "Default",
+                now: now
+            )
+        }
+    }
+
+    /// Mirrors ReminderView's previous person selection behavior.
+    private func selectPreviousPerson(current: Person?, persons: [Person]) -> (selectedPerson: Person?, slideEdge: String?) {
+        guard let current, let index = persons.firstIndex(of: current), index > 0 else {
+            return (current, nil)
+        }
+        return (persons[index - 1], "leading")
+    }
+
+    /// Mirrors ReminderView's next person selection behavior.
+    private func selectNextPerson(current: Person?, persons: [Person]) -> (selectedPerson: Person?, slideEdge: String?) {
+        guard let current, let index = persons.firstIndex(of: current), index < persons.count - 1 else {
+            return (current, nil)
+        }
+        return (persons[index + 1], "trailing")
+    }
+
+    /// Mirrors ReminderView's UI state sync from selected person.
+    private func syncSelectionState(selectedPerson: Person?) -> (reminderEnabled: Bool, defaultFrequency: String)? {
+        guard let person = selectedPerson else { return nil }
+        return (person.defaultReminderEnabled, displayFrequency(for: person))
+    }
+
     private func displayFrequency(for person: Person) -> String {
         switch person.defaultReminderFrequency.lowercased() {
         case "weekly":
@@ -183,6 +419,24 @@ struct ReminderOverviewTest {
         default:
             return "Weekly"
         }
+    }
+
+    private func displayFrequency(for mole: Mole) -> String {
+        if mole.followDefault ?? true {
+            return "Default"
+        }
+        if let reminderFrequency = mole.reminderFrequency {
+            switch reminderFrequency {
+            case .weekly:
+                return "Weekly"
+            case .monthly:
+                return "Monthly"
+            case .quarterly:
+                return "Quarterly"
+            }
+        }
+
+        return "Default"
     }
 
     private func isSameMinute(_ lhs: Date, _ rhs: Date) -> Bool {
