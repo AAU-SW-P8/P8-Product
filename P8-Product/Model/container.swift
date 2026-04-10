@@ -90,8 +90,9 @@ class DataController {
         // process that does not inherit `XCTestConfigurationFilePath`, so we also
         // honor an explicit launch argument to force an in-memory store.
         let isTesting = ProcessInfo.processInfo.environment["CI"] == "true" ||
-                        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil ||
-                        ProcessInfo.processInfo.arguments.contains("-UITest_EmptyStore")
+                ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil ||
+                ProcessInfo.processInfo.arguments.contains("-UITest_EmptyStore") ||
+                ProcessInfo.processInfo.arguments.contains("-UITest_InMemoryStore")
 
         let config: ModelConfiguration
         if isTesting {
