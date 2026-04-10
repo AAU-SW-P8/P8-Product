@@ -13,6 +13,7 @@ final class TabStateUITests: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchArguments.append("-UITest_InMemoryStore")
+        app.launchArguments.append("-SkipModelLoading")
         app.launch()
     }
 

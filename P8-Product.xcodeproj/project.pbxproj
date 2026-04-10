@@ -43,6 +43,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				UITests/CompareViewUITests.swift,
+				UITests/Helpers.swift,
 				UITests/ImageCarouselUITests.swift,
 				UITests/ProductUITests.swift,
 				UITests/ProductUITestsLaunchTests.swift,
@@ -78,6 +79,7 @@
 				SAMPipelineTests/SAM3FeatureNamesTests.swift,
 				SAMPipelineTests/SAM3ImagePreprocessorTests.swift,
 				SAMPipelineTests/SAM3ModelsTests.swift,
+				SAMPipelineTests/TestHelpers.swift,
 			);
 			target = 97C2DB192F6AB3F100454255 /* PipelineTests */;
 		};
