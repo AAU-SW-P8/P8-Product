@@ -145,8 +145,8 @@ private struct OverviewContentView: View {
         ZStack {
             if let person: Person = appState.selectedPerson {
                 List {
-                    ForEach(person.moles) { (mole: Mole) in
-                        NavigationLink(destination: Text("Details for \(mole.name)")) {
+                    ForEach(person.moles) { mole in
+                        NavigationLink(destination: MoleDetailView(mole: mole)) {
                             moleRow(for: mole)
                         }
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -195,7 +195,7 @@ private struct OverviewContentView: View {
                     Text(mole.name)
                         .font(.system(size: 20, weight: .semibold))
                     if mole.isReminderActive {
-                        Image(systemName: "flag.fill")
+                        Image(systemName: "bell.fill")
                             .foregroundColor(.orange)
                     }
                 }
