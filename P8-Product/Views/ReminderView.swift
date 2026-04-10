@@ -27,14 +27,14 @@ struct ReminderView: View {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 20) {
                         sectionContainer(title: "Default Reminder Enabled") {
-                            Toggle("Reminder Enabled", isOn: $reminderEnabled)
+                            Toggle("Reminder Enabled", isOn: $appState.reminderEnabled)
                                 .onChange(of: reminderEnabled) { _, newValue in
                                     appState.selectedPerson?.defaultReminderEnabled = newValue
                                 }
                         }
 
                         sectionContainer(title: "Default Reminder Frequency") {
-                            Picker("Frequency", selection: $defaultFrequency) {
+                            Picker("Frequency", selection: $appState.defaultFrequency) {
                                 Text("Weekly").tag("Weekly")
                                 Text("Monthly").tag("Monthly")
                                 Text("Quarterly").tag("Quarterly")
@@ -42,7 +42,7 @@ struct ReminderView: View {
                             .pickerStyle(.menu)
                             .disabled(!reminderEnabled)
                             .opacity(reminderEnabled ? 1.0 : 0.4)
-                            .onChange(of: defaultFrequency) { _, newValue in
+                            .onChange(of: appState.defaultFrequency) { _, newValue in
                                 appState.selectedPerson?.defaultReminderFrequency = newValue
                                 updateDefaultFrequencyForFollowDefaultMoles()
                             }
@@ -100,17 +100,17 @@ struct ReminderView: View {
                 if appState.selectedPerson == nil {
                     appState.selectedPerson = people.first
                 }
-                syncSelectionState()
+                appState.syncSelectionState()
             }
             .onChange(of: people) { _, newValue in
                 if appState.selectedPerson == nil, let first = newValue.first {
                     appState.selectedPerson = first
                 }
-                syncSelectionState()
+                appState.syncSelectionState()
             }
             .onChange(of: appState.selectedPerson) { _, newValue in
                 guard newValue != nil else { return }
-                syncSelectionState()
+                appState.syncSelectionState()
             }
         }
     }
@@ -285,25 +285,6 @@ struct ReminderView: View {
     }
 
     /**
-     Converts a person's stored default frequency to a display label.
-
-     - Parameter person: The person whose default frequency is displayed.
-     - Returns: `Weekly`, `Monthly`, or `Quarterly`.
-     */
-    private func displayFrequency(for person: Person) -> String {
-        switch person.defaultReminderFrequency.lowercased() {
-        case "weekly":
-            return "Weekly"
-        case "monthly":
-            return "Monthly"
-        case "quarterly":
-            return "Quarterly"
-        default:
-            return "Weekly"
-        }
-    }
-
-    /**
      Converts a mole's reminder frequency state to the picker label.
 
      - Parameter mole: The mole whose frequency selection is displayed.
@@ -345,7 +326,7 @@ struct ReminderView: View {
 
         let effectiveFrequencyLabel: String
         if frequencyLabel == "Default", let person = appState.selectedPerson {
-            effectiveFrequencyLabel = displayFrequency(for: person)
+            effectiveFrequencyLabel = appState.displayFrequency(for: person)
         } else {
             effectiveFrequencyLabel = frequencyLabel
         }
@@ -376,14 +357,5 @@ struct ReminderView: View {
         for mole in selectedPersonMoles where mole.followDefault ?? true {
             updateReminder(for: mole, frequencyLabel: "Default")
         }
-    }
-
-    /**
-     Syncs local UI state from the currently selected person.
-     */
-    private func syncSelectionState() {
-        guard let person = appState.selectedPerson else { return }
-        reminderEnabled = person.defaultReminderEnabled
-        defaultFrequency = displayFrequency(for: person)
     }
 }

@@ -63,4 +63,33 @@ class ReminderAppState {
         }
     }
 
+    /**
+     Syncs local UI state from the currently selected person.
+     */
+    func syncSelectionState() {
+        guard let person = selectedPerson else { return }
+        reminderEnabled = person.defaultReminderEnabled
+        defaultFrequency = displayFrequency(for: person)
+    }
+
+
+    /**
+     Converts a person's stored default frequency to a display label.
+
+     - Parameter person: The person whose default frequency is displayed.
+     - Returns: `Weekly`, `Monthly`, or `Quarterly`.
+     */
+    func displayFrequency(for person: Person) -> String {
+        switch person.defaultReminderFrequency.lowercased() {
+        case "weekly":
+            return "Weekly"
+        case "monthly":
+            return "Monthly"
+        case "quarterly":
+            return "Quarterly"
+        default:
+            return "Weekly"
+        }
+    }
+
 }
