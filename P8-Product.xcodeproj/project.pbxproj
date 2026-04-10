@@ -20,27 +20,6 @@
 			remoteGlobalIDString = F1845EED2F59945F00E27D2B;
 			remoteInfo = "P8-Product";
 		};
-		9740A0DF2F867E640077935D /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = F1845EE62F59945F00E27D2B /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = F1845EED2F59945F00E27D2B;
-			remoteInfo = "P8-Product";
-		};
-		9740A0EC2F867EB50077935D /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = F1845EE62F59945F00E27D2B /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = F1845EED2F59945F00E27D2B;
-			remoteInfo = "P8-Product";
-		};
-		9740A0FB2F867EE20077935D /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = F1845EE62F59945F00E27D2B /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = F1845EED2F59945F00E27D2B;
-			remoteInfo = "P8-Product";
-		};
 		9740A1082F867F300077935D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = F1845EE62F59945F00E27D2B /* Project object */;
@@ -59,8 +38,8 @@
 
 /* Begin PBXFileReference section */
 		972E93A82F7BC67300BB8979 /* P8-ProductUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "P8-ProductUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		97BFEFF92F7BC99800C9495F /* UITests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = UITests.xctestplan; sourceTree = "<group>"; };
 		9740A1042F867F300077935D /* ReminderOverview.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ReminderOverview.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		97BFEFF92F7BC99800C9495F /* UITests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = UITests.xctestplan; sourceTree = "<group>"; };
 		97C2DB142F6AB39500454255 /* Unittests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = Unittests.xctestplan; sourceTree = "<group>"; };
 		97C2DB1A2F6AB3F100454255 /* PipelineTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PipelineTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		97D066402F8657A700FB4C0B /* Alltests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = Alltests.xctestplan; sourceTree = "<group>"; };
@@ -128,27 +107,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		9740A0D82F867E640077935D /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		9740A0E52F867EB50077935D /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		9740A0F42F867EE20077935D /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		9740A1012F867F300077935D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -187,7 +145,6 @@
 			);
 			sourceTree = "<group>";
 		};
-		//TODO
 		F1845EEF2F59945F00E27D2B /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -303,18 +260,6 @@
 						CreatedOnToolsVersion = 26.3;
 						TestTargetID = F1845EED2F59945F00E27D2B;
 					};
-					9740A0DA2F867E640077935D = {
-						CreatedOnToolsVersion = 26.3;
-						TestTargetID = F1845EED2F59945F00E27D2B;
-					};
-					9740A0E72F867EB50077935D = {
-						CreatedOnToolsVersion = 26.3;
-						TestTargetID = F1845EED2F59945F00E27D2B;
-					};
-					9740A0F62F867EE20077935D = {
-						CreatedOnToolsVersion = 26.3;
-						TestTargetID = F1845EED2F59945F00E27D2B;
-					};
 					9740A1032F867F300077935D = {
 						CreatedOnToolsVersion = 26.3;
 						TestTargetID = F1845EED2F59945F00E27D2B;
@@ -358,27 +303,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		9740A0D92F867E640077935D /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		9740A0E62F867EB50077935D /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		9740A0F52F867EE20077935D /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		9740A1022F867F300077935D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -413,27 +337,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		9740A0D72F867E640077935D /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		9740A0E42F867EB50077935D /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		9740A0F32F867EE20077935D /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		9740A1002F867F300077935D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -462,21 +365,6 @@
 			isa = PBXTargetDependency;
 			target = F1845EED2F59945F00E27D2B /* P8-Product */;
 			targetProxy = 972E93AE2F7BC67300BB8979 /* PBXContainerItemProxy */;
-		};
-		9740A0E02F867E640077935D /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = F1845EED2F59945F00E27D2B /* P8-Product */;
-			targetProxy = 9740A0DF2F867E640077935D /* PBXContainerItemProxy */;
-		};
-		9740A0ED2F867EB50077935D /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = F1845EED2F59945F00E27D2B /* P8-Product */;
-			targetProxy = 9740A0EC2F867EB50077935D /* PBXContainerItemProxy */;
-		};
-		9740A0FC2F867EE20077935D /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = F1845EED2F59945F00E27D2B /* P8-Product */;
-			targetProxy = 9740A0FB2F867EE20077935D /* PBXContainerItemProxy */;
 		};
 		9740A1092F867F300077935D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

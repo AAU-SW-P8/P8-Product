@@ -7,17 +7,15 @@ import SwiftUI
 import SwiftData
 
 struct ReminderView: View {
-    @Query(sort: \Person.createdAt) private var persons: [Person]
-    @State private var selectedPerson: Person?
-    @State private var reminderEnabled = true
-    @State private var defaultFrequency = "Weekly"
-    @State private var slideEdge: Edge = .trailing
     
+    @State private var appState = ReminderAppState(dataController: .shared)
+    @Query(sort: \Person.createdAt) var people: [Person]
+
     /**
      The list of moles for the currently selected person, sorted by the next due date with nils at the end.
      */
     private var selectedPersonMoles: [Mole] {
-        guard let selectedPerson = selectedPerson else { return [] }
+        guard let selectedPerson = appState.selectedPerson else { return [] }
         return selectedPerson.moles.sorted { $0.nextDueDate ?? Date.distantFuture < $1.nextDueDate ?? Date.distantFuture }
     }
     
@@ -31,7 +29,7 @@ struct ReminderView: View {
                         sectionContainer(title: "Default Reminder Enabled") {
                             Toggle("Reminder Enabled", isOn: $reminderEnabled)
                                 .onChange(of: reminderEnabled) { _, newValue in
-                                    selectedPerson?.defaultReminderEnabled = newValue
+                                    appState.selectedPerson?.defaultReminderEnabled = newValue
                                 }
                         }
 
@@ -45,7 +43,7 @@ struct ReminderView: View {
                             .disabled(!reminderEnabled)
                             .opacity(reminderEnabled ? 1.0 : 0.4)
                             .onChange(of: defaultFrequency) { _, newValue in
-                                selectedPerson?.defaultReminderFrequency = newValue
+                                appState.selectedPerson?.defaultReminderFrequency = newValue
                                 updateDefaultFrequencyForFollowDefaultMoles()
                             }
                         }
@@ -99,18 +97,18 @@ struct ReminderView: View {
                 }
             }
             .onAppear {
-                if selectedPerson == nil {
-                    selectedPerson = persons.first
+                if appState.selectedPerson == nil {
+                    appState.selectedPerson = people.first
                 }
                 syncSelectionState()
             }
-            .onChange(of: persons) { _, newValue in
-                if selectedPerson == nil, let first = newValue.first {
-                    selectedPerson = first
+            .onChange(of: people) { _, newValue in
+                if appState.selectedPerson == nil, let first = newValue.first {
+                    appState.selectedPerson = first
                 }
                 syncSelectionState()
             }
-            .onChange(of: selectedPerson) { _, newValue in
+            .onChange(of: appState.selectedPerson) { _, newValue in
                 guard newValue != nil else { return }
                 syncSelectionState()
             }
@@ -137,17 +135,17 @@ struct ReminderView: View {
             .background(Color(.systemGray6))
             
             HStack {
-                Button(action: selectPreviousPerson) {
+                Button(action: { appState.selectPreviousPerson(from: people) }) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 30, weight: .bold))
                         .foregroundColor(.primary)
                         .frame(width: 44, height: 44)
                 }
-                .disabled(selectedPerson == persons.first)
-                .opacity(selectedPerson == persons.first ? 0.3 : 1.0)
+                .disabled(appState.selectedPerson == people.first)
+                .opacity(appState.selectedPerson == people.first ? 0.3 : 1.0)
 
                 ZStack {
-                    if let person = selectedPerson {
+                    if let person = appState.selectedPerson {
                         Text(person.name)
                             .font(.system(size: 18, weight: .semibold))
                             .lineLimit(1)
@@ -163,14 +161,14 @@ struct ReminderView: View {
                 .frame(maxWidth: .infinity)
                 .clipped()
                 
-                Button(action: selectNextPerson) {
+                Button(action: { appState.selectNextPerson(from: people) }) {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 30, weight: .bold))
                         .foregroundColor(.primary)
                         .frame(width: 44, height: 44)
                 }
-                .disabled(selectedPerson == persons.last)
-                .opacity(selectedPerson == persons.last ? 0.3 : 1.0)
+                .disabled(appState.selectedPerson == people.last)
+                .opacity(appState.selectedPerson == people.last ? 0.3 : 1.0)
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 8)
@@ -193,26 +191,6 @@ struct ReminderView: View {
     }
     
     // MARK: -Helper Functions
-    /**
-     Selects the previous person in `persons` and animates the transition.
-     */
-    private func selectPreviousPerson() {
-        guard let current = selectedPerson, let index = persons.firstIndex(of: current), index > 0 else { return }
-        slideEdge = .leading
-        withAnimation {
-            selectedPerson = persons[index - 1]
-        }
-    }
-    /**
-     Selects the next person in `persons` and animates the transition.
-     */
-    private func selectNextPerson() {
-        guard let current = selectedPerson, let index = persons.firstIndex(of: current), index < persons.count - 1 else { return }
-        slideEdge = .trailing
-        withAnimation {
-            selectedPerson = persons[index + 1]
-        }
-    }
 
     /**
      Creates a two-way binding between a mole and the frequency label used by the picker.
@@ -366,7 +344,7 @@ struct ReminderView: View {
         }
 
         let effectiveFrequencyLabel: String
-        if frequencyLabel == "Default", let person = selectedPerson {
+        if frequencyLabel == "Default", let person = appState.selectedPerson {
             effectiveFrequencyLabel = displayFrequency(for: person)
         } else {
             effectiveFrequencyLabel = frequencyLabel
@@ -404,7 +382,7 @@ struct ReminderView: View {
      Syncs local UI state from the currently selected person.
      */
     private func syncSelectionState() {
-        guard let person = selectedPerson else { return }
+        guard let person = appState.selectedPerson else { return }
         reminderEnabled = person.defaultReminderEnabled
         defaultFrequency = displayFrequency(for: person)
     }
