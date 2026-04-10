@@ -11,7 +11,19 @@ jobs:
     runs-on: macos-26
 
     steps:
-      - name: Checkout
+      - name: Display runner information
+        run: |
+          echo "cpu-core:       $(sysctl -n hw.ncpu)"
+          echo "cpu-model:      $(sysctl -n machdep.cpu.brand_string)"
+          echo "hostname:       $(hostname)"
+          echo "kernel-release: $(uname -r)"
+          echo "kernel-version: $(uname -v)"
+          echo "name:           $(sw_vers -productName)"
+          echo "platform:       $(uname -s)"
+          echo "release:        $(sw_vers -productVersion)"
+          echo "total-memory:   $(sysctl -n hw.memsize)"
+      
+      - name: Checkout repository
         uses: actions/checkout@v6
         with:
           submodules: recursive
@@ -27,7 +39,7 @@ jobs:
           echo $default | cat >default
           echo Using default scheme: $default
 
-      - name: Build
+      - name: Build project
         env:
           scheme: ${{ 'default' }}
         run: |
@@ -53,15 +65,17 @@ jobs:
 
           file_to_build=$(echo $file_to_build | awk '{$1=$1;print}')
 
-          echo "Finding test plans..."
+          echo "Running Alltests test plan..."
+          xcodebuild test-without-building \
+            -scheme "$scheme" \
+            -"$filetype_parameter" "$file_to_build" \
+            -testPlan "Alltests" \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=latest'
 
-          testplans=$(find . -name "*.xctestplan" -exec basename {} .xctestplan \;)
-
-          for plan in $testplans; do
-            echo "Running test plan: $plan"
-            xcodebuild test-without-building \
-          -scheme "$scheme" \
-          -"$filetype_parameter" "$file_to_build" \
-          -testPlan "$plan" \
-          -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=latest'
-          done
+      - name: Upload xcresult artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: |
+            ~/Library/Developer/Xcode/DerivedData/**/Logs/Test/*.xcresult
