@@ -35,6 +35,13 @@ class MoleSegmentationAppState {
     
     // MARK: - ML Logic
     
+    /**
+     Starts the segmentation flow. 
+     If no people exist, shows an error alert. 
+     If exactly one person exists, selects that person and starts segmentation immediately. 
+     If multiple people exist, shows a person picker dialog.
+     - Parameter people: The current list of people to determine the flow.
+     */
     func startSegmentationFlow(people: [Person]) {
         if people.isEmpty {
             activeAlert = .error("Please add a person in the Overview first.")
@@ -46,6 +53,13 @@ class MoleSegmentationAppState {
         }
     }
     
+    /**
+     Performs the segmentation using the loaded model. Updates the UI state with the results or any errors.
+     Uses the current `testImage`, `confidenceThreshold`, and `nmsThreshold` values for the segmentation.
+     Updates `maskOverlay`, `detectedBoxes`, and `statusMessage` based on the outcome.
+     Sets `isProcessing` to true while the segmentation is running, and false when it completes or fails.
+     Handles errors by showing an alert with the error message.
+     */
     func resegment() {
         guard let segmentor = modelLoader.segmentor, let image = testImage else { return }
 
@@ -74,6 +88,12 @@ class MoleSegmentationAppState {
         }
     }
     
+    /**
+     Clears the current segmentation results and resets related state. 
+     Also clears the segmentor's cache to free up memory.
+     Updates `maskOverlay`, `detectedBoxes`, `selectedPersonForScan`, and `statusMessage` to reflect the cleared state.
+     Should be called when the user wants to start fresh or after saving a scan.
+     */
     func clearSegmentation() {
         maskOverlay = nil
         detectedBoxes = []
@@ -84,6 +104,13 @@ class MoleSegmentationAppState {
     
     // MARK: - Data Saving Logic
     
+    /**
+     Handles the logic for when a new mole is selected to be added. 
+     Validates that a person, image, and box are selected. 
+     Crops the image to the selected box and adds it as a new mole and scan to the selected person via the `DataController`. 
+     Updates the `statusMessage` and shows a success alert upon completion.
+     Should be called when confirming the addition of a new mole after segmentation.
+     */
     func handleNewMoleSelection() {
         guard let person: Person = selectedPersonForScan, let image: UIImage = testImage, let box: CGRect = selectedBoxForMole else { return }
         if let cropped: UIImage = cropImage(image, to: box) {
@@ -93,6 +120,14 @@ class MoleSegmentationAppState {
         }
     }
     
+    /**
+     Handles the logic for when an existing mole is selected to add a new scan to. 
+     Validates that a mole, image, and box are selected. 
+     Crops the image to the selected box and adds it as a new scan to the selected mole via the `DataController`. 
+     Updates the `statusMessage` and shows a success alert upon completion.
+     Should be called when confirming the addition of a scan to an existing mole after segmentation.
+     - Parameter mole: The existing mole to which the new scan should be added.
+     */
     func handleExistingMoleSelection(mole: Mole) {
         guard let image: UIImage = testImage, let box: CGRect = selectedBoxForMole else { return }
         
@@ -108,7 +143,15 @@ class MoleSegmentationAppState {
         }
     }
     
-    // Helper to extract the cropping logic away from the View
+    /**
+     Crops the given image to the specified box with some padding, ensuring the crop stays within the image bounds. 
+     Uses `UIGraphicsImageRenderer` for efficient cropping while maintaining the original image's scale. 
+     Returns the cropped image or nil if cropping fails.
+     - Parameters:
+        - image: The original UIImage to be cropped.
+        - box: The CGRect defining the area to crop, in the coordinate space of the original image.
+     - Returns: A new UIImage that is cropped to the specified box, or nil if cropping fails.
+     */
     private func cropImage(_ image: UIImage, to box: CGRect) -> UIImage? {
         let padding: CGFloat = 20.0
         var cropRect: CGRect = box.insetBy(dx: -padding, dy: -padding)
@@ -125,6 +168,13 @@ class MoleSegmentationAppState {
 
     // MARK: - Alert State Helper
     
+    /**
+     An enum representing the state of an alert to be shown in the UI. 
+     Can represent either an error or a success message, each with an associated string message. 
+     Conforms to `Identifiable` to be used with SwiftUI's alert system, using a unique ID based on the type and content of the message.
+     Provides computed properties for the alert title and message to simplify alert presentation in the UI.
+     Should be used to represent any user-facing messages that need to be shown as alerts, such as errors during segmentation or confirmations of successful saves.
+     */
     enum AlertState: Identifiable {
         case error(String)
         case success(String)
