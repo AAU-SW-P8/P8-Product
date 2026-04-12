@@ -18,7 +18,7 @@ final class CompareViewUITests: XCTestCase {
         app = XCUIApplication()
         app.launchArguments.append("-SkipModelLoading")
         app.launchArguments.append("-UITest_InMemoryStore")
-        app.launch()
+        app.launchForUITests()
 
         // Navigate to the Compare tab
         Helpers.openCompareTab(in: app)
