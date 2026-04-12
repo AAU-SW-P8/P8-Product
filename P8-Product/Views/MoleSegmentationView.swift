@@ -2,11 +2,15 @@
 //  MoleSegmentationView.swift
 //  P8-Product
 //
-//  Created by Simon Thordal on 3/24/26.
-//
+
 import SwiftUI
 import SwiftData
 
+/**
+ A SwiftUI view for testing and demonstrating the mole segmentation functionality using the SAM 3.1 model. 
+ Displays a test image, allows the user to run segmentation, and shows the results with interactive bounding boxes. 
+ Provides controls for adjusting detection parameters and handles the flow of selecting a person and adding new moles or scans based on the segmentation results.
+ */
 struct MoleSegmentationTestView: View {
     @Query(sort: \Person.createdAt)
     private var people: [Person]
@@ -69,7 +73,14 @@ struct MoleSegmentationTestView: View {
 
     // MARK: - Image layer
 
-    /// Renders the base image with the mask overlay composited on top.
+    /**
+     A view builder that renders the main image content, including the original image, the segmentation mask overlay, and interactive bounding boxes. 
+     Uses a `GeometryReader` to handle scaling and positioning of the image and overlays. 
+     Applies zoom and pan gestures to allow the user to explore the image in detail. 
+     The bounding boxes are rendered as transparent rectangles that can be long-pressed to trigger actions for adding new moles or scans.
+     - Parameter image: The original UIImage to be displayed and annotated with segmentation results.
+     - Returns: A view containing the image with overlays and interactive elements.
+     */
     @ViewBuilder
     private func imageContent(image: UIImage) -> some View {
         GeometryReader { geometry in
@@ -183,7 +194,13 @@ struct MoleSegmentationTestView: View {
 
     // MARK: - Supporting views
 
-    /// A sheet containing controls for confidence and NMS thresholds.
+    /**
+     A view builder that renders the settings sheet for adjusting detection parameters. 
+     Provides sliders for confidence threshold and NMS overlap threshold, along with explanatory text. 
+     The settings are bound to static properties on `AppState` to allow real-time adjustments that affect the segmentation results. 
+     Should be presented as a sheet when the user taps the "Settings" button in the toolbar.
+     - Returns: A view containing controls for adjusting segmentation parameters.
+     */
     private var settingsSheet: some View {
         NavigationStack {
             List {
@@ -225,7 +242,11 @@ struct MoleSegmentationTestView: View {
         }
     }
 
-    /// Full-screen overlay shown while loading or segmenting.
+    /**
+     A view builder that renders a full-screen overlay shown while loading or segmenting. 
+     Displays a progress indicator and a status message to inform the user about the current operation. 
+     - Returns: A view containing the loading overlay.
+     */
     private var loadingOverlay: some View {
         ZStack {
             Color.black.opacity(0.3).ignoresSafeArea()
@@ -241,7 +262,11 @@ struct MoleSegmentationTestView: View {
         }
     }
 
-    /// Shown in place of the image when `testImage` is `nil`.
+    /**
+     A view builder that renders a placeholder image when no test image is available. 
+     Displays a photo icon and a message indicating that no test image was found. 
+     - Returns: A view containing the placeholder content.
+     */
     private var noImagePlaceholder: some View {
         VStack(spacing: 20) {
             Image(systemName: "photo")
@@ -257,7 +282,13 @@ struct MoleSegmentationTestView: View {
         }
     }
 
-    /// Navigation bar buttons.
+    /**
+     A view builder that renders the toolbar content for the navigation bar. 
+     Provides buttons for opening settings, starting segmentation, and clearing results. 
+     The buttons are disabled based on the processing state to prevent conflicting actions. 
+     Should be included in the navigation bar of the main view.
+     - Returns: A view containing the toolbar items.
+     */
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .navigationBarTrailing) {
