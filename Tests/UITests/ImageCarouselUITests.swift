@@ -25,6 +25,7 @@ final class ImageCarouselUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
+        app.launchArguments.append("-SkipModelLoading")
         app.launchArguments.append("-UITest_InMemoryStore")
         app.launch()
 
