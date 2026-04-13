@@ -15,6 +15,8 @@ final class SelectionState {
     static let shared = SelectionState()
 
     var selectedPerson: Person?
+    var selectedMole: Mole?
+    var pendingCompareMole: Mole?
 
     private init() {}
 }

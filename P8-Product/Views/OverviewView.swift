@@ -26,6 +26,7 @@ private struct OverviewContentView: View {
     // Declared at the top of the struct, so ALL subviews below can see it!
     @Bindable var appState: OverviewAppState
     var people: [Person]
+    @ObservationIgnored private let selectionState = SelectionState.shared
     
     var body: some View {
         navigationContent
@@ -149,6 +150,9 @@ private struct OverviewContentView: View {
                         NavigationLink(destination: MoleDetailView(mole: mole)) {
                             moleRow(for: mole)
                         }
+                        .simultaneousGesture(TapGesture().onEnded {
+                            selectionState.selectedMole = mole
+                        })
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button {
                                 appState.requestDelete(mole: mole) // Perfectly in scope here!

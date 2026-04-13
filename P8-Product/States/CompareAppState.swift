@@ -24,7 +24,10 @@ class CompareAppState {
     @ObservationIgnored private let selectionState = SelectionState.shared
 
     // MARK: - Persistent Data Selection
-    var selectedMole: Mole?
+    var selectedMole: Mole? {
+        get { selectionState.selectedMole }
+        set { selectionState.selectedMole = newValue }
+    }
     var selectedMetric: ChartMetric = .area
     var selectedIndexTop: Int = 0
     var selectedIndexBottom: Int = 0

@@ -17,6 +17,7 @@ public struct CompareView: View {
 
     /// The state object that manages the selected person, mole, metric, and scan indices for the carousels
     @State private var appState = CompareAppState()
+    @ObservationIgnored private let selectionState = SelectionState.shared
 
     public init() {}
 
@@ -42,6 +43,7 @@ public struct CompareView: View {
 private struct CompareContentView: View {
     @Bindable var appState: CompareAppState
     var people: [Person]
+    @ObservationIgnored private let selectionState = SelectionState.shared
 
     /// Extracts and sorts the mole scans for the currently selected mole, if any. Returns an empty array if no mole is selected or if there are no scans.
     private var scans: [MoleScan] {
@@ -61,14 +63,6 @@ private struct CompareContentView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text("Compare")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal)
-                .padding(.top)
-                .accessibilityIdentifier("compareTitle")
-
             /// Handles the different states of the UI based on the availability of people and scans in the database.
             if people.isEmpty {
                 Spacer()
@@ -196,6 +190,22 @@ private struct CompareContentView: View {
                 }
             }
         }
+        .onAppear {
+            applyPendingSelectionIfNeeded()
+        }
+        .navigationTitle("Evolution")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func applyPendingSelectionIfNeeded() {
+        guard let pendingMole = selectionState.pendingCompareMole else { return }
+
+        if appState.selectedPerson == nil, let owner = pendingMole.person {
+            appState.selectPerson(owner)
+        }
+
+        appState.selectMole(pendingMole)
+        selectionState.pendingCompareMole = nil
     }
 
 /**

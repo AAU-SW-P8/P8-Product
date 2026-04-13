@@ -39,11 +39,6 @@ struct ContentView: View {
                     Label("Overview", systemImage: "square.grid.2x2")
                 }
 
-            CompareView()
-                .tabItem {
-                    Label("Compare", systemImage: "book.pages")
-                }
-
             ReminderView()
                 .tabItem {
                     Label("Reminder", systemImage: "clock")
