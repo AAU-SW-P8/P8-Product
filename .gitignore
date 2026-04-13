@@ -62,7 +62,9 @@ fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
 
+# Core ML compiled models and large binary files
+*.mlmodelc
+**/weights/weight.bin
+**/coremldata.bin
 
-*.DS_Store
-Local.xcconfig
-P8-Product.xcodeproj/project.xcworkspace/xcuserdata/simonthordal.xcuserdatad/UserInterfaceState.xcuserstate
+.DS_Store

@@ -2,81 +2,105 @@
 //  MoleSegmentor.swift
 //  P8-Product
 //
-//  Created by Simon Thordal on 3/16/26.
+//  Created by Adomas Ciplys on 08/04/26.
 //
+//  Top-level orchestrator for the SAM 3.1 mole segmentation pipeline.
+//  All heavy lifting lives in dedicated types under SAM3/ and Rendering/
+//
+
 import CoreML
 import UIKit
 
+/// Detects and segments moles in a photo using SAM 3.1
+///
+/// The pipeline is composed of three CoreML models:
+///   1. **Vision encoder** — turns the image into FPN feature maps.
+///   2. **Text encoder** — turns the prompt `"moles"` into a text embedding
+///   3. **Decoder** — fuses the two and produces masks, boxes, and scores.
+///
+/// `MoleSegmentor`
 class MoleSegmentor {
-    //takes single mole and makes a segmentation mask
 
-    // `private let` — constant field, equivalent to a private final field in Java/C#
-    private let model: unet_mole
-    // CIContext is expensive to create; stored as a field so it's reused across calls
-    private let ciContext = CIContext()
+    // MARK: - Components
 
-    // `throws` means this initializer can fail — callers must use `try` and handle errors
-    init(modelname: String) async throws {
-        // `guard let` is an early-exit unwrap: if the right-hand side is nil,
-        // the else block runs and must exit the scope (here via throw).
-        guard let modelURL = Bundle.main.url(forResource: modelname, withExtension: "mlmodelc")
-            ?? Bundle.main.url(forResource: modelname, withExtension: "mlmodel") else {
-            throw PipelineError.modelNotFound(name: modelname)
-        }
-        self.model = try await unet_mole.load(contentsOf: modelURL)
+    private let visionEncoder: SAM3VisionEncoder
+    private let decoder: SAM3Decoder
+    private let textPrompt: SAM3TextPromptEncoder
+    private let renderer: SegmentationRenderer
+
+    // MARK: - Init
+
+    /// Loads the three SAM 3.1 models from the app bundle and pre-encodes the fixed `"moles"` text prompt.
+    /// This is `async` because compiling the vision encoder on first launch can take several seconds.
+    ///
+    /// - Throws: `PipelineError.modelNotFound` if any model resource is missing,
+    ///     or any error CoreML raises while loading or running the text encoder.
+    init() async throws {
+        let models = try await SAM3Models.load()
+        
+        let preprocessor = SAM3ImagePreprocessor()
+        
+        // Encode image into tensor and cache result
+        self.visionEncoder = SAM3VisionEncoder(model: models.visionEncoder, preprocessor: preprocessor)
+        self.decoder = SAM3Decoder(model: models.decoder)
+        self.textPrompt = try SAM3TextPromptEncoder(encoder: models.textEncoder)
+        self.renderer = SegmentationRenderer()
+
+        print("SAM3 models loaded and text encoded")
     }
 
-    /**
-     Runs segmentation on a cropped image
-     - Parameters:
-        - cropped: Image cropped specifically focused on a mole.
-        - modelSize: The input UNet model
+    // MARK: - Public API
 
-     
-     - Returns: An MLMultiArray mask output from the UNet model. Size: [1, 256, 256, 3]
-        - 1 is amount of images
-        - 256 is the resolution
-        - 3 is the color chanels
-     
-     - Throws: invalidImage & renderFailed.
-     
-     */
-    func segment(cropped: UIImage, modelSize: Int = 256)
-    async throws -> MLMultiArray? {
-        // guard only runs this function if condition holds.
-        // `.cgImage` is an optional property — UIImage wraps CGImage but doesn't always have one
-        guard let cgImage = cropped.cgImage else {
-            throw PipelineError.invalidImage
+    /// Segments moles in the given image using the prompt `"moles"`.
+    ///
+    /// - Parameters:
+    ///   - image: The full-resolution photo to segment.
+    ///   - confidenceThreshold: Minimum decoder probability for a detection to be kept. Defaults to `0.3`.
+    ///   - nmsThreshold: IoU threshold above which overlapping detections are suppressed. The default of `1.0` effectively disables NMS;
+    ///     pass ~`0.5` for actual deduplication.
+    /// - Returns: An annotated image (mask overlays + boxes + labels) and
+    ///   the per-detection bounding boxes in pixel coordinates, or `nil` if
+    ///   no detections passed the confidence threshold.
+    func segment(image: UIImage, confidenceThreshold: Float = 0.3, nmsThreshold: Float = 1.0) throws -> (UIImage, [CGRect])? {
+        let clock = ContinuousClock()
+
+        // 1. Encode image (cached on repeat calls with the same UIImage instance).
+        print("Encoding image…")
+        var visionOutput: MLFeatureProvider!
+        let encodeTime = try clock.measure {
+            visionOutput = try visionEncoder.encode(image)
+        }
+        print("Encoding time: \(encodeTime)")
+
+        // 2. Run the grounded mask decoder.
+        var decoderOutput: SAM3DecoderOutput!
+        let decodeTime = try clock.measure {
+            decoderOutput = try decoder.run(visionFeatures: visionOutput, textFeatures: textPrompt.features)
+        }
+        print("Decoder execution time: \(decodeTime)")
+
+        // 3. Filter by confidence.
+        var detections = SAM3Detection.filterByConfidence(decoderOutput, threshold: confidenceThreshold)
+        guard !detections.isEmpty else {
+            print("No detections above threshold \(confidenceThreshold)")
+            return nil
         }
 
-        // CIImage is an immutable image representation used by Core Image (GPU-accelerated filters).
-        // '.extent' is the image's bounding rectangle (origin + size)
-        let originalCI = CIImage(cgImage: cgImage)
-        let scaleX = CGFloat(modelSize) / originalCI.extent.width
-        let scaleY = CGFloat(modelSize) / originalCI.extent.height
-        // `.transformed(by:)` returns a new CIImage — CIImage operations are lazy/non-destructive
-        let resizedCI = originalCI.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
-
-        // CVPixelBuffer is a raw pixel memory buffer used by CoreML and CoreImage.
-        // The attributes tell the system this buffer needs to be compatible with CGImage rendering.
-        let bufferAttributes: [String: Any] = [
-            kCVPixelBufferCGImageCompatibilityKey as String: true,
-            kCVPixelBufferCGBitmapContextCompatibilityKey as String: true
-        ]
-        // CVPixelBufferCreate uses an output-parameter pattern: pass a pointer with '&' at the end
-        // and the function writes the result into it. The result is Optional (nil on failure)
-        var pixelBuffer: CVPixelBuffer?
-        CVPixelBufferCreate(kCFAllocatorDefault, modelSize, modelSize, kCVPixelFormatType_32BGRA, bufferAttributes as CFDictionary, &pixelBuffer)
-        guard let inputBuffer = pixelBuffer else {
-            throw PipelineError.renderFailed
+        // 4. Drop overlapping detections.
+        let beforeNms = detections.count
+        detections = SAM3Detection.nonMaxSuppression(detections, iouThreshold: nmsThreshold)
+        print("Found \(detections.count) moles (from \(beforeNms) candidates after NMS)")
+        for det in detections {
+            print("Detection \(det.index): prob=\(String(format: "%.3f", det.prob))")
         }
-        // Renders the CIImage into the pixel buffer
-        ciContext.render(resizedCI, to: inputBuffer)
 
-        // unet_moleInput is a generated Swift wrapper for the CoreML model's input schema
-        let input = unet_moleInput(x: inputBuffer)
-        let output = try await model.prediction(input: input)
+        // 5. Draw the annotated overlay.
+        return renderer.renderOverlay(on: image, detections: detections, masks: decoderOutput.masks)
+    }
 
-        return output.Identity
+    /// Drops the cached vision embeddings. Call this whenever the displayed
+    /// image changes so the next `segment(_:)` call re-encodes from scratch.
+    func clearCache() {
+        visionEncoder.clearCache()
     }
 }
