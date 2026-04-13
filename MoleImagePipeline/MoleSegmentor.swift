@@ -2,196 +2,106 @@
 //  MoleSegmentor.swift
 //  P8-Product
 //
-//  Created by Simon Thordal on 3/16/26.
+//  Created by Adomas Ciplys on 08/04/26.
 //
+//  Top-level orchestrator for the SAM 3.1 mole segmentation pipeline.
+//  All heavy lifting lives in dedicated types under SAM3/ and Rendering/
+//
+
 import CoreML
 import UIKit
 
+/// Detects and segments moles in a photo using SAM 3.1
+///
+/// The pipeline is composed of three CoreML models:
+///   1. **Vision encoder** — turns the image into FPN feature maps.
+///   2. **Text encoder** — turns the prompt `"moles"` into a text embedding
+///   3. **Decoder** — fuses the two and produces masks, boxes, and scores.
+///
+/// `MoleSegmentor`
 class MoleSegmentor {
 
-    // MARK: - Types
+    // MARK: - Components
 
-    enum PipelineError: Error {
-        case modelNotFound(name: String)
-        case invalidImage
-        case renderFailed
-    }
-
-    // MARK: - Properties
-
-    // SAM 2 uses three models: Image Encoder, Prompt Encoder, and Mask Decoder
-    private let imageEncoder: SAM2_1LargeImageEncoderFLOAT16
-    private let promptEncoder: SAM2_1LargePromptEncoderFLOAT16
-    private let maskDecoder: SAM2_1LargeMaskDecoderFLOAT16
-
-    private let ciContext = CIContext()
-
-    // Cache the image encoder output (SAM 2 usually requires high-res features in addition to base embeddings)
-    // We store the entire output object to easily pass its properties to the decoder later.
-    private var cachedEncoderOutput: SAM2_1LargeImageEncoderFLOAT16Output?
-    private var cachedImageHash: Int?
+    private let visionEncoder: SAM3VisionEncoder
+    private let decoder: SAM3Decoder
+    private let textPrompt: SAM3TextPromptEncoder
+    private let renderer: SegmentationRenderer
 
     // MARK: - Init
 
+    /// Loads the three SAM 3.1 models from the app bundle and pre-encodes the fixed `"moles"` text prompt.
+    /// This is `async` because compiling the vision encoder on first launch can take several seconds.
+    ///
+    /// - Throws: `PipelineError.modelNotFound` if any model resource is missing,
+    ///     or any error CoreML raises while loading or running the text encoder.
     init() async throws {
-        // Load Image Encoder URL
-        guard let encoderURL = Bundle.main.url(forResource: "SAM2_1LargeImageEncoderFLOAT16", withExtension: "mlmodelc")
-            ?? Bundle.main.url(forResource: "SAM2_1LargeImageEncoderFLOAT16", withExtension: "mlmodel") else {
-            throw PipelineError.modelNotFound(name: "SAM2_1LargeImageEncoderFLOAT16")
-        }
+        let models = try await SAM3Models.load()
+        
+        let preprocessor = SAM3ImagePreprocessor()
+        
+        // Encode image into tensor and cache result
+        self.visionEncoder = SAM3VisionEncoder(model: models.visionEncoder, preprocessor: preprocessor)
+        self.decoder = SAM3Decoder(model: models.decoder)
+        self.textPrompt = try SAM3TextPromptEncoder(encoder: models.textEncoder)
+        self.renderer = SegmentationRenderer()
 
-        // Load Prompt Encoder URL
-        guard let promptURL = Bundle.main.url(forResource: "SAM2_1LargePromptEncoderFLOAT16", withExtension: "mlmodelc")
-            ?? Bundle.main.url(forResource: "SAM2_1LargePromptEncoderFLOAT16", withExtension: "mlmodel") else {
-            throw PipelineError.modelNotFound(name: "SAM2_1LargePromptEncoderFLOAT16")
-        }
-
-        // Load Mask Decoder URL
-        guard let decoderURL = Bundle.main.url(forResource: "SAM2_1LargeMaskDecoderFLOAT16", withExtension: "mlmodelc")
-            ?? Bundle.main.url(forResource: "SAM2_1LargeMaskDecoderFLOAT16", withExtension: "mlmodel") else {
-            throw PipelineError.modelNotFound(name: "SAM2_1LargeMaskDecoderFLOAT16")
-        }
-
-        // --- THE FIX ---
-        // Create a configuration that forces Core ML to bypass the Apple Neural Engine
-        let config = MLModelConfiguration()
-            config.computeUnits = .cpuOnly
-
-            // Initialize the models with the CPU-only configuration
-            self.imageEncoder = try await SAM2_1LargeImageEncoderFLOAT16.load(contentsOf: encoderURL, configuration: config)
-            self.promptEncoder = try await SAM2_1LargePromptEncoderFLOAT16.load(contentsOf: promptURL, configuration: config)
-            self.maskDecoder = try await SAM2_1LargeMaskDecoderFLOAT16.load(contentsOf: decoderURL, configuration: config)
-        }
-
-    // MARK: - Public
-
-    func segment(image: UIImage, point: CGPoint, modelSize: Int = 1024) async throws -> MLMultiArray {
-        // 1. Get the Image Features (Embeddings + High Res features)
-        let encoderOutput = try await encodeImage(image, modelSize: modelSize)
-
-        // ADD THIS: Check if the image encoder actually saw anything
-        print("📸 Image Encoder test value: \(encoderOutput.image_embedding[0])")
-
-        guard let cgImage = image.cgImage else { throw PipelineError.invalidImage }
-
-        let scaleX = Double(modelSize) / Double(cgImage.width)
-        let scaleY = Double(modelSize) / Double(cgImage.height)
-        let normalizedX = Double(point.x) * scaleX
-        let normalizedY = Double(point.y) * scaleY
-
-        // 2. Set up Prompt Encoder Inputs
-        // Note: Check Xcode autocomplete to see if it wants .float32 or .float16 based on your model export
-        guard let pointCoords = try? MLMultiArray(shape: [1, 2, 2], dataType: .float16),
-              let pointLabels = try? MLMultiArray(shape: [1, 2], dataType: .float16) else {
-            throw PipelineError.renderFailed
-        }
-
-        // POINT 1: The user's actual click
-        pointCoords[[0, 0, 0] as [NSNumber]] = NSNumber(value: normalizedX)
-        pointCoords[[0, 0, 1] as [NSNumber]] = NSNumber(value: normalizedY)
-        pointLabels[[0, 0] as [NSNumber]] = 1.0 // 1.0 = Foreground
-
-        // POINT 2: The SAM padding point
-        // SAM requires this dummy point so the tensor is the correct size
-        pointCoords[[0, 1, 0] as [NSNumber]] = 0.0
-        pointCoords[[0, 1, 1] as [NSNumber]] = 0.0
-        pointLabels[[0, 1] as [NSNumber]] = -1.0 // -1.0 = Ignore / Padding
-
-        // Run Prompt Encoder
-        let promptInput = SAM2_1LargePromptEncoderFLOAT16Input(
-            points: pointCoords,
-            labels: pointLabels
-        )
-        let promptOutput = try await promptEncoder.prediction(input: promptInput)
-
-        // ADD THIS: Check if the prompt encoder actually registered the click
-        print("🎯 Prompt Encoder test value: \(promptOutput.dense_embeddings[0])")
-
-        // 3. Set up Mask Decoder Inputs
-        // Combine image features and prompt features
-        // NOTE: SAM 2 image encoders usually output `image_embeddings`, `high_res_feats_0`, and `high_res_feats_1`.
-        // Ensure you are passing all required features to the decoder input.
-        let decoderInput = SAM2_1LargeMaskDecoderFLOAT16Input(
-            image_embedding: encoderOutput.image_embedding,
-            sparse_embedding: promptOutput.sparse_embeddings, // Note: watch out for the 's' at the end of promptOutput.sparse_embeddings if the parameter name is singular!
-            dense_embedding: promptOutput.dense_embeddings,
-            feats_s0: encoderOutput.feats_s0,
-            feats_s1: encoderOutput.feats_s1
-        )
-
-        let decoderOutput = try await maskDecoder.prediction(input: decoderInput)
-
-        // Return the generated masks
-        return decoderOutput.low_res_masks
+        print("SAM3 models loaded and text encoded")
     }
 
-    /**
-     Converts the SAM mask output into a transparent UIImage with a colored overlay.
-     */
-    func createMaskImage(from mlArray: MLMultiArray) -> UIImage? {
-        let shape = mlArray.shape
-        // SAM mask outputs usually have the shape [batch, masks, height, width].
-        // We grab the height and width from the last two dimensions.
-        let height = shape[shape.count - 2].intValue
-        let width = shape[shape.count - 1].intValue
+    // MARK: - Public API
 
-        // Create an array to hold the raw RGBA pixel data
-        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+    /// Segments moles in the given image using the prompt `"moles"`.
+    ///
+    /// - Parameters:
+    ///   - image: The full-resolution photo to segment.
+    ///   - confidenceThreshold: Minimum decoder probability for a detection to be kept. Defaults to `0.3`.
+    ///   - nmsThreshold: IoU threshold above which overlapping detections are suppressed. The default of `1.0` effectively disables NMS;
+    ///     pass ~`0.5` for actual deduplication.
+    /// - Returns: An annotated image (mask overlays + boxes + labels) and
+    ///   the per-detection bounding boxes in pixel coordinates, or `nil` if
+    ///   no detections passed the confidence threshold.
+    func segment(image: UIImage, confidenceThreshold: Float = 0.3, nmsThreshold: Float = 1.0) throws -> (UIImage, [CGRect])? {
+        let clock = ContinuousClock()
 
-        // Safely get a pointer to the Float32 data inside the MLMultiArray
-        // Note: If your decoder outputs Float16, you will need to cast this to Float16 instead
-        guard let pointer = try? UnsafeBufferPointer<Float32>(mlArray) else {
-            print("Failed to access MLMultiArray data")
+        // 1. Encode image (cached on repeat calls with the same UIImage instance).
+        print("Encoding image…")
+        var visionOutput: MLFeatureProvider!
+        let encodeTime = try clock.measure {
+            visionOutput = try visionEncoder.encode(image)
+        }
+        print("Encoding time: \(encodeTime)")
+
+        // 2. Run the grounded mask decoder.
+        var decoderOutput: SAM3DecoderOutput!
+        let decodeTime = try clock.measure {
+            decoderOutput = try decoder.run(visionFeatures: visionOutput, textFeatures: textPrompt.features)
+        }
+        print("Decoder execution time: \(decodeTime)")
+
+        // 3. Filter by confidence.
+        var detections = SAM3Detection.filterByConfidence(decoderOutput, threshold: confidenceThreshold)
+        guard !detections.isEmpty else {
+            print("No detections above threshold \(confidenceThreshold)")
             return nil
         }
 
-        // Iterate through the pixels
-        for y in 0..<height {
-            for x in 0..<width {
-                let index = y * width + x
-                let value = pointer[index]
-
-                let pixelIndex = index * 4
-
-                // If logit > 0, it's the mole! Paint it semi-transparent red.
-                if value > 0.0 {
-                    pixels[pixelIndex]     = 255  // Red
-                    pixels[pixelIndex + 1] = 0    // Green
-                    pixels[pixelIndex + 2] = 0    // Blue
-                    pixels[pixelIndex + 3] = 128  // Alpha (Semi-transparent)
-                } else {
-                    // Background is completely transparent
-                    pixels[pixelIndex]     = 0
-                    pixels[pixelIndex + 1] = 0
-                    pixels[pixelIndex + 2] = 0
-                    pixels[pixelIndex + 3] = 0
-                }
-            }
+        // 4. Drop overlapping detections.
+        let beforeNms = detections.count
+        detections = SAM3Detection.nonMaxSuppression(detections, iouThreshold: nmsThreshold)
+        print("Found \(detections.count) moles (from \(beforeNms) candidates after NMS)")
+        for det in detections {
+            print("Detection \(det.index): prob=\(String(format: "%.3f", det.prob))")
         }
 
-        // Convert the pixel array into a CGImage, then to a UIImage
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue)
-
-        guard let context = CGContext(
-            data: &pixels,
-            width: width,
-            height: height,
-            bitsPerComponent: 8,
-            bytesPerRow: width * 4,
-            space: colorSpace,
-            bitmapInfo: bitmapInfo.rawValue
-        ), let cgImage = context.makeImage() else {
-            return nil
-        }
-
-        return UIImage(cgImage: cgImage)
+        // 5. Draw the annotated overlay.
+        return renderer.renderOverlay(on: image, detections: detections, masks: decoderOutput.masks)
     }
 
-    /// Clears the cached embeddings - call this when switching to a new image
+    /// Drops the cached vision embeddings. Call this whenever the displayed
+    /// image changes so the next `segment(_:)` call re-encodes from scratch.
     func clearCache() {
-        // cachedImageEmbeddings = nil
-        cachedImageHash = nil
+        visionEncoder.clearCache()
     }
 
     // MARK: - Private

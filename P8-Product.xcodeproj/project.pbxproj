@@ -7,11 +7,19 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7A2B3BFB2F795DC400E5B7F8 /* Local.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 7A2B3BFA2F795DC400E5B7F8 /* Local.xcconfig */; };
+		97BFEFFA2F7BC99800C9495F /* UITests.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = 97BFEFF92F7BC99800C9495F /* UITests.xctestplan */; };
 		97C2DB152F6AB39500454255 /* Unittests.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = 97C2DB142F6AB39500454255 /* Unittests.xctestplan */; };
+		97D066412F8657A700FB4C0B /* Alltests.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = 97D066402F8657A700FB4C0B /* Alltests.xctestplan */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		972E93AE2F7BC67300BB8979 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F1845EE62F59945F00E27D2B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F1845EED2F59945F00E27D2B;
+			remoteInfo = "P8-Product";
+		};
 		97C2DB1E2F6AB3F100454255 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = F1845EE62F59945F00E27D2B /* Project object */;
@@ -22,20 +30,92 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		7A2B3BFA2F795DC400E5B7F8 /* Local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Local.xcconfig; sourceTree = "<group>"; };
+		972E93A82F7BC67300BB8979 /* P8-ProductUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "P8-ProductUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		97BFEFF92F7BC99800C9495F /* UITests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = UITests.xctestplan; sourceTree = "<group>"; };
 		97C2DB142F6AB39500454255 /* Unittests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = Unittests.xctestplan; sourceTree = "<group>"; };
 		97C2DB1A2F6AB3F100454255 /* PipelineTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PipelineTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		97D066402F8657A700FB4C0B /* Alltests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = Alltests.xctestplan; sourceTree = "<group>"; };
 		F1845EEE2F59945F00E27D2B /* P8-Product.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "P8-Product.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		7AD89F892F87B66800A2C5F0 /* Exceptions for "Tests" folder in "P8-ProductUITests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				UITests/CompareViewUITests.swift,
+				UITests/Helpers.swift,
+				UITests/ImageCarouselUITests.swift,
+				UITests/ProductUITests.swift,
+				UITests/ProductUITestsLaunchTests.swift,
+				UITests/TabStateUITests.swift,
+			);
+			target = 972E93A72F7BC67300BB8979 /* P8-ProductUITests */;
+		};
+		97C2DB272F6AB49400454255 /* Exceptions for "Tests" folder in "P8-Product" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				ChartViewTest.swift,
+				SAMPipelineTests/SAM3DecoderTests.swift,
+				SAMPipelineTests/SAM3DetectionTests.swift,
+				SAMPipelineTests/SAM3FeatureNamesTests.swift,
+				SAMPipelineTests/SAM3ImagePreprocessorTests.swift,
+				SAMPipelineTests/SAM3ModelsTests.swift,
+				SAMPipelineTests/TestHelpers.swift,
+				UITests/CompareViewUITests.swift,
+				UITests/Helpers.swift,
+				UITests/ImageCarouselUITests.swift,
+				UITests/ProductUITests.swift,
+				UITests/ProductUITestsLaunchTests.swift,
+				UITests/TabStateUITests.swift,
+			);
+			target = F1845EED2F59945F00E27D2B /* P8-Product */;
+		};
+		97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				ChartViewTest.swift,
+				SAMPipelineTests/SAM3DecoderTests.swift,
+				SAMPipelineTests/SAM3DetectionTests.swift,
+				SAMPipelineTests/SAM3FeatureNamesTests.swift,
+				SAMPipelineTests/SAM3ImagePreprocessorTests.swift,
+				SAMPipelineTests/SAM3ModelsTests.swift,
+				SAMPipelineTests/TestHelpers.swift,
+			);
+			target = 97C2DB192F6AB3F100454255 /* PipelineTests */;
+		};
+		97C2DB302F6AB49400454255 /* Exceptions for "MoleImagePipeline" folder in "P8-Product" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"models/sam3.1-coreml-fp16/.gitattributes",
+			);
+			target = F1845EED2F59945F00E27D2B /* P8-Product */;
+		};
+		97C2DB312F6AB49400454255 /* Exceptions for "MoleImagePipeline" folder in "PipelineTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"models/sam3.1-coreml-fp16/.gitattributes",
+			);
+			target = 97C2DB192F6AB3F100454255 /* PipelineTests */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		97C2DAEC2F6AAFA600454255 /* MoleImagePipeline */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				97C2DB302F6AB49400454255 /* Exceptions for "MoleImagePipeline" folder in "P8-Product" target */,
+				97C2DB312F6AB49400454255 /* Exceptions for "MoleImagePipeline" folder in "PipelineTests" target */,
+			);
 			path = MoleImagePipeline;
 			sourceTree = "<group>";
 		};
 		97C2DB232F6AB48B00454255 /* Tests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				97C2DB272F6AB49400454255 /* Exceptions for "Tests" folder in "P8-Product" target */,
+				97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */,
+				7AD89F892F87B66800A2C5F0 /* Exceptions for "Tests" folder in "P8-ProductUITests" target */,
+			);
 			path = Tests;
 			sourceTree = "<group>";
 		};
@@ -47,6 +127,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		972E93A52F7BC67300BB8979 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C2DB172F6AB3F100454255 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -67,7 +154,8 @@
 		F1845EE52F59945F00E27D2B = {
 			isa = PBXGroup;
 			children = (
-				7A2B3BFA2F795DC400E5B7F8 /* Local.xcconfig */,
+				97D066402F8657A700FB4C0B /* Alltests.xctestplan */,
+				97BFEFF92F7BC99800C9495F /* UITests.xctestplan */,
 				97C2DB142F6AB39500454255 /* Unittests.xctestplan */,
 				97C2DB232F6AB48B00454255 /* Tests */,
 				97C2DAEC2F6AAFA600454255 /* MoleImagePipeline */,
@@ -81,6 +169,7 @@
 			children = (
 				F1845EEE2F59945F00E27D2B /* P8-Product.app */,
 				97C2DB1A2F6AB3F100454255 /* PipelineTests.xctest */,
+				972E93A82F7BC67300BB8979 /* P8-ProductUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -88,6 +177,26 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		972E93A72F7BC67300BB8979 /* P8-ProductUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 972E93B02F7BC67300BB8979 /* Build configuration list for PBXNativeTarget "P8-ProductUITests" */;
+			buildPhases = (
+				972E93A42F7BC67300BB8979 /* Sources */,
+				972E93A52F7BC67300BB8979 /* Frameworks */,
+				972E93A62F7BC67300BB8979 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				972E93AF2F7BC67300BB8979 /* PBXTargetDependency */,
+			);
+			name = "P8-ProductUITests";
+			packageProductDependencies = (
+			);
+			productName = "P8-ProductUITests";
+			productReference = 972E93A82F7BC67300BB8979 /* P8-ProductUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		97C2DB192F6AB3F100454255 /* PipelineTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 97C2DB202F6AB3F100454255 /* Build configuration list for PBXNativeTarget "PipelineTests" */;
@@ -144,6 +253,10 @@
 				LastSwiftUpdateCheck = 2630;
 				LastUpgradeCheck = 2630;
 				TargetAttributes = {
+					972E93A72F7BC67300BB8979 = {
+						CreatedOnToolsVersion = 26.3;
+						TestTargetID = F1845EED2F59945F00E27D2B;
+					};
 					97C2DB192F6AB3F100454255 = {
 						CreatedOnToolsVersion = 26.3;
 						TestTargetID = F1845EED2F59945F00E27D2B;
@@ -169,11 +282,19 @@
 			targets = (
 				F1845EED2F59945F00E27D2B /* P8-Product */,
 				97C2DB192F6AB3F100454255 /* PipelineTests */,
+				972E93A72F7BC67300BB8979 /* P8-ProductUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		972E93A62F7BC67300BB8979 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C2DB182F6AB3F100454255 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -186,13 +307,21 @@
 			buildActionMask = 2147483647;
 			files = (
 				97C2DB152F6AB39500454255 /* Unittests.xctestplan in Resources */,
-				7A2B3BFB2F795DC400E5B7F8 /* Local.xcconfig in Resources */,
+				97BFEFFA2F7BC99800C9495F /* UITests.xctestplan in Resources */,
+				97D066412F8657A700FB4C0B /* Alltests.xctestplan in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		972E93A42F7BC67300BB8979 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C2DB162F6AB3F100454255 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -210,6 +339,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		972E93AF2F7BC67300BB8979 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F1845EED2F59945F00E27D2B /* P8-Product */;
+			targetProxy = 972E93AE2F7BC67300BB8979 /* PBXContainerItemProxy */;
+		};
 		97C2DB1F2F6AB3F100454255 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = F1845EED2F59945F00E27D2B /* P8-Product */;
@@ -218,6 +352,54 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		972E93B12F7BC67300BB8979 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 484SQATWRN;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "test.P8-ProductUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "P8-Product";
+			};
+			name = Debug;
+		};
+		972E93B22F7BC67300BB8979 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 484SQATWRN;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "test.P8-ProductUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "P8-Product";
+			};
+			name = Release;
+		};
 		97C2DB212F6AB3F100454255 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -233,12 +415,13 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/P8-Product.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/P8-Product";
 				XROS_DEPLOYMENT_TARGET = 26.2;
 			};
@@ -259,12 +442,13 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/P8-Product.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/P8-Product";
 				XROS_DEPLOYMENT_TARGET = 26.2;
 			};
@@ -398,6 +582,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "P8-Product/P8-Product.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 484SQATWRN;
@@ -411,6 +596,7 @@
 				INFOPLIST_KEY_UIStatusBarHidden = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -437,6 +623,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "P8-Product/P8-Product.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 484SQATWRN;
@@ -450,6 +637,7 @@
 				INFOPLIST_KEY_UIStatusBarHidden = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -474,6 +662,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		972E93B02F7BC67300BB8979 /* Build configuration list for PBXNativeTarget "P8-ProductUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				972E93B12F7BC67300BB8979 /* Debug */,
+				972E93B22F7BC67300BB8979 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		97C2DB202F6AB3F100454255 /* Build configuration list for PBXNativeTarget "PipelineTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
