@@ -28,7 +28,7 @@ struct ReminderView: View {
                     LazyVStack(alignment: .leading, spacing: 20) {
                         sectionContainer(title: "Default Reminder Enabled") {
                             Toggle("Reminder Enabled", isOn: $appState.reminderEnabled)
-                                .onChange(of: reminderEnabled) { _, newValue in
+                                .onChange(of: appState.reminderEnabled) { _, newValue in
                                     appState.selectedPerson?.defaultReminderEnabled = newValue
                                 }
                         }
@@ -40,8 +40,8 @@ struct ReminderView: View {
                                 Text("Quarterly").tag("Quarterly")
                             }
                             .pickerStyle(.menu)
-                            .disabled(!reminderEnabled)
-                            .opacity(reminderEnabled ? 1.0 : 0.4)
+                            .disabled(!appState.reminderEnabled)
+                            .opacity(appState.reminderEnabled ? 1.0 : 0.4)
                             .onChange(of: appState.defaultFrequency) { _, newValue in
                                 appState.selectedPerson?.defaultReminderFrequency = newValue
                                 updateDefaultFrequencyForFollowDefaultMoles()
@@ -153,8 +153,8 @@ struct ReminderView: View {
                             .background(Color(.systemGray6))
                             .id(person)
                             .transition(.asymmetric(
-                                insertion: .move(edge: slideEdge).combined(with: .opacity),
-                                removal: .move(edge: slideEdge == .leading ? .trailing : .leading).combined(with: .opacity)
+                                insertion: .move(edge: appState.slideEdge).combined(with: .opacity),
+                                removal: .move(edge: appState.slideEdge == .leading ? .trailing : .leading).combined(with: .opacity)
                             ))
                     }
                 }
@@ -279,7 +279,7 @@ struct ReminderView: View {
      */
     private func effectiveReminderEnabled(for mole: Mole) -> Bool {
         if mole.followDefaultReminderEnabled ?? true {
-            return reminderEnabled
+            return appState.reminderEnabled
         }
         return mole.isReminderActive
     }
