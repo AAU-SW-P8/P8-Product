@@ -34,13 +34,13 @@ class SAM3ModelLoader: ObservableObject {
                 self.segmentor = seg
             } catch {
                 self.error = error
-                print("❌ SAM3 Model Loading Failed: \(error.localizedDescription)")
+                print("SAM3 Model Loading Failed: \(error.localizedDescription)")
             }
         }
         
         isLoading = false
         if error == nil {
-            print("⏱️ Total SAM3 loading time: \(result)")
+            print("Total SAM3 loading time: \(result)")
         }
     }
 }

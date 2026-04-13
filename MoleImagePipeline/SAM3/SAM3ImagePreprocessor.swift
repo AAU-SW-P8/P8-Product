@@ -35,6 +35,12 @@ final class SAM3ImagePreprocessor {
     }
 
     /// Resizes a CGImage into a square `CVPixelBuffer`.
+    ///
+    /// - Parameters:
+    ///   - cgImage: The source image to resize.
+    ///   - size: The target side length in pixels for the square output buffer.
+    /// - Returns: A BGRA `CVPixelBuffer` of dimensions `size × size`.
+    /// - Throws: `PipelineError.renderFailed` if the pixel buffer cannot be allocated.
     private func makeResizedPixelBuffer(from cgImage: CGImage, size: Int) throws -> CVPixelBuffer {
         let originalCI: CIImage = CIImage(cgImage: cgImage)
         let scaleX: CGFloat = CGFloat(size) / originalCI.extent.width
@@ -72,6 +78,12 @@ final class SAM3ImagePreprocessor {
     /// translates them into the exact mathematical format (a Float16 tensor) that the SAM 3.1 neural network can read.
     /// Specifically converts a BGRA `CVPixelBuffer` into a Float16 `[1, 3, H, W]` tensor in RGB order, normalized to `[-1, 1]
     /// SAM 3.1 expects `Normalize(mean=[0.5,0.5,0.5], std=[0.5,0.5,0.5])`, which simplifies to`pixel/127.5 - 1`.
+    ///
+    /// - Parameters:
+    ///   - pixelBuffer: A BGRA `CVPixelBuffer` containing the resized image pixels.
+    ///   - size: The side length of the square buffer (must match the buffer's dimensions).
+    /// - Returns: A `[1, 3, size, size]` Float16 `MLMultiArray` in RGB channel order, normalized to `[-1, 1]`.
+    /// - Throws: `PipelineError.renderFailed` if the pixel buffer's base address is inaccessible.
     private func makeNormalizedTensor(from pixelBuffer: CVPixelBuffer, size: Int) throws -> MLMultiArray {
         // Create an empty tensor. Shape is [1 image, 3 colors, Height, Width]
         let array: MLMultiArray = try MLMultiArray(shape: [1, 3, size as NSNumber, size as NSNumber], dataType: .float16)

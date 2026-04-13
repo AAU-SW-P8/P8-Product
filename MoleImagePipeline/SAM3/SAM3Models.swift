@@ -34,11 +34,11 @@ struct SAM3Models {
         let defaultConfig: MLModelConfiguration = MLModelConfiguration()
         defaultConfig.computeUnits = .all
 
-        print("📦 Loading SAM3 vision encoder…")
+        print("Loading SAM3 vision encoder…")
         let vision: MLModel = try await loadModel(named: "SAM3.1_ImageEncoder_FP16", configuration: visionConfig)
-        print("📦 Loading SAM3 text encoder…")
+        print("Loading SAM3 text encoder…")
         let text: MLModel = try await loadModel(named: "SAM3.1_TextEncoder_FP16", configuration: defaultConfig)
-        print("📦 Loading SAM3 decoder…")
+        print("Loading SAM3 decoder…")
         let decoder: MLModel = try await loadModel(named: "SAM3.1_Detector_FP16", configuration: defaultConfig)
 
         return SAM3Models(visionEncoder: vision, textEncoder: text, decoder: decoder)

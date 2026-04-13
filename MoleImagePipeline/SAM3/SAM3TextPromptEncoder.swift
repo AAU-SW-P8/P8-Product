@@ -43,9 +43,9 @@ final class SAM3TextPromptEncoder {
             SAM3FeatureNames.TextEncoder.tokenIdsInput: MLFeatureValue(multiArray: inputIds)
         ])
 
-        print("📝 Encoding text prompt 'moles'…")
+        print("Encoding text prompt 'moles'…")
         let output: MLFeatureProvider = try encoder.prediction(from: input)
-        print("📝 Text encoder output features: \(output.featureNames.joined(separator: ", "))")
+        print("Text encoder output features: \(output.featureNames.joined(separator: ", "))")
         self.features = output
     }
 }
