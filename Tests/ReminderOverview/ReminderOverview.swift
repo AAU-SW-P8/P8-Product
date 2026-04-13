@@ -43,6 +43,48 @@ struct ReminderOverviewTest {
         #expect(mole.nextDueDate != nil)
     }
 
+    /// Verifies that monthly reminder selection uses a one-month offset from the latest scan.
+    @Test("Monthly frequency computes due date one month after latest check-in")
+    func updateReminderWithMonthlyFrequencyComputesMonthlyDueDate() {
+        let calendar = Calendar.current
+        let lastCheckIn = Date(timeIntervalSinceNow: -8 * 24 * 60 * 60)
+        let mole = makeMole(lastCheckIn: lastCheckIn)
+
+        applyReminderUpdate(
+            mole: mole,
+            selectedPerson: nil,
+            frequencyLabel: "Monthly",
+            now: Date(timeIntervalSinceNow: -60)
+        )
+
+        let expected = calendar.date(byAdding: .month, value: 1, to: lastCheckIn)
+        #expect(mole.followDefault == false)
+        #expect(mole.reminderFrequency == .monthly)
+        #expect(mole.nextDueDate != nil)
+        #expect(isSameMinute(mole.nextDueDate!, expected!))
+    }
+
+    /// Verifies that quarterly reminder selection uses a three-month offset from the latest scan.
+    @Test("Quarterly frequency computes due date three months after latest check-in")
+    func updateReminderWithQuarterlyFrequencyComputesQuarterlyDueDate() {
+        let calendar = Calendar.current
+        let lastCheckIn = Date(timeIntervalSinceNow: -10 * 24 * 60 * 60)
+        let mole = makeMole(lastCheckIn: lastCheckIn)
+
+        applyReminderUpdate(
+            mole: mole,
+            selectedPerson: nil,
+            frequencyLabel: "Quarterly",
+            now: Date(timeIntervalSinceNow: -60)
+        )
+
+        let expected = calendar.date(byAdding: .month, value: 3, to: lastCheckIn)
+        #expect(mole.followDefault == false)
+        #expect(mole.reminderFrequency == .quarterly)
+        #expect(mole.nextDueDate != nil)
+        #expect(isSameMinute(mole.nextDueDate!, expected!))
+    }
+
     @Test("Past computed due date is clamped to current date")
     func dueDateIsClampedToNowWhenComputedDateIsPast() {
         let now = Date()
@@ -238,6 +280,19 @@ struct ReminderOverviewTest {
         #expect(result.slideEdge == "leading")
     }
 
+    /// Verifies that selecting the previous person at the first index does not move selection.
+    @Test("Selecting previous person at first index keeps current selection")
+    func selectPreviousPersonAtFirstIndexDoesNotMove() {
+        let first = Person(name: "A")
+        let second = Person(name: "B")
+        let people = [first, second]
+
+        let result = selectPreviousPerson(current: first, persons: people)
+
+        #expect(result.selectedPerson?.name == "A")
+        #expect(result.slideEdge == nil)
+    }
+
     @Test("Selecting next person moves one step when possible")
     func selectNextPersonMovesOneStep() {
         let first = Person(name: "A")
@@ -249,6 +304,19 @@ struct ReminderOverviewTest {
 
         #expect(result.selectedPerson?.name == "C")
         #expect(result.slideEdge == "trailing")
+    }
+
+    /// Verifies that selecting the next person at the last index does not move selection.
+    @Test("Selecting next person at last index keeps current selection")
+    func selectNextPersonAtLastIndexDoesNotMove() {
+        let first = Person(name: "A")
+        let second = Person(name: "B")
+        let people = [first, second]
+
+        let result = selectNextPerson(current: second, persons: people)
+
+        #expect(result.selectedPerson?.name == "B")
+        #expect(result.slideEdge == nil)
     }
 
     @Test("Sync state copies selected person's defaults")
@@ -263,6 +331,14 @@ struct ReminderOverviewTest {
 
         #expect(synced?.reminderEnabled == false)
         #expect(synced?.defaultFrequency == "Monthly")
+    }
+
+    /// Verifies that syncing reminder state with no selected person produces no state snapshot.
+    @Test("Sync state with no selected person returns nil")
+    func syncSelectionStateWithoutSelectedPersonReturnsNil() {
+        let synced = syncSelectionState(selectedPerson: nil)
+
+        #expect(synced == nil)
     }
 
     @Test("Mole display frequency returns Default when following default")

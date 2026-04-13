@@ -44,7 +44,7 @@ struct ReminderView: View {
                             .opacity(appState.reminderEnabled ? 1.0 : 0.4)
                             .onChange(of: appState.defaultFrequency) { _, newValue in
                                 appState.selectedPerson?.defaultReminderFrequency = newValue
-                                updateDefaultFrequencyForFollowDefaultMoles()
+                                updateFrequencyFollowDefaultMoles()
                             }
                         }
 
@@ -353,7 +353,7 @@ struct ReminderView: View {
     /**
      Reapplies default frequency logic to all moles that follow defaults.
      */
-    private func updateDefaultFrequencyForFollowDefaultMoles() {
+    private func updateFrequencyFollowDefaultMoles() {
         for mole in selectedPersonMoles where mole.followDefault ?? true {
             updateReminder(for: mole, frequencyLabel: "Default")
         }
