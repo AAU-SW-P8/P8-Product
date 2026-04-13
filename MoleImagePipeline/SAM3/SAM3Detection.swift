@@ -22,8 +22,7 @@ struct RawDetection {
     let box: CGRect
 }
 
-/// Functions for filtering and deduplicating decoder output. All `static`
-/// because none of them need state — easier to test, easier to reason about.
+/// Functions for filtering and deduplicating decoder output.  All `static` because none of them need state
 enum SAM3Detection {
 
     /// Returns every detection whose score is at least `threshold`.
@@ -32,6 +31,7 @@ enum SAM3Detection {
     ///   - output: Decoder result, validated to have shapes `[1,N]`, `[1,N,4]`,
     ///     `[1,N,288,288]`.
     ///   - threshold: Minimum probability in `[0, 1]`.
+    /// - Returns: An array of ``RawDetection`` values whose confidence meets or exceeds the threshold.
     static func filterByConfidence(_ output: SAM3DecoderOutput, threshold: Float) -> [RawDetection] {
         var detections: [RawDetection] = []
         for i in 0..<output.detectionCount {
@@ -53,6 +53,10 @@ enum SAM3Detection {
     /// confidence order; any detection whose IoU with an already-kept box
     /// exceeds `iouThreshold` is dropped.
     ///
+    /// - Parameters:
+    ///   - detections: Candidate detections to deduplicate.
+    ///   - iouThreshold: Maximum allowed IoU overlap with an already-kept detection before a candidate is suppressed.
+    /// - Returns: The subset of detections that survived suppression, in descending confidence order.
     /// - Note: An `iouThreshold` of `1.0` is effectively a no-op (IoU never
     ///   strictly exceeds 1), which matches the historical default in this
     ///   pipeline. Use `~0.5` if you want actual deduplication.
@@ -68,6 +72,11 @@ enum SAM3Detection {
 
     /// Standard Intersection-over-Union of two axis-aligned rectangles.
     /// Returns `0` for disjoint rectangles or degenerate (zero-area) inputs.
+    ///
+    /// - Parameters:
+    ///   - a: First bounding rectangle in normalized image coordinates.
+    ///   - b: Second bounding rectangle in normalized image coordinates.
+    /// - Returns: The IoU ratio in `[0, 1]`, or `0` if the rectangles are disjoint or have zero area.
     static func intersectionOverUnion(_ a: CGRect, _ b: CGRect) -> Float {
         let intersection: CGRect = a.intersection(b)
         if intersection.isNull { return 0 }
