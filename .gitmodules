@@ -1,0 +1,3 @@
+[submodule "MoleImagePipeline/models/sam3.1-coreml-fp16"]
+	path = MoleImagePipeline/models/sam3.1-coreml-fp16
+	url = https://huggingface.co/AllanVester/SAM3.1-CoreML-FP16
