@@ -41,7 +41,7 @@ final class SAM3VisionEncoder {
         ])
 
         let output: MLFeatureProvider = try model.prediction(from: input)
-        print("🖼️ Vision encoder output features: \(output.featureNames.joined(separator: ", "))")
+        print("Vision encoder output features: \(output.featureNames.joined(separator: ", "))")
         cachedOutput = output
         cachedImageHash = imageHash
         return output

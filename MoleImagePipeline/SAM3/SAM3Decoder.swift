@@ -39,18 +39,18 @@ final class SAM3Decoder {
     func run(visionFeatures: MLFeatureProvider, textFeatures: MLFeatureProvider) throws -> SAM3DecoderOutput {
         let input = try buildInput(visionFeatures: visionFeatures, textFeatures: textFeatures)
 
-        print("🧠 Running decoder…")
+        print("Running decoder…")
         let output: MLFeatureProvider = try model.prediction(from: input)
 
         guard let masks: MLMultiArray  = output.featureValue(for: SAM3FeatureNames.Decoder.masks)?.multiArrayValue,
               let scores: MLMultiArray = output.featureValue(for: SAM3FeatureNames.Decoder.scores)?.multiArrayValue,
               let boxes: MLMultiArray  = output.featureValue(for: SAM3FeatureNames.Decoder.boxes)?.multiArrayValue else {
-            print("❌ Decoder missing expected output features")
-            print("   Available features: \(output.featureNames.joined(separator: ", "))")
+            print("Decoder missing expected output features")
+            print("Available features: \(output.featureNames.joined(separator: ", "))")
             throw PipelineError.unexpectedModelOutput
         }
 
-        print("📊 Scores shape: \(scores.shape), Boxes shape: \(boxes.shape), Masks shape: \(masks.shape)")
+        print("Scores shape: \(scores.shape), Boxes shape: \(boxes.shape), Masks shape: \(masks.shape)")
         try validateShapes(scores: scores, boxes: boxes, masks: masks)
 
         return SAM3DecoderOutput(masks: masks, scores: scores, boxes: boxes)
@@ -64,14 +64,14 @@ final class SAM3Decoder {
               let fpnFeat1: MLFeatureValue = visionFeatures.featureValue(for: SAM3FeatureNames.VisionEncoder.fpnFeat1),
               let fpnFeat2: MLFeatureValue = visionFeatures.featureValue(for: SAM3FeatureNames.VisionEncoder.fpnFeat2),
               let visPos: MLFeatureValue   = visionFeatures.featureValue(for: SAM3FeatureNames.VisionEncoder.visPos) else {
-            print("❌ Vision encoder missing expected output features")
-            print("   Available features: \(visionFeatures.featureNames.joined(separator: ", "))")
+            print("Vision encoder missing expected output features")
+            print("Available features: \(visionFeatures.featureNames.joined(separator: ", "))")
             throw PipelineError.unexpectedModelOutput
         }
 
         guard let textFeat: MLFeatureValue = textFeatures.featureValue(for: SAM3FeatureNames.TextEncoder.features),
               let textMask: MLFeatureValue = textFeatures.featureValue(for: SAM3FeatureNames.TextEncoder.mask) else {
-            print("❌ Text encoder missing expected output features")
+            print("Text encoder missing expected output features")
             throw PipelineError.unexpectedModelOutput
         }
 
@@ -98,7 +98,7 @@ final class SAM3Decoder {
               scores.shape[1] == boxes.shape[1],
               scores.shape[1] == masks.shape[1],
               boxes.shape[2] == 4 else {
-            print("❌ Unexpected output shapes from decoder")
+            print("Unexpected output shapes from decoder")
             throw PipelineError.unexpectedModelOutput
         }
     }
