@@ -13,6 +13,11 @@ class OverviewAppState {
         get { selectionState.selectedPerson }
         set { selectionState.selectedPerson = newValue }
     }
+
+    var selectedMole: Mole? {
+        get { selectionState.selectedMole }
+        set { selectionState.selectedMole = newValue }
+    }
     
     // MARK: - UI Flow State
     var showingAddPerson: Bool = false
@@ -158,6 +163,10 @@ class OverviewAppState {
     func requestDelete(mole: Mole) {
         moleToDelete = mole
         showingDeleteMoleAlert = true
+    }
+
+    func selectMole(_ mole: Mole?) {
+        selectedMole = mole
     }
     
     func confirmDeleteMole() {

@@ -43,7 +43,7 @@ final class MoleDetailAppState {
 	}
 
 	func handleAppear() {
-		if !didOpenEvolution {
+		if !didOpenEvolution && selectionState.selectedMole == nil {
 			selectionState.selectedMole = initialMole
 		}
 	}

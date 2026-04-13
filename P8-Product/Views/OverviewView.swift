@@ -26,7 +26,6 @@ private struct OverviewContentView: View {
     // Declared at the top of the struct, so ALL subviews below can see it!
     @Bindable var appState: OverviewAppState
     var people: [Person]
-    @ObservationIgnored private let selectionState = SelectionState.shared
     
     var body: some View {
         navigationContent
@@ -149,9 +148,11 @@ private struct OverviewContentView: View {
                     ForEach(person.moles) { mole in
                         NavigationLink(destination: MoleDetailView(mole: mole)) {
                             moleRow(for: mole)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
                         }
                         .simultaneousGesture(TapGesture().onEnded {
-                            selectionState.selectedMole = mole
+                            appState.selectMole(mole)
                         })
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button {
@@ -210,6 +211,7 @@ private struct OverviewContentView: View {
             
             Spacer()
         }
+        .contentShape(Rectangle())
         .padding(.vertical, 8)
     }
 
