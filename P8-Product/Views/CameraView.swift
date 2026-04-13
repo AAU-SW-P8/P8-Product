@@ -59,7 +59,7 @@ struct CameraView: View {
             // tab bar stays visible and the user can navigate back.
             .navigationDestination(isPresented: $showSegmentation) {
                 if let capturedImage {
-                    MoleSegmentationTestView(inputImage: capturedImage)
+                    MoleSegmentationView(inputImage: capturedImage)
                 }
             }
         }

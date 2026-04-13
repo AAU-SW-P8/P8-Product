@@ -13,7 +13,7 @@ import SwiftData
 /// Uses the pre-loaded SAM3 pipeline from SAM3ModelLoader
 /// and runs segmentation on an image upon user request. Detected mole regions
 /// are shown as a semi-transparent overlays on top of the original image.
-struct MoleSegmentationTestView: View {
+struct MoleSegmentationView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Person.createdAt) private var people: [Person]
 
@@ -29,8 +29,8 @@ struct MoleSegmentationTestView: View {
     @State private var offset: CGSize = .zero
     @State private var lastOffset: CGSize = .zero
 
-    /// The image to segment. Replace with the image captured by the camera.
-    @State private var testImage: UIImage? = UIImage(named: "test_mole_image")
+    /// The image to segment, supplied by the caller (e.g. camera capture).
+    @State private var testImage: UIImage?
 
     /// Combined mask overlay for all detected moles.
     @State private var maskOverlay: UIImage?
@@ -66,6 +66,15 @@ struct MoleSegmentationTestView: View {
     /// Access the global SAM3 model loader
     @ObservedObject private var modelLoader = SAM3ModelLoader.shared
 
+    // MARK: - Init
+
+    /// Creates a segmentation view for the given image.
+    ///
+    /// - Parameter inputImage: The image to segment. Pass `nil` to show a placeholder.
+    init(inputImage: UIImage?) {
+        _testImage = State(initialValue: inputImage)
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -79,50 +88,27 @@ struct MoleSegmentationTestView: View {
             if isProcessing {
                 loadingOverlay
             }
-            .navigationTitle("Mole Segmentation")
-            .toolbar { toolbarContent }
-            .sheet(isPresented: $showSettings) {
-                settingsSheet
-            }
-            .confirmationDialog("Who is this scan for?", isPresented: $showPersonPicker, titleVisibility: .visible) {
-                ForEach(people) { person in
-                    Button(person.name) {
-                        selectedPersonForScan = person
-                        resegment()
-                    }
-                }
-                Button("Cancel", role: .cancel) {}
-            }
-            .confirmationDialog("Mole Action", isPresented: $showMoleActionDialog, titleVisibility: .visible) {
-                Button("New Mole") {
-                    if let person = selectedPersonForScan {
-                        addMole(to: person, from: testImage, in: selectedBoxForMole)
-                    }
-                }
-                if let person = selectedPersonForScan, !person.moles.isEmpty {
-                    Button("Existing Mole") {
-                        showExistingMolePicker = true
-                    }
-                }
-                Button("Cancel", role: .cancel) {}
-            }
-            .confirmationDialog("Select Existing Mole", isPresented: $showExistingMolePicker, titleVisibility: .visible) {
-                if let person = selectedPersonForScan {
-                    ForEach(person.moles) { mole in
-                        Button(mole.name) {
-                            addToExistingMole(mole, from: testImage, in: selectedBoxForMole)
-                        }
-                    }
-                }
-                Button("Cancel", role: .cancel) {}
-            }
-            .alert(item: $activeAlert) { alert in
-                Alert(
-                    title: Text(alert.title),
-                    message: Text(alert.message),
-                    dismissButton: .default(Text("OK"))
-                )
-            }
+        }
+        .navigationTitle("Mole Segmentation")
+        .toolbar { toolbarContent }
+        .sheet(isPresented: $showSettings) {
+            settingsSheet
+        }
+        .confirmationDialog("Who is this scan for?", isPresented: $showPersonPicker, titleVisibility: .visible) {
+            personPickerButtons
+        }
+        .confirmationDialog("Mole Action", isPresented: $showMoleActionDialog, titleVisibility: .visible) {
+            moleActionButtons
+        }
+        .confirmationDialog("Select Existing Mole", isPresented: $showExistingMolePicker, titleVisibility: .visible) {
+            existingMoleButtons
+        }
+        .alert(item: $activeAlert) { alert in
+            Alert(
+                title: Text(alert.title),
+                message: Text(alert.message),
+                dismissButton: .default(Text("OK"))
+            )
         }
     }
 
@@ -409,6 +395,47 @@ struct MoleSegmentationTestView: View {
 
     // MARK: - Supporting views
 
+    /// Buttons for the person-picker confirmation dialog.
+    @ViewBuilder
+    private var personPickerButtons: some View {
+        ForEach(people) { person in
+            Button(person.name) {
+                selectedPersonForScan = person
+                resegment()
+            }
+        }
+        Button("Cancel", role: .cancel) {}
+    }
+
+    /// Buttons for the mole-action confirmation dialog.
+    @ViewBuilder
+    private var moleActionButtons: some View {
+        Button("New Mole") {
+            if let person = selectedPersonForScan {
+                addMole(to: person, from: testImage, in: selectedBoxForMole)
+            }
+        }
+        if let person = selectedPersonForScan, !person.moles.isEmpty {
+            Button("Existing Mole") {
+                showExistingMolePicker = true
+            }
+        }
+        Button("Cancel", role: .cancel) {}
+    }
+
+    /// Buttons for the existing-mole picker confirmation dialog.
+    @ViewBuilder
+    private var existingMoleButtons: some View {
+        if let person = selectedPersonForScan {
+            ForEach(person.moles) { mole in
+                Button(mole.name) {
+                    addToExistingMole(mole, from: testImage, in: selectedBoxForMole)
+                }
+            }
+        }
+        Button("Cancel", role: .cancel) {}
+    }
+
     /// A sheet containing controls for confidence and NMS thresholds.
     private var settingsSheet: some View {
         NavigationStack {
@@ -507,5 +534,5 @@ struct MoleSegmentationTestView: View {
 // MARK: - Preview
 
 #Preview {
-    MoleSegmentationTestView(inputImage: UIImage(named: "test_mole_image"))
+    MoleSegmentationView(inputImage: UIImage(named: "test_mole_image"))
 }
