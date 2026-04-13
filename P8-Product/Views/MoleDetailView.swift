@@ -6,25 +6,17 @@
 import SwiftUI
 
 struct MoleDetailView: View {
-    let mole: Mole
-    @State private var selectedIndex = 0
-    @State private var showCompare = false
-    @State private var didOpenEvolution = false
-    @State private var selectionState = SelectionState.shared
+    @State private var appState: MoleDetailAppState
 
-    private var activeMole: Mole {
-        selectionState.selectedMole ?? mole
-    }
-
-    private var scans: [MoleScan] {
-        activeMole.instances
-            .compactMap(\.moleScan)
-            .sorted { $0.captureDate < $1.captureDate }
+    init(mole: Mole) {
+        _appState = State(initialValue: MoleDetailAppState(mole: mole))
     }
 
     var body: some View {
+        @Bindable var appState = appState
+
         VStack(spacing: 0) {
-            if scans.isEmpty {
+            if appState.scans.isEmpty {
                 Spacer()
                 Image(systemName: "photo.on.rectangle.angled")
                     .font(.system(size: 48))
@@ -38,7 +30,7 @@ struct MoleDetailView: View {
                 
                 Spacer()
                 HStack(spacing: 0) {
-                    ImageCarousel(scans: scans, mole: activeMole, selectedIndex: $selectedIndex)
+                    ImageCarousel(scans: appState.scans, mole: appState.activeMole, selectedIndex: $appState.selectedIndex)
                         .frame(maxWidth: 420)
                 }
                 .padding(.vertical, 12)
@@ -55,34 +47,24 @@ struct MoleDetailView: View {
                 Spacer()
             }
         }
-        .navigationTitle(activeMole.name)
+        .navigationTitle(appState.activeMole.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if scans.count > 1 {
+            if appState.shouldShowEvolutionButton {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Evolution") {
-                        didOpenEvolution = true
-                        selectionState.selectedPerson = activeMole.person
-                        selectionState.selectedMole = activeMole
-                        selectionState.pendingCompareMole = activeMole
-                        showCompare = true
-                    }
+                    Button("Evolution") { appState.openEvolution() }
                     .accessibilityIdentifier("moleDetailCompareButton")
                 }
             }
         }
-        .navigationDestination(isPresented: $showCompare) {
+        .navigationDestination(isPresented: $appState.showCompare) {
             CompareView()
         }
         .onAppear {
-            if !didOpenEvolution {
-                selectionState.selectedMole = mole
-            }
+            appState.handleAppear()
         }
-        .onChange(of: scans.count) {
-            if selectedIndex >= scans.count {
-                selectedIndex = max(0, scans.count - 1)
-            }
+        .onChange(of: appState.scans.count) {
+            appState.clampSelectedIndexIfNeeded()
         }
     }
 }
