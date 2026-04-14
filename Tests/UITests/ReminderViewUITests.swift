@@ -167,7 +167,7 @@ final class ReminderViewUITests: XCTestCase {
             
         enabledPicker.tap()
         
-		XCTAssertTrue(app.buttons["Follow Default"].waitForExistence(timeout: 3))
+		XCTAssertTrue(app.buttons["Default"].waitForExistence(timeout: 3))
 		XCTAssertTrue(app.buttons["Enabled"].exists)
 		XCTAssertTrue(app.buttons["Disabled"].exists)
 	}
