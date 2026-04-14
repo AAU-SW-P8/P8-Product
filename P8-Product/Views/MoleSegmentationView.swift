@@ -14,7 +14,7 @@ import SwiftData
 struct MoleSegmentationTestView: View {
     @Query(sort: \Person.createdAt)
     private var people: [Person]
-    @State private var AppState: MoleSegmentationAppState = MoleSegmentationAppState(dataController: .shared)
+    @State private var appState: MoleSegmentationAppState = MoleSegmentationAppState(dataController: .shared)
 
     // MARK: - UI-Only State (Gestures)
     @State private var currentZoom: Double = 0.0
@@ -197,7 +197,7 @@ struct MoleSegmentationTestView: View {
     /**
      A view builder that renders the settings sheet for adjusting detection parameters. 
      Provides sliders for confidence threshold and NMS overlap threshold, along with explanatory text. 
-     The settings are bound to static properties on `AppState` to allow real-time adjustments that affect the segmentation results. 
+     The settings are bound to the view's `AppState` instance (`MoleSegmentationAppState`) so changes update the segmentation parameters in real time. 
      Should be presented as a sheet when the user taps the "Settings" button in the toolbar.
      - Returns: A view containing controls for adjusting segmentation parameters.
      */
