@@ -32,6 +32,12 @@ struct MoleSegmentationView: View {
     /// The image to segment, supplied by the caller (e.g. camera capture).
     @State private var testImage: UIImage?
 
+    /// Depth map from the AR camera's LiDAR sensor (nil for non-AR captures).
+    @State private var depthMap: CVPixelBuffer?
+
+    /// Confidence map for the depth data (nil for non-AR captures).
+    @State private var confidenceMap: CVPixelBuffer?
+
     /// Combined mask overlay for all detected moles.
     @State private var maskOverlay: UIImage?
     
@@ -68,11 +74,16 @@ struct MoleSegmentationView: View {
 
     // MARK: - Init
 
-    /// Creates a segmentation view for the given image.
+    /// Creates a segmentation view for the given image and optional depth data.
     ///
-    /// - Parameter inputImage: The image to segment. Pass `nil` to show a placeholder.
-    init(inputImage: UIImage?) {
+    /// - Parameters:
+    ///   - inputImage: The image to segment. Pass `nil` to show a placeholder.
+    ///   - depthMap: LiDAR depth map captured alongside the image. `nil` for non-AR captures.
+    ///   - confidenceMap: Confidence values for each depth pixel. `nil` for non-AR captures.
+    init(inputImage: UIImage?, depthMap: CVPixelBuffer? = nil, confidenceMap: CVPixelBuffer? = nil) {
         _testImage = State(initialValue: inputImage)
+        _depthMap = State(initialValue: depthMap)
+        _confidenceMap = State(initialValue: confidenceMap)
     }
 
     // MARK: - Body
@@ -534,5 +545,7 @@ struct MoleSegmentationView: View {
 // MARK: - Preview
 
 #Preview {
-    MoleSegmentationView(inputImage: UIImage(named: "test_mole_image"))
+    MoleSegmentationView(inputImage: UIImage(named: "test_mole_image"),
+                         depthMap: nil,
+                         confidenceMap: nil)
 }

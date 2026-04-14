@@ -5,6 +5,7 @@
 
 import UIKit
 import ARKit
+import RealityKit
 
 class ARCameraViewController: UIViewController, ARSessionDelegate {
 
@@ -16,12 +17,12 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
 
     // MARK: - Callbacks
 
-    var onCapture: ((UIImage) -> Void)?
+    var onCapture: ((UIImage, CVPixelBuffer?, CVPixelBuffer?) -> Void)?
     var onCancel: (() -> Void)?
 
     // MARK: - Subviews
 
-    private var sceneView: ARSCNView!
+    private var arView: ARView!
     private var captureButton: UIButton!
     private var measurementDisplay: UIView!
     private var displayLabel: UILabel!
@@ -29,7 +30,6 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
 
     // MARK: - State
 
-    private var arSession: ARSession?
     private var currentDistance: Float = 100.0
 
     // MARK: - Lifecycle
@@ -48,19 +48,17 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        arSession?.pause()
+        arView?.session.pause()
     }
 
     // MARK: - AR Setup
 
     private func setupARView() {
-        sceneView = ARSCNView(frame: view.bounds)
-        sceneView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        view.addSubview(sceneView)
+        arView = ARView(frame: view.bounds)
+        arView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.addSubview(arView)
 
-        arSession = ARSession()
-        arSession?.delegate = self
-        sceneView.session = arSession!
+        arView.session.delegate = self
 
         let configuration = ARWorldTrackingConfiguration()
         configuration.sceneReconstruction = .mesh
@@ -69,7 +67,7 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         }
         configuration.environmentTexturing = .automatic
 
-        arSession?.run(configuration)
+        arView.session.run(configuration)
     }
 
     // MARK: - UI Setup
@@ -214,7 +212,7 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
     // MARK: - ARSessionDelegate
 
     func session(_ session: ARSession, didUpdate frame: ARFrame) {
-        guard sceneView != nil else { return }
+        guard arView != nil else { return }
 
         if let distance = closestDepthDistance(from: frame) ?? raycastDistance(from: frame) {
             currentDistance = distance
@@ -255,10 +253,11 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
     }
 
     private func raycastDistance(from frame: ARFrame) -> Float? {
-        let screenCenter = CGPoint(x: sceneView.bounds.midX, y: sceneView.bounds.midY)
-        guard let query = sceneView.raycastQuery(from: screenCenter, allowing: .estimatedPlane, alignment: .any),
-              let arSession = arSession,
-              let result = arSession.raycast(query).first else { return nil }
+        let screenCenter = CGPoint(x: arView.bounds.midX, y: arView.bounds.midY)
+        guard let ray = arView.ray(through: screenCenter) else { return nil }
+        let query = ARRaycastQuery(origin: ray.origin, direction: ray.direction,
+                                   allowing: .estimatedPlane, alignment: .any)
+        guard let result = arView.session.raycast(query).first else { return nil }
 
         let hit = SIMD3<Float>(result.worldTransform.columns.3.x,
                                result.worldTransform.columns.3.y,
@@ -287,9 +286,30 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
     // MARK: - Actions
 
     @objc private func capturePhoto() {
-        guard sceneView != nil else { return }
-        let image = sceneView.snapshot()
-        onCapture?(image)
+        guard let frame = arView?.session.currentFrame else { return }
+
+        // Convert the camera pixel buffer to a UIImage with correct orientation
+        let ciImage = CIImage(cvPixelBuffer: frame.capturedImage)
+        let context = CIContext()
+        guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return }
+
+        let orientationMap: [UIInterfaceOrientation: UIImage.Orientation] = [
+            .portrait: .right,
+            .portraitUpsideDown: .left,
+            .landscapeLeft: .up,
+            .landscapeRight: .down,
+        ]
+        let windowScene = view.window?.windowScene
+        let interfaceOrientation = windowScene?.effectiveGeometry.interfaceOrientation ?? .portrait
+        let imageOrientation = orientationMap[interfaceOrientation] ?? .right
+        let image = UIImage(cgImage: cgImage, scale: 1.0, orientation: imageOrientation)
+
+        let depthMap = frame.sceneDepth?.depthMap
+        let confidenceMap = frame.sceneDepth?.confidenceMap
+        
+        print(depthMap.debugDescription)
+        print(confidenceMap.debugDescription)
+        onCapture?(image, depthMap, confidenceMap)
     }
 
     @objc private func cancel() {

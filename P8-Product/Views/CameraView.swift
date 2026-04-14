@@ -17,6 +17,12 @@ struct CameraView: View {
     /// The photo returned by the camera after the user confirms it.
     @State private var capturedImage: UIImage?
 
+    /// Depth map from the AR camera's LiDAR sensor (nil for non-AR captures).
+    @State private var capturedDepthMap: CVPixelBuffer?
+
+    /// Confidence map for the depth data (nil for non-AR captures).
+    @State private var capturedConfidenceMap: CVPixelBuffer?
+
     /// Controls presentation of the camera full-screen cover.
     @State private var showCamera = false
 
@@ -59,7 +65,9 @@ struct CameraView: View {
             // tab bar stays visible and the user can navigate back.
             .navigationDestination(isPresented: $showSegmentation) {
                 if let capturedImage {
-                    MoleSegmentationView(inputImage: capturedImage)
+                    MoleSegmentationView(inputImage: capturedImage,
+                                         depthMap: capturedDepthMap,
+                                         confidenceMap: capturedConfidenceMap)
                 }
             }
         }
@@ -70,7 +78,9 @@ struct CameraView: View {
         // Camera: choose AR or simple depending on device capabilities.
         .fullScreenCover(isPresented: $showCamera) {
             if supportsARCapture {
-                ARCameraView(capturedImage: $capturedImage)
+                ARCameraView(capturedImage: $capturedImage,
+                             capturedDepthMap: $capturedDepthMap,
+                             capturedConfidenceMap: $capturedConfidenceMap)
                     .ignoresSafeArea()
             } else {
                 SimpleCameraView(capturedImage: $capturedImage)

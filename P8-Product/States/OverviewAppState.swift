@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import UIKit
+import CoreVideo
 
 @MainActor
 @Observable
@@ -31,6 +32,8 @@ class OverviewAppState {
     var personToDelete: Person?
     var moleToDelete: Mole?
     var capturedImage: UIImage?
+    var capturedDepthMap: CVPixelBuffer?
+    var capturedConfidenceMap: CVPixelBuffer?
     
     private let dataController: DataController
     
@@ -182,5 +185,7 @@ class OverviewAppState {
         
         // Clean up
         self.capturedImage = nil
+        self.capturedDepthMap = nil
+        self.capturedConfidenceMap = nil
     }
 }

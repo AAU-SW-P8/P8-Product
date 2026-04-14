@@ -43,7 +43,9 @@ private struct OverviewContentView: View {
                 newScanButton
             }
             .fullScreenCover(isPresented: $appState.cameraShowing) {
-                ARCameraView(capturedImage: $appState.capturedImage)
+                ARCameraView(capturedImage: $appState.capturedImage,
+                             capturedDepthMap: $appState.capturedDepthMap,
+                             capturedConfidenceMap: $appState.capturedConfidenceMap)
                     .ignoresSafeArea()
             }
             .onChange(of: appState.capturedImage) { _, newImage in
