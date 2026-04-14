@@ -145,8 +145,34 @@ struct MoleDetailView: View {
                 }
             }
         }
-        .navigationTitle(appState.activeMole.name)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Menu {
+                    ForEach(appState.molesForActivePerson) { mole in
+                        Button {
+                            appState.selectMole(mole)
+                        } label: {
+                            if mole.id == appState.activeMole.id {
+                                Label(mole.name, systemImage: "checkmark")
+                            } else {
+                                Text(mole.name)
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(appState.activeMole.name)
+                            .font(.headline)
+                            .lineLimit(1)
+                        Image(systemName: "chevron.down")
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                    }
+                }
+                .accessibilityIdentifier("moleDetailMolePicker")
+            }
+        }
         .onAppear {
             appState.handleAppear()
         }

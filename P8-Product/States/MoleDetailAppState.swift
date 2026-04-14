@@ -37,11 +37,34 @@ final class MoleDetailAppState {
 			.sorted { $0.captureDate < $1.captureDate }
 	}
 
+	var molesForActivePerson: [Mole] {
+		guard let person = activeMole.person else {
+			return [activeMole]
+		}
+
+		let sorted = person.moles.sorted {
+			if $0.bodyPart.localizedCaseInsensitiveCompare($1.bodyPart) == .orderedSame {
+				return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+			}
+			return $0.bodyPart.localizedCaseInsensitiveCompare($1.bodyPart) == .orderedAscending
+		}
+
+		return sorted.isEmpty ? [activeMole] : sorted
+	}
+
 	// MARK: - Actions
 
 	func handleAppear() {
 		selectionState.selectedPerson = initialMole.person
 		selectionState.selectedMole = initialMole
+	}
+
+	func selectMole(_ mole: Mole) {
+		selectionState.selectedPerson = mole.person
+		selectionState.selectedMole = mole
+		selectedIndex = 0
+		selectedEvolutionTopIndex = 0
+		selectedEvolutionBottomIndex = 0
 	}
 
 	func clampSelectedIndicesIfNeeded() {

@@ -18,6 +18,9 @@ class OverviewAppState {
         get { selectionState.selectedMole }
         set { selectionState.selectedMole = newValue }
     }
+
+    // Keeps list-driven navigation stable while detail view is open.
+    var selectedMoleNavigationID: UUID?
     
     // MARK: - UI Flow State
     var showingAddPerson: Bool = false
@@ -167,6 +170,7 @@ class OverviewAppState {
 
     func selectMole(_ mole: Mole?) {
         selectedMole = mole
+        selectedMoleNavigationID = mole?.id
     }
     
     func confirmDeleteMole() {

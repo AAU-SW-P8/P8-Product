@@ -175,7 +175,7 @@ private struct OverviewContentView: View {
 
     private func selectedMoleIDBinding(for person: Person) -> Binding<UUID?> {
         Binding(
-            get: { appState.selectedMole?.id },
+            get: { appState.selectedMoleNavigationID },
             set: { newID in
                 let selected = person.moles.first { $0.id == newID }
                 appState.selectMole(selected)
