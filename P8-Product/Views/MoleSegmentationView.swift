@@ -311,7 +311,13 @@ struct MoleSegmentationView: View {
         let croppedImage = renderer.image { _ in
             image.draw(at: CGPoint(x: -cropRect.origin.x, y: -cropRect.origin.y))
         }
-        
+
+        // Calculate mole area and diameter using the Calculator class
+        let calculator = Calculator()
+        let segmentedImage = maskOverlay ?? croppedImage
+        let area = calculator.calculateArea(from: (segmentedImage, [box]), depthMap: depthMap, confidenceMap: confidenceMap)
+        let diameter = 2 * sqrt(area / .pi) //TODO: This is a simplification; actual mole shapes may not be perfectly circular. Change when area func is done
+
         // Save scan and mole, similar to OverviewView
         let scan = MoleScan(imageData: croppedImage.jpegData(compressionQuality: 0.9))
         modelContext.insert(scan)
@@ -327,8 +333,8 @@ struct MoleSegmentationView: View {
         modelContext.insert(mole)
         
         let instance = MoleInstance(
-            diameter: 0,
-            area: 0,
+            diameter: Float(diameter),
+            area: Float(area),
             mole: mole,
             moleScan: scan
         )
@@ -356,14 +362,20 @@ struct MoleSegmentationView: View {
         let croppedImage = renderer.image { _ in
             image.draw(at: CGPoint(x: -cropRect.origin.x, y: -cropRect.origin.y))
         }
+        // Calculate mole area and diameter using the Calculator class
+        let calculator = Calculator()
+        let segmentedImage = maskOverlay ?? croppedImage
+        let area = calculator.calculateArea(from: (segmentedImage, [box]), depthMap: depthMap, confidenceMap: confidenceMap)
+        let diameter = 2 * sqrt(area / .pi) //TODO: This is a simplification; actual mole shapes may not be perfectly circular. Change when area func is done
+
         
         // Save scan and associate to existing mole
         let scan = MoleScan(imageData: croppedImage.jpegData(compressionQuality: 0.9))
         modelContext.insert(scan)
         
         let instance = MoleInstance(
-            diameter: 0,
-            area: 0,
+            diameter: Float(diameter),
+            area: Float(area),
             mole: mole,
             moleScan: scan
         )
