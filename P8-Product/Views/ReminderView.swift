@@ -41,8 +41,6 @@ struct ReminderView: View {
                             }
                             .pickerStyle(.menu)
                             .accessibilityIdentifier("defaultReminderFrequencyPicker")
-                            .disabled(!appState.reminderEnabled)
-                            .opacity(appState.reminderEnabled ? 1.0 : 0.4)
                             .onChange(of: appState.defaultFrequency) { _, newValue in
                                 appState.selectedPerson?.defaultReminderFrequency = newValue
                                 updateFrequencyFollowDefaultMoles()
@@ -67,9 +65,17 @@ struct ReminderView: View {
                                                 }
                                             }
 
-                                            Text("Reminder Enabled")
-                                                .font(.subheadline.weight(.semibold))
-                                            reminderModeSelector(for: mole)
+                                            HStack {
+                                                Text("Reminder Enabled")
+                                                    .font(.subheadline.weight(.semibold))
+                                                Picker("Reminder Mode", selection: reminderModeBinding(for: mole)) {
+                                                    Text("Default").tag("Default")
+                                                    Text("Enabled").tag("Enabled")
+                                                    Text("Disabled").tag("Disabled")
+                                                }
+                                                .pickerStyle(.menu)
+                                                .accessibilityIdentifier("moleReminderEnabledPicker_\(mole.name)")
+                                            }
 
                                             HStack {
                                                 Text("Reminder Frequency")
