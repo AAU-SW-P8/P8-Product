@@ -10,10 +10,13 @@ import XCTest
 final class ReminderViewUITests: XCTestCase {
 
 	private var app: XCUIApplication!
+	private let reminderFrequencyButtonLabels = ["Default", "Weekly", "Monthly", "Quarterly"]
 
 	override func setUpWithError() throws {
 		continueAfterFailure = false
 		app = XCUIApplication()
+		app.launchArguments += ["-SkipModelLoading", "-UITest_InMemoryStore"]
+		app.terminate()
 		app.launch()
 
 		app.tabBars.buttons["Reminder"].tap()
@@ -29,8 +32,33 @@ final class ReminderViewUITests: XCTestCase {
 		app.buttons["chevron.left"]
 	}
 
+	private func leftArmMoleCard() -> XCUIElement {
+		app.otherElements.containing(.staticText, identifier: "Mole Left Arm Mole").firstMatch
+	}
+
 	private func firstMoleFrequencyButton() -> XCUIElement {
-		app.buttons["Default"].firstMatch
+		let frequencyPredicate = NSPredicate(format: "label IN %@", reminderFrequencyButtonLabels)
+		return leftArmMoleCard().buttons.matching(frequencyPredicate).firstMatch
+	}
+
+	private func defaultFrequencyButton() -> XCUIElement {
+		let frequencyPredicate = NSPredicate(format: "label IN %@", reminderFrequencyButtonLabels)
+		let frequencyButtons = app.buttons.matching(frequencyPredicate)
+
+		var topMostButton = frequencyButtons.firstMatch
+		var minY: CGFloat = .greatestFiniteMagnitude
+
+		for index in 0..<frequencyButtons.count {
+			let button = frequencyButtons.element(boundBy: index)
+			guard button.exists else { continue }
+
+			if button.frame.minY < minY {
+				minY = button.frame.minY
+				topMostButton = button
+			}
+		}
+
+		return topMostButton
 	}
 
 	// MARK: - Smoke
@@ -105,7 +133,8 @@ final class ReminderViewUITests: XCTestCase {
 
 	func testReminderModeChangesMoleFrequencyControlEnabledState() {
 		// Verifies reminder mode toggles whether the per-mole frequency picker is editable.
-		XCTAssertTrue(app.staticTexts["Mole Left Arm Mole"].waitForExistence(timeout: 3))
+		let leftArmCard = leftArmMoleCard()
+		XCTAssertTrue(leftArmCard.waitForExistence(timeout: 3))
 
 		let frequencyButton = firstMoleFrequencyButton()
 		XCTAssertTrue(frequencyButton.waitForExistence(timeout: 3))
@@ -124,52 +153,59 @@ final class ReminderViewUITests: XCTestCase {
 	func testMoleFrequencySelectionPersistsAfterPersonSwitch() {
 		// Verifies a mole frequency selection survives a person switch and return.
 		XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3))
-		XCTAssertTrue(app.staticTexts["Mole Left Arm Mole"].waitForExistence(timeout: 3))
+		let leftArmCard = leftArmMoleCard()
+		XCTAssertTrue(leftArmCard.waitForExistence(timeout: 3))
 
 		let moleFrequency = firstMoleFrequencyButton()
 		XCTAssertTrue(moleFrequency.waitForExistence(timeout: 3))
 		moleFrequency.tap()
 		app.buttons["Quarterly"].tap()
 
-		XCTAssertTrue(app.buttons["Quarterly"].firstMatch.waitForExistence(timeout: 3))
+		XCTAssertEqual(firstMoleFrequencyButton().label, "Quarterly")
 
 		nextPersonButton.tap()
 		XCTAssertTrue(app.staticTexts["Jordan"].waitForExistence(timeout: 3))
 
 		previousPersonButton.tap()
 		XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3))
-		XCTAssertTrue(app.buttons["Quarterly"].firstMatch.waitForExistence(timeout: 3))
+		XCTAssertTrue(firstMoleFrequencyButton().waitForExistence(timeout: 3))
+		XCTAssertEqual(firstMoleFrequencyButton().label, "Quarterly")
 	}
 
 	func testChangingDefaultFrequencyDoesNotOverrideCustomMoleFrequency() {
 		// Verifies custom mole frequency stays independent from the person's default frequency.
 		XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3))
-		XCTAssertTrue(app.staticTexts["Mole Left Arm Mole"].waitForExistence(timeout: 3))
+		let leftArmCard = leftArmMoleCard()
+		XCTAssertTrue(leftArmCard.waitForExistence(timeout: 3))
 
 		let moleFrequency = firstMoleFrequencyButton()
 		XCTAssertTrue(moleFrequency.waitForExistence(timeout: 3))
 		moleFrequency.tap()
 		app.buttons["Quarterly"].tap()
 
-		let defaultFrequency = app.buttons["Weekly"].firstMatch
+		let defaultFrequency = defaultFrequencyButton()
 		XCTAssertTrue(defaultFrequency.waitForExistence(timeout: 3))
+		let targetDefaultFrequency = defaultFrequency.label == "Monthly" ? "Weekly" : "Monthly"
 		defaultFrequency.tap()
-		app.buttons["Monthly"].tap()
+		let targetOption = app.buttons[targetDefaultFrequency].firstMatch
+		XCTAssertTrue(targetOption.waitForExistence(timeout: 3))
+		targetOption.tap()
 
-		XCTAssertTrue(app.buttons["Quarterly"].exists)
-		XCTAssertTrue(app.buttons["Monthly"].exists)
-		XCTAssertTrue(app.buttons["Default"].exists)
+		XCTAssertEqual(firstMoleFrequencyButton().label, "Quarterly")
+		XCTAssertEqual(defaultFrequencyButton().label, targetDefaultFrequency)
 	}
 
 	func testDueDateIsShownAsFormattedDateWhenPresent() {
 		// Verifies moles with a due date render a formatted date string.
-		XCTAssertTrue(app.staticTexts["Mole Left Arm Mole"].waitForExistence(timeout: 3))
+		let leftArmCard = leftArmMoleCard()
+		XCTAssertTrue(leftArmCard.waitForExistence(timeout: 3))
 
-		let dateLikeText = app.staticTexts.matching(
-			NSPredicate(format: "label MATCHES %@", ".*\\\\d{1,2}:\\\\d{2}.*")
+		let dateLikeText = leftArmCard.staticTexts.matching(
+			NSPredicate(format: "label MATCHES %@", ".*\\\\d{1,2}[:.]\\\\d{2}.*")
 		).firstMatch
 
 		XCTAssertTrue(dateLikeText.waitForExistence(timeout: 3))
+		XCTAssertFalse(leftArmCard.staticTexts["No date set"].exists)
 	}
 
 	func testNoDateSetLabelShownForMoleWithoutDueDate() {
