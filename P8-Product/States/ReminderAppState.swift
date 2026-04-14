@@ -27,12 +27,6 @@ class ReminderAppState {
         set { selectionState.selectedPerson = newValue }
     }
 
-    private let dataController: DataController
-    
-    init(dataController: DataController) {
-        self.dataController = dataController
-    }
-
     /**
      Selects the next person in the list, if possible, and sets the slide animation direction.
      - Parameter people: The current list of people to determine the index of the selected person.

@@ -67,7 +67,7 @@ struct ReminderView: View {
                                                 }
                                             }
 
-                                            Text("Reminder")
+                                            Text("Reminder Enabled")
                                                 .font(.subheadline.weight(.semibold))
                                             reminderModeSelector(for: mole)
 
@@ -240,7 +240,7 @@ struct ReminderView: View {
      */
     private func reminderModeSelector(for mole: Mole) -> some View {
         let selection = reminderModeBinding(for: mole)
-        let options = ["Follow Default", "Enabled", "Disabled"]
+        let options = ["Default", "Enabled", "Disabled"]
 
         return HStack(spacing: 8) {
             ForEach(options, id: \.self) { option in
