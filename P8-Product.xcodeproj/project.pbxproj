@@ -42,24 +42,16 @@
 		7AD89F892F87B66800A2C5F0 /* Exceptions for "Tests" folder in "P8-ProductUITests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				UITests/CompareViewUITests.swift,
-				UITests/Helpers.swift,
-				UITests/ImageCarouselUITests.swift,
 				UITests/ProductUITests.swift,
 				UITests/ProductUITestsLaunchTests.swift,
-				UITests/TabStateUITests.swift,
 			);
 			target = 972E93A72F7BC67300BB8979 /* P8-ProductUITests */;
 		};
 		97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				UITests/CompareViewUITests.swift,
-				UITests/Helpers.swift,
-				UITests/ImageCarouselUITests.swift,
 				UITests/ProductUITests.swift,
 				UITests/ProductUITestsLaunchTests.swift,
-				UITests/TabStateUITests.swift,
 			);
 			target = 97C2DB192F6AB3F100454255 /* PipelineTests */;
 		};

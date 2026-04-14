@@ -3,14 +3,23 @@ import SwiftUI
 @MainActor
 @Observable
 final class MoleDetailAppState {
+	enum Page: String, CaseIterable, Identifiable {
+		case detail = "Detail"
+		case evolution = "Evolution"
+
+		var id: Self { self }
+	}
+
 	@ObservationIgnored private let selectionState = SelectionState.shared
 
 	private let initialMole: Mole
 
 	// MARK: - UI State
+	var selectedPage: Page = .detail
 	var selectedIndex: Int = 0
-	var showCompare: Bool = false
-	var didOpenEvolution: Bool = false
+	var selectedMetric: ChartMetric = .area
+	var selectedEvolutionTopIndex: Int = 0
+	var selectedEvolutionBottomIndex: Int = 0
 
 	init(mole: Mole) {
 		self.initialMole = mole
@@ -28,29 +37,17 @@ final class MoleDetailAppState {
 			.sorted { $0.captureDate < $1.captureDate }
 	}
 
-	var shouldShowEvolutionButton: Bool {
-		scans.count > 1
-	}
-
 	// MARK: - Actions
 
-	func openEvolution() {
-		didOpenEvolution = true
-		selectionState.selectedPerson = activeMole.person
-		selectionState.selectedMole = activeMole
-		selectionState.pendingCompareMole = activeMole
-		showCompare = true
-	}
-
 	func handleAppear() {
-		if !didOpenEvolution && selectionState.selectedMole == nil {
-			selectionState.selectedMole = initialMole
-		}
+		selectionState.selectedPerson = initialMole.person
+		selectionState.selectedMole = initialMole
 	}
 
-	func clampSelectedIndexIfNeeded() {
-		if selectedIndex >= scans.count {
-			selectedIndex = max(0, scans.count - 1)
-		}
+	func clampSelectedIndicesIfNeeded() {
+		let maxIndex = max(0, scans.count - 1)
+		selectedIndex = min(selectedIndex, maxIndex)
+		selectedEvolutionTopIndex = min(selectedEvolutionTopIndex, maxIndex)
+		selectedEvolutionBottomIndex = min(selectedEvolutionBottomIndex, maxIndex)
 	}
 }
