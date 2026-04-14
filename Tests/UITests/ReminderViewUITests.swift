@@ -78,6 +78,15 @@ final class ReminderViewUITests: XCTestCase {
 		option.tap()
 	}
 
+	private func selectedFrequencyValue(from accessibilityLabel: String) -> String {
+		let parts = accessibilityLabel.split(separator: ",", maxSplits: 1, omittingEmptySubsequences: true)
+		if parts.count == 2 {
+			return String(parts[1]).trimmingCharacters(in: .whitespaces)
+		}
+
+		return accessibilityLabel.trimmingCharacters(in: .whitespaces)
+	}
+
 	// MARK: - Smoke
 
 	func testReminderTabShowsHeaderAndSections() {
@@ -174,7 +183,7 @@ final class ReminderViewUITests: XCTestCase {
 		moleFrequency.tap()
 		try chooseFrequencyOption("Quarterly")
 
-		XCTAssertEqual(firstMoleFrequencyButton().label, "Quarterly")
+		XCTAssertEqual(selectedFrequencyValue(from: firstMoleFrequencyButton().label), "Quarterly")
 
 		nextPersonButton.tap()
 		XCTAssertTrue(app.staticTexts["Jordan"].waitForExistence(timeout: 3))
@@ -182,7 +191,7 @@ final class ReminderViewUITests: XCTestCase {
 		previousPersonButton.tap()
 		XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3))
 		XCTAssertTrue(firstMoleFrequencyButton().waitForExistence(timeout: 3))
-		XCTAssertEqual(firstMoleFrequencyButton().label, "Quarterly")
+		XCTAssertEqual(selectedFrequencyValue(from: firstMoleFrequencyButton().label), "Quarterly")
 	}
 
 	func testChangingDefaultFrequencyDoesNotOverrideCustomMoleFrequency() throws {
@@ -199,8 +208,8 @@ final class ReminderViewUITests: XCTestCase {
 		defaultFrequency.tap()
 		try chooseFrequencyOption(targetDefaultFrequency)
 
-		XCTAssertEqual(firstMoleFrequencyButton().label, "Quarterly")
-		XCTAssertEqual(defaultFrequencyButton().label, targetDefaultFrequency)
+		XCTAssertEqual(selectedFrequencyValue(from: firstMoleFrequencyButton().label), "Quarterly")
+		XCTAssertEqual(selectedFrequencyValue(from: defaultFrequencyButton().label), targetDefaultFrequency)
 	}
 
 	func testDueDateIsShownAsFormattedDateWhenPresent() {
