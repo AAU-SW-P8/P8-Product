@@ -11,19 +11,7 @@ jobs:
     runs-on: macos-26
 
     steps:
-      - name: Display runner information
-        run: |
-          echo "cpu-core:       $(sysctl -n hw.ncpu)"
-          echo "cpu-model:      $(sysctl -n machdep.cpu.brand_string)"
-          echo "hostname:       $(hostname)"
-          echo "kernel-release: $(uname -r)"
-          echo "kernel-version: $(uname -v)"
-          echo "name:           $(sw_vers -productName)"
-          echo "platform:       $(uname -s)"
-          echo "release:        $(sw_vers -productVersion)"
-          echo "total-memory:   $(sysctl -n hw.memsize)"
-      
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v6
         with:
           submodules: recursive
@@ -39,7 +27,7 @@ jobs:
           echo $default | cat >default
           echo Using default scheme: $default
 
-      - name: Build project
+      - name: Build
         env:
           scheme: ${{ 'default' }}
         run: |
