@@ -40,6 +40,7 @@ struct ReminderView: View {
                                 Text("Quarterly").tag("Quarterly")
                             }
                             .pickerStyle(.menu)
+                            .accessibilityIdentifier("defaultReminderFrequencyPicker")
                             .disabled(!appState.reminderEnabled)
                             .opacity(appState.reminderEnabled ? 1.0 : 0.4)
                             .onChange(of: appState.defaultFrequency) { _, newValue in
@@ -80,6 +81,7 @@ struct ReminderView: View {
                                                     Text("Quarterly").tag("Quarterly")
                                                 }
                                                 .pickerStyle(.menu)
+                                                .accessibilityIdentifier("moleReminderFrequencyPicker_\(mole.name)")
                                                 .disabled(!effectiveReminderEnabled(for: mole))
                                                 .opacity(effectiveReminderEnabled(for: mole) ? 1.0 : 0.4)
                                             }
