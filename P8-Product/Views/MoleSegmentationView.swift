@@ -25,47 +25,47 @@ struct MoleSegmentationTestView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                if let image: UIImage = AppState.testImage {
+                if let image: UIImage = appState.testImage {
                     imageContent(image: image)
                 } else {
                     noImagePlaceholder
                 }
 
-                if AppState.isProcessing {
+                if appState.isProcessing {
                     loadingOverlay
                 }
             }
             .navigationTitle("Mole Segmentation")
             .toolbar { toolbarContent }
-            .sheet(isPresented: $AppState.showSettings) {
+            .sheet(isPresented: $appState.showSettings) {
                 // Assuming settingsSheet is extracted
                 settingsSheet
             }
-            .confirmationDialog("Who is this scan for?", isPresented: $AppState.showPersonPicker) {
+            .confirmationDialog("Who is this scan for?", isPresented: $appState.showPersonPicker) {
                 ForEach(people) { person in
                     Button(person.name) {
-                        AppState.selectedPersonForScan = person
-                        AppState.resegment()
+                        appState.selectedPersonForScan = person
+                        appState.resegment()
                     }
                 }
                 Button("Cancel", role: .cancel) {}
             }
-            .confirmationDialog("Mole Action", isPresented: $AppState.showMoleActionDialog) {
-                Button("New Mole") { AppState.handleNewMoleSelection() }
-                if let person: Person = AppState.selectedPersonForScan, !person.moles.isEmpty {
-                    Button("Existing Mole") { AppState.showExistingMolePicker = true }
+            .confirmationDialog("Mole Action", isPresented: $appState.showMoleActionDialog) {
+                Button("New Mole") { appState.handleNewMoleSelection() }
+                if let person: Person = appState.selectedPersonForScan, !person.moles.isEmpty {
+                    Button("Existing Mole") { appState.showExistingMolePicker = true }
                 }
                 Button("Cancel", role: .cancel) {}
             }
-            .confirmationDialog("Select Existing Mole", isPresented: $AppState.showExistingMolePicker) {
-                if let person: Person = AppState.selectedPersonForScan {
+            .confirmationDialog("Select Existing Mole", isPresented: $appState.showExistingMolePicker) {
+                if let person: Person = appState.selectedPersonForScan {
                     ForEach(person.moles) { mole in
-                        Button(mole.name) { AppState.handleExistingMoleSelection(mole: mole) }
+                        Button(mole.name) { appState.handleExistingMoleSelection(mole: mole) }
                     }
                 }
                 Button("Cancel", role: .cancel) {}
             }
-            .alert(item: $AppState.activeAlert) { alert in
+            .alert(item: $appState.activeAlert) { alert in
                 Alert(title: Text(alert.title), message: Text(alert.message), dismissButton: .default(Text("OK")))
             }
         }
@@ -85,7 +85,7 @@ struct MoleSegmentationTestView: View {
     private func imageContent(image: UIImage) -> some View {
         GeometryReader { geometry in
             ZStack {
-                if let mask: UIImage = AppState.maskOverlay {
+                if let mask: UIImage = appState.maskOverlay {
                     // Render the fully composited annotated image returned by MoleSegmentor
                     Image(uiImage: mask)
                         .resizable()
@@ -105,8 +105,8 @@ struct MoleSegmentationTestView: View {
                                 let scaleX: Double = drawWidth / mask.size.width
                                 let scaleY: Double = drawHeight / mask.size.height
 
-                                ForEach(0..<AppState.detectedBoxes.count, id: \.self) { index in
-                                    let box: CGRect = AppState.detectedBoxes[index]
+                                ForEach(0..<appState.detectedBoxes.count, id: \.self) { index in
+                                    let box: CGRect = appState.detectedBoxes[index]
                                     let rect: CGRect = CGRect(
                                         x: drawX + box.minX * scaleX,
                                         y: drawY + box.minY * scaleY,
@@ -120,15 +120,15 @@ struct MoleSegmentationTestView: View {
                                         .frame(width: rect.width, height: rect.height)
                                         .position(x: rect.midX, y: rect.midY)
                                         .onLongPressGesture {
-                                            AppState.selectedBoxForMole = box
-                                            if AppState.selectedPersonForScan == nil && people.count == 1 {
-                                                AppState.selectedPersonForScan = people[0]
+                                            appState.selectedBoxForMole = box
+                                            if appState.selectedPersonForScan == nil && people.count == 1 {
+                                                appState.selectedPersonForScan = people[0]
                                             }
                                             
-                                            if AppState.selectedPersonForScan != nil {
-                                                AppState.showMoleActionDialog = true
+                                            if appState.selectedPersonForScan != nil {
+                                                appState.showMoleActionDialog = true
                                             } else {
-                                                AppState.activeAlert = .error("Please segment again to select a person.")
+                                                appState.activeAlert = .error("Please segment again to select a person.")
                                             }
                                         }
                                 }
@@ -184,7 +184,7 @@ struct MoleSegmentationTestView: View {
         }
         .safeAreaInset(edge: .bottom) {
             VStack {
-                Text(AppState.statusMessage)
+                Text(appState.statusMessage)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .padding(.bottom, 2)
@@ -209,20 +209,20 @@ struct MoleSegmentationTestView: View {
                         HStack {
                             Text("Confidence:")
                             Spacer()
-                            Text(String(format: "%.2f", AppState.confidenceThreshold))
+                            Text(String(format: "%.2f", appState.confidenceThreshold))
                                 .monospacedDigit()
                         }
-                        Slider(value: $AppState.confidenceThreshold, in: 0.00...1.00, step: 0.05)
+                        Slider(value: $appState.confidenceThreshold, in: 0.00...1.00, step: 0.05)
                     }
                     
                     VStack(alignment: .leading) {
                         HStack {
                             Text("NMS Overlap:")
                             Spacer()
-                            Text(String(format: "%.2f", AppState.nmsThreshold))
+                            Text(String(format: "%.2f", appState.nmsThreshold))
                                 .monospacedDigit()
                         }
-                        Slider(value: $AppState.nmsThreshold, in: 0.00...1.00, step: 0.05)
+                        Slider(value: $appState.nmsThreshold, in: 0.00...1.00, step: 0.05)
                         Text("Higher values allow more overlapping boxes.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -234,7 +234,7 @@ struct MoleSegmentationTestView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                        AppState.showSettings = false
+                        appState.showSettings = false
                     }
                 }
             }
@@ -252,7 +252,7 @@ struct MoleSegmentationTestView: View {
             Color.black.opacity(0.3).ignoresSafeArea()
             VStack(spacing: 16) {
                 ProgressView().scaleEffect(1.5)
-                Text(AppState.statusMessage)
+                Text(appState.statusMessage)
                     .foregroundStyle(.white)
                     .font(.headline)
             }
@@ -294,16 +294,16 @@ struct MoleSegmentationTestView: View {
         ToolbarItem(placement: .navigationBarTrailing) {
             HStack {
                 Button {
-                    AppState.showSettings = true
+                    appState.showSettings = true
                 } label: {
                     Label("Settings", systemImage: "slider.horizontal.3")
                 }
-                .disabled(AppState.isProcessing)
+                .disabled(appState.isProcessing)
 
-                Button("Segment") { AppState.startSegmentationFlow(people: people) }
-                    .disabled(AppState.isProcessing)
-                Button("Clear") { AppState.clearSegmentation() }
-                    .disabled(AppState.maskOverlay == nil)
+                Button("Segment") { appState.startSegmentationFlow(people: people) }
+                    .disabled(appState.isProcessing)
+                Button("Clear") { appState.clearSegmentation() }
+                    .disabled(appState.maskOverlay == nil)
             }
         }
     }
