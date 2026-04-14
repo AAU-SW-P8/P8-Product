@@ -146,14 +146,13 @@ private struct OverviewContentView: View {
             if let person: Person = appState.selectedPerson {
                 List {
                     ForEach(person.moles) { mole in
-                        NavigationLink(destination: MoleDetailView(mole: mole)) {
+                        NavigationLink(
+                            destination: MoleDetailView(mole: mole),
+                            tag: mole.id,
+                            selection: selectedMoleIDBinding(for: person)
+                        ) {
                             moleRow(for: mole)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .contentShape(Rectangle())
                         }
-                        .simultaneousGesture(TapGesture().onEnded {
-                            appState.selectMole(mole)
-                        })
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button {
                                 appState.requestDelete(mole: mole) // Perfectly in scope here!
@@ -172,6 +171,16 @@ private struct OverviewContentView: View {
                 ))
             }
         }
+    }
+
+    private func selectedMoleIDBinding(for person: Person) -> Binding<UUID?> {
+        Binding(
+            get: { appState.selectedMole?.id },
+            set: { newID in
+                let selected = person.moles.first { $0.id == newID }
+                appState.selectMole(selected)
+            }
+        )
     }
 
     private func moleRow(for mole: Mole) -> some View {
