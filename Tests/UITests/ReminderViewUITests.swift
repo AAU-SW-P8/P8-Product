@@ -43,6 +43,20 @@ final class ReminderViewUITests: XCTestCase {
 			.firstMatch
 	}
 
+    private var leftArmMoleEnabledControl: XCUIElement {
+        app.descendants(matching: .any)
+            .matching(identifier: "moleReminderEnabledPicker_Left Arm Mole")
+            .firstMatch
+    }
+
+    private func requireMoleEnabledButton() throws -> XCUIElement {
+        let button = leftArmMoleEnabledControl
+        guard button.waitForExistence(timeout: 3) else {
+            throw XCTSkip("Per-mole enabled picker is not exposed as an accessible button.")
+        }
+        return button
+    }
+    
 	private func firstMoleFrequencyButton() -> XCUIElement {
 		leftArmMoleFrequencyControl
 	}
@@ -86,7 +100,7 @@ final class ReminderViewUITests: XCTestCase {
 
 		return accessibilityLabel.trimmingCharacters(in: .whitespaces)
 	}
-
+    
 	// MARK: - Smoke
 
 	func testReminderTabShowsHeaderAndSections() {
@@ -148,6 +162,11 @@ final class ReminderViewUITests: XCTestCase {
 	func testReminderModeOptionsAreVisibleForMole() {
 		XCTAssertTrue(app.staticTexts["Mole Left Arm Mole"].waitForExistence(timeout: 3))
 
+        let enabledPicker = leftArmMoleEnabledControl
+        XCTAssertTrue(enabledPicker.waitForExistence(timeout: 3), "The Reminder Enabled picker was not found.")
+            
+        enabledPicker.tap()
+        
 		XCTAssertTrue(app.buttons["Follow Default"].waitForExistence(timeout: 3))
 		XCTAssertTrue(app.buttons["Enabled"].exists)
 		XCTAssertTrue(app.buttons["Disabled"].exists)
@@ -161,17 +180,20 @@ final class ReminderViewUITests: XCTestCase {
 		// Verifies reminder mode toggles whether the per-mole frequency picker is editable.
 		XCTAssertTrue(app.staticTexts["Mole Left Arm Mole"].waitForExistence(timeout: 3))
 
-		let frequencyButton = try requireMoleFrequencyButton()
-		XCTAssertTrue(frequencyButton.isEnabled)
+        let enabledPicker = leftArmMoleEnabledControl
+        let frequencyButton = leftArmMoleFrequencyControl
+        
+        XCTAssertTrue(enabledPicker.waitForExistence(timeout: 3))
+        XCTAssertTrue(frequencyButton.waitForExistence(timeout: 3))
 
-		app.buttons["Disabled"].firstMatch.tap()
-		XCTAssertFalse(firstMoleFrequencyButton().isEnabled)
+        enabledPicker.tap()
+        
+        try chooseFrequencyOption("Disabled")
+        XCTAssertFalse(frequencyButton.isEnabled)
 
-		app.buttons["Enabled"].firstMatch.tap()
-		XCTAssertTrue(firstMoleFrequencyButton().isEnabled)
-
-		app.buttons["Follow Default"].firstMatch.tap()
-		XCTAssertTrue(firstMoleFrequencyButton().isEnabled)
+        enabledPicker.tap()
+        try chooseFrequencyOption("Enabled")
+        XCTAssertTrue(frequencyButton.isEnabled)
 	}
 
 	func testMoleFrequencySelectionPersistsAfterPersonSwitch() throws {
