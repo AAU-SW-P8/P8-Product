@@ -4,11 +4,13 @@ import simd
 
 class Calculator {
 
-    /// Alpha threshold used to treat a mask pixel as part of the mole.
-    ///
-    /// The mask renderer writes alpha from sigmoid(logit) with a 0.5 max alpha,
-    /// so alpha ~= 64 corresponds to logit ~= 0 (probability ~= 0.5).
-    private let measurementAlphaThreshold: UInt8 = 64
+    /// Peak alpha the mask renderer applies to a fully-confident pixel.
+    /// Must match `SegmentationRenderer.maskAlphaMax`.
+    private let maskAlphaMax: Float = 0.5
+
+    /// Minimum alpha to consider a pixel as potentially part of the mole.
+    /// Filters out near-zero background noise (~p=0.004).
+    private let minimumAlpha: UInt8 = 1
 
     /// Calculates the physical area of a mole in mm² using the segmentation mask,
     /// LiDAR depth map, and camera intrinsics.
@@ -95,14 +97,23 @@ class Calculator {
 
         guard minX <= maxX, minY <= maxY else { return 0.0 }
 
-        var totalArea: Double = 0.0
+        // Pass 1: accumulate probability-weighted pixel count and collect
+        // deduplicated depth samples from the depth map.
+        let alphaScale = Double(maskAlphaMax) * 255.0
+        var weightedPixelCount: Double = 0.0
+        var depthValues: [Float] = []
+        var sampledDepthPixels = Set<Int>()
 
         for ny in minY...maxY {
             for nx in minX...maxX {
                 // Check alpha in the mask image (offset 3 = alpha in RGBA)
                 let pixelOffset = (ny * maskW + nx) * 4
                 let alpha = maskPixels[pixelOffset + 3]
-                guard alpha >= measurementAlphaThreshold else { continue }
+                guard alpha >= minimumAlpha else { continue }
+
+                // Weight by recovered probability (clamped to [0, 1])
+                let probability = min(1.0, Double(alpha) / alphaScale)
+                weightedPixelCount += probability
 
                 // Map normalized image coords to sensor coords
                 let (sx, sy) = normalizedToSensor(
@@ -116,7 +127,13 @@ class Calculator {
                 let dy = sy * depthH / sensorH
                 guard dx >= 0 && dx < depthW && dy >= 0 && dy < depthH else { continue }
 
-                // Check confidence (skip low confidence pixels)
+                // Only sample each depth pixel once (many camera pixels
+                // map to the same depth pixel at the lower resolution)
+                let depthIndex = dy * depthW + dx
+                guard !sampledDepthPixels.contains(depthIndex) else { continue }
+                sampledDepthPixels.insert(depthIndex)
+
+                // Check confidence (skip low confidence depth readings)
                 if let confBase = confBase {
                     let confPtr = confBase.advanced(by: dy * confBytesPerRow)
                         .assumingMemoryBound(to: UInt8.self)
@@ -130,18 +147,33 @@ class Calculator {
                 let depth = depthPtr[dx]
                 guard depth > 0.05 && depth < 2.0 else { continue }
 
-                // Physical area of this pixel at the measured depth
-                // area = d² / (fx * fy) in meters²
-                let d = Double(depth)
-                totalArea += (d * d) / (Double(fx) * Double(fy))
+                depthValues.append(depth)
             }
         }
+
+        guard !depthValues.isEmpty, weightedPixelCount > 0 else { return 0.0 }
+
+        // Pass 2: use the median depth to compute total physical area.
+        // Median is more robust to LiDAR noise than per-pixel depth.
+        let d = median(of: depthValues)
+        let totalArea = weightedPixelCount * (d * d) / (Double(fx) * Double(fy))
 
         // Convert m² to mm²
         return CGFloat(totalArea * 1_000_000)
     }
 
     // MARK: - Helpers
+
+    /// Returns the median of a non-empty array of Float values.
+    private func median(of values: [Float]) -> Double {
+        let sorted = values.sorted()
+        let n = sorted.count
+        if n % 2 == 1 {
+            return Double(sorted[n / 2])
+        } else {
+            return (Double(sorted[n / 2 - 1]) + Double(sorted[n / 2])) / 2.0
+        }
+    }
 
     /// Renders a UIImage into a flat RGBA byte array for predictable pixel access.
     private func renderToRGBA(image: UIImage) -> (pixels: [UInt8], width: Int, height: Int)? {
