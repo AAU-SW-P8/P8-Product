@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import UIKit
 import CoreVideo
+import simd
 
 @MainActor
 @Observable
@@ -34,6 +35,7 @@ class OverviewAppState {
     var capturedImage: UIImage?
     var capturedDepthMap: CVPixelBuffer?
     var capturedConfidenceMap: CVPixelBuffer?
+    var capturedIntrinsics: simd_float3x3?
     
     private let dataController: DataController
     
@@ -187,5 +189,6 @@ class OverviewAppState {
         self.capturedImage = nil
         self.capturedDepthMap = nil
         self.capturedConfidenceMap = nil
+        self.capturedIntrinsics = nil
     }
 }

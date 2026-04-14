@@ -45,7 +45,8 @@ private struct OverviewContentView: View {
             .fullScreenCover(isPresented: $appState.cameraShowing) {
                 ARCameraView(capturedImage: $appState.capturedImage,
                              capturedDepthMap: $appState.capturedDepthMap,
-                             capturedConfidenceMap: $appState.capturedConfidenceMap)
+                             capturedConfidenceMap: $appState.capturedConfidenceMap,
+                             capturedIntrinsics: $appState.capturedIntrinsics)
                     .ignoresSafeArea()
             }
             .onChange(of: appState.capturedImage) { _, newImage in

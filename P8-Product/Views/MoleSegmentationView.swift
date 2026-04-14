@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import simd
 
 /// A view that segments moles using SAM3 with the text prompt "moles".
 ///
@@ -38,8 +39,18 @@ struct MoleSegmentationView: View {
     /// Confidence map for the depth data (nil for non-AR captures).
     @State private var confidenceMap: CVPixelBuffer?
 
+    /// Camera intrinsics matrix from ARFrame (nil for non-AR captures).
+    @State private var cameraIntrinsics: simd_float3x3?
+
+    /// The orientation of the captured image before normalization, needed to
+    /// map normalized image coordinates back to sensor-aligned depth map coordinates.
+    @State private var capturedImageOrientation: UIImage.Orientation?
+
     /// Combined mask overlay for all detected moles.
     @State private var maskOverlay: UIImage?
+
+    /// Mask-only image where alpha encodes mole probability (no base photo).
+    @State private var maskOnlyImage: UIImage?
     
     /// Bounding boxes for each detected mole, in the original image's pixel coordinate space.
     @State private var detectedBoxes: [CGRect] = []
@@ -80,10 +91,14 @@ struct MoleSegmentationView: View {
     ///   - inputImage: The image to segment. Pass `nil` to show a placeholder.
     ///   - depthMap: LiDAR depth map captured alongside the image. `nil` for non-AR captures.
     ///   - confidenceMap: Confidence values for each depth pixel. `nil` for non-AR captures.
-    init(inputImage: UIImage?, depthMap: CVPixelBuffer? = nil, confidenceMap: CVPixelBuffer? = nil) {
+    ///   - cameraIntrinsics: Camera intrinsics matrix from ARFrame. `nil` for non-AR captures.
+    init(inputImage: UIImage?, depthMap: CVPixelBuffer? = nil, confidenceMap: CVPixelBuffer? = nil, cameraIntrinsics: simd_float3x3? = nil) {
         _testImage = State(initialValue: inputImage)
         _depthMap = State(initialValue: depthMap)
         _confidenceMap = State(initialValue: confidenceMap)
+        _cameraIntrinsics = State(initialValue: cameraIntrinsics)
+        // Store the original orientation before normalizedOrientation() strips it
+        _capturedImageOrientation = State(initialValue: inputImage?.imageOrientation)
     }
 
     // MARK: - Body
@@ -270,6 +285,7 @@ struct MoleSegmentationView: View {
                 await MainActor.run {
                     self.maskOverlay = result?.0
                     self.detectedBoxes = result?.1 ?? []
+                    self.maskOnlyImage = result?.2
                     self.statusMessage = result != nil ? "Segmentation complete. Long press a mole to add it." : "No moles detected"
                     self.isProcessing = false
                 }
@@ -287,6 +303,7 @@ struct MoleSegmentationView: View {
     @MainActor
     private func clearSegmentation() {
         maskOverlay = nil
+        maskOnlyImage = nil
         detectedBoxes = []
         selectedPersonForScan = nil
         statusMessage = "Cleared"
@@ -314,8 +331,14 @@ struct MoleSegmentationView: View {
 
         // Calculate mole area and diameter using the Calculator class
         let calculator = Calculator()
-        let segmentedImage = maskOverlay ?? croppedImage
-        let area = calculator.calculateArea(from: (segmentedImage, [box]), depthMap: depthMap, confidenceMap: confidenceMap)
+        let maskImage = maskOnlyImage ?? croppedImage
+        let area = calculator.calculateArea(
+            from: (maskImage, [box]),
+            depthMap: depthMap,
+            confidenceMap: confidenceMap,
+            cameraIntrinsics: cameraIntrinsics,
+            imageOrientation: capturedImageOrientation ?? .up
+        )
         let diameter = 2 * sqrt(area / .pi) //TODO: This is a simplification; actual mole shapes may not be perfectly circular. Change when area func is done
 
         // Save scan and mole, similar to OverviewView
@@ -364,8 +387,14 @@ struct MoleSegmentationView: View {
         }
         // Calculate mole area and diameter using the Calculator class
         let calculator = Calculator()
-        let segmentedImage = maskOverlay ?? croppedImage
-        let area = calculator.calculateArea(from: (segmentedImage, [box]), depthMap: depthMap, confidenceMap: confidenceMap)
+        let maskImage = maskOnlyImage ?? croppedImage
+        let area = calculator.calculateArea(
+            from: (maskImage, [box]),
+            depthMap: depthMap,
+            confidenceMap: confidenceMap,
+            cameraIntrinsics: cameraIntrinsics,
+            imageOrientation: capturedImageOrientation ?? .up
+        )
         let diameter = 2 * sqrt(area / .pi) //TODO: This is a simplification; actual mole shapes may not be perfectly circular. Change when area func is done
 
         
@@ -557,7 +586,5 @@ struct MoleSegmentationView: View {
 // MARK: - Preview
 
 #Preview {
-    MoleSegmentationView(inputImage: UIImage(named: "test_mole_image"),
-                         depthMap: nil,
-                         confidenceMap: nil)
+    MoleSegmentationView(inputImage: UIImage(named: "test_mole_image"))
 }

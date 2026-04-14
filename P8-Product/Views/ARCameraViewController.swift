@@ -6,6 +6,7 @@
 import UIKit
 import ARKit
 import RealityKit
+import simd
 
 class ARCameraViewController: UIViewController, ARSessionDelegate {
 
@@ -17,7 +18,7 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
 
     // MARK: - Callbacks
 
-    var onCapture: ((UIImage, CVPixelBuffer?, CVPixelBuffer?) -> Void)?
+    var onCapture: ((UIImage, CVPixelBuffer?, CVPixelBuffer?, simd_float3x3?) -> Void)?
     var onCancel: (() -> Void)?
 
     // MARK: - Subviews
@@ -306,10 +307,11 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
 
         let depthMap = frame.sceneDepth?.depthMap
         let confidenceMap = frame.sceneDepth?.confidenceMap
-        
+        let intrinsics = frame.camera.intrinsics
+
         print(depthMap.debugDescription)
         print(confidenceMap.debugDescription)
-        onCapture?(image, depthMap, confidenceMap)
+        onCapture?(image, depthMap, confidenceMap, intrinsics)
     }
 
     @objc private func cancel() {
