@@ -8,7 +8,7 @@ import SwiftData
 
 struct ReminderView: View {
     
-    @State private var appState = ReminderAppState(dataController: .shared)
+    @State private var appState = ReminderAppState()
     @Query(sort: \Person.createdAt) var people: [Person]
 
     /**
@@ -212,7 +212,7 @@ struct ReminderView: View {
      Creates a two-way binding for the reminder mode segmented options.
 
      - Parameter mole: The mole whose reminder mode should be read and updated.
-     - Returns: A `Binding<String>` for `Follow Default`, `Enabled`, or `Disabled`.
+     - Returns: A `Binding<String>` for `Default`, `Enabled`, or `Disabled`.
      */
     private func reminderModeBinding(for mole: Mole) -> Binding<String> {
         Binding(
@@ -264,11 +264,11 @@ struct ReminderView: View {
      Resolves the current reminder mode label for a mole.
 
      - Parameter mole: The mole whose reminder mode should be evaluated.
-     - Returns: `Follow Default`, `Enabled`, or `Disabled`.
+     - Returns: `Default`, `Enabled`, or `Disabled`.
      */
     private func reminderMode(for mole: Mole) -> String {
         if mole.followDefaultReminderEnabled ?? true {
-            return "Follow Default"
+            return "Default"
         }
         return mole.isReminderActive ? "Enabled" : "Disabled"
     }
