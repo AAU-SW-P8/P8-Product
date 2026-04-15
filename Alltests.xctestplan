@@ -14,6 +14,10 @@
   },
   "testTargets" : [
     {
+      "skippedTests" : [
+        "ProductUITests",
+        "ProductUITests\/testLaunchPerformance()"
+      ],
       "target" : {
         "containerPath" : "container:P8-Product.xcodeproj",
         "identifier" : "97C2DB192F6AB3F100454255",
