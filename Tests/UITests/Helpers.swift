@@ -67,16 +67,27 @@ final class Helpers {
 	}
 
 	static func moveOverviewSelection(to name: String, in app: XCUIApplication) {
-		let expectedSelections = ["Alex", "Jordan", "Taylor"]
-		guard let targetIndex = expectedSelections.firstIndex(of: name) else {
-			XCTFail("Unknown person: \(name)")
-			return
+		if app.staticTexts[name].exists { return }
+
+		let maxMoves = 6
+		let rightButton = app.buttons["chevron.right"]
+		let leftButton = app.buttons["chevron.left"]
+
+		var moves = 0
+		while !app.staticTexts[name].exists && rightButton.isEnabled && moves < maxMoves {
+			rightButton.tap()
+			moves += 1
 		}
 
-		let nextButton = app.buttons["chevron.right"]
-		for _ in 0..<targetIndex {
-			nextButton.tap()
+		if app.staticTexts[name].exists { return }
+
+		moves = 0
+		while !app.staticTexts[name].exists && leftButton.isEnabled && moves < maxMoves {
+			leftButton.tap()
+			moves += 1
 		}
+
+		XCTAssertTrue(app.staticTexts[name].waitForExistence(timeout: 1), "Expected selected person to be \(name)")
 	}
 
 	static func selectAlexLeftArmMole(in app: XCUIApplication) {
@@ -101,5 +112,28 @@ final class Helpers {
 		personCell.press(forDuration: 1.0)
 		app.buttons["Delete"].tap()
 		app.alerts.buttons["Delete"].tap()
+	}
+    
+    static func switchNameOfPerson(from oldName: String, to newName: String, in app: XCUIApplication) {
+		let personCell = app.staticTexts[oldName]
+		XCTAssertTrue(personCell.waitForExistence(timeout: 3), "Person \(oldName) should exist before renaming")
+
+		personCell.press(forDuration: 1.0)
+		let editButton = app.buttons["Edit Name"]
+		XCTAssertTrue(editButton.waitForExistence(timeout: 3), "Edit Name action should appear")
+		editButton.tap()
+
+		let editAlert = app.alerts["Edit Person"]
+		XCTAssertTrue(editAlert.waitForExistence(timeout: 3), "Edit Person alert should appear")
+
+		let textField = editAlert.textFields["Name"]
+		XCTAssertTrue(textField.waitForExistence(timeout: 3), "Edit name text field should appear")
+		textField.tap()
+		if let current = textField.value as? String, !current.isEmpty {
+			textField.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count))
+		}
+		textField.typeText(newName)
+
+		editAlert.buttons["Save"].tap()
 	}
 }

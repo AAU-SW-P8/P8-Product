@@ -45,30 +45,12 @@
 				UITests/CompareViewUITests.swift,
 				UITests/Helpers.swift,
 				UITests/ImageCarouselUITests.swift,
+				UITests/OverviewUITests.swift,
 				UITests/ProductUITests.swift,
 				UITests/ProductUITestsLaunchTests.swift,
 				UITests/TabStateUITests.swift,
 			);
 			target = 972E93A72F7BC67300BB8979 /* P8-ProductUITests */;
-		};
-		97C2DB272F6AB49400454255 /* Exceptions for "Tests" folder in "P8-Product" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				ChartViewTest.swift,
-				SAMPipelineTests/SAM3DecoderTests.swift,
-				SAMPipelineTests/SAM3DetectionTests.swift,
-				SAMPipelineTests/SAM3FeatureNamesTests.swift,
-				SAMPipelineTests/SAM3ImagePreprocessorTests.swift,
-				SAMPipelineTests/SAM3ModelsTests.swift,
-				SAMPipelineTests/TestHelpers.swift,
-				UITests/CompareViewUITests.swift,
-				UITests/Helpers.swift,
-				UITests/ImageCarouselUITests.swift,
-				UITests/ProductUITests.swift,
-				UITests/ProductUITestsLaunchTests.swift,
-				UITests/TabStateUITests.swift,
-			);
-			target = F1845EED2F59945F00E27D2B /* P8-Product */;
 		};
 		97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
@@ -97,6 +79,26 @@
 			);
 			target = 97C2DB192F6AB3F100454255 /* PipelineTests */;
 		};
+		DB2D85A72F8F8F6B00D8E438 /* Exceptions for "Tests" folder in "P8-Product" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				ChartViewTest.swift,
+				SAMPipelineTests/SAM3DecoderTests.swift,
+				SAMPipelineTests/SAM3DetectionTests.swift,
+				SAMPipelineTests/SAM3FeatureNamesTests.swift,
+				SAMPipelineTests/SAM3ImagePreprocessorTests.swift,
+				SAMPipelineTests/SAM3ModelsTests.swift,
+				SAMPipelineTests/TestHelpers.swift,
+				UITests/CompareViewUITests.swift,
+				UITests/Helpers.swift,
+				UITests/ImageCarouselUITests.swift,
+				UITests/OverviewUITests.swift,
+				UITests/ProductUITests.swift,
+				UITests/ProductUITestsLaunchTests.swift,
+				UITests/TabStateUITests.swift,
+			);
+			target = F1845EED2F59945F00E27D2B /* P8-Product */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -112,7 +114,7 @@
 		97C2DB232F6AB48B00454255 /* Tests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				97C2DB272F6AB49400454255 /* Exceptions for "Tests" folder in "P8-Product" target */,
+				DB2D85A72F8F8F6B00D8E438 /* Exceptions for "Tests" folder in "P8-Product" target */,
 				97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */,
 				7AD89F892F87B66800A2C5F0 /* Exceptions for "Tests" folder in "P8-ProductUITests" target */,
 			);

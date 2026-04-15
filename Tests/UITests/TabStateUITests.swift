@@ -44,10 +44,8 @@ final class TabStateUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3),
                       "Overview should begin with Alex selected")
 
-        Helpers.selectPerson("Jordan", in: app)
+        Helpers.moveOverviewSelection(to: "Jordan", in: app)
         Helpers.openMoleDetail(person: "Jordan", mole: "Face Mole", in: app)
-
-        app.navigationBars.buttons.element(boundBy: 0).tap()
 
         Helpers.openOverviewTab(in: app)
 
