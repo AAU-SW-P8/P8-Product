@@ -105,6 +105,7 @@ class ReminderAppState {
                     mole.isReminderActive = false
                 default:
                     mole.followDefaultReminderEnabled = true
+                    mole.isReminderActive = self.reminderEnabled
                 }
             }
         )

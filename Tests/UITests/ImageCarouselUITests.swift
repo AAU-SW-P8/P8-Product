@@ -143,8 +143,6 @@ final class ImageCarouselUITests: XCTestCase {
         let leftAdvancedOnFirstSwipe =
             leftCarousel.staticTexts["Diameter: 4.2 mm"].waitForExistence(timeout: 2)
             || leftCarousel.staticTexts["Diameter: 4,2 mm"].waitForExistence(timeout: 2)
-            || leftCarousel.staticTexts["Diameter: 4.8 mm"].waitForExistence(timeout: 2)
-            || leftCarousel.staticTexts["Diameter: 4,8 mm"].waitForExistence(timeout: 2)
 
         if !leftAdvancedOnFirstSwipe {
             // Retry once because simulator gesture handling can intermittently drop a swipe.
@@ -153,9 +151,7 @@ final class ImageCarouselUITests: XCTestCase {
 
         XCTAssertTrue(
             leftCarousel.staticTexts["Diameter: 4.2 mm"].waitForExistence(timeout: 3)
-            || leftCarousel.staticTexts["Diameter: 4,2 mm"].waitForExistence(timeout: 3)
-            || leftCarousel.staticTexts["Diameter: 4.8 mm"].waitForExistence(timeout: 3)
-            || leftCarousel.staticTexts["Diameter: 4,8 mm"].waitForExistence(timeout: 3),
+            || leftCarousel.staticTexts["Diameter: 4,2 mm"].waitForExistence(timeout: 3),
             "Left carousel should advance away from the first scan"
         )
         XCTAssertTrue(
