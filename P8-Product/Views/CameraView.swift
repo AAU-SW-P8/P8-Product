@@ -93,6 +93,16 @@ struct CameraView: View {
                 showSegmentation = true
             }
         }
+        // When the user taps back from segmentation, reset state and
+        // reopen the camera instead of landing on the placeholder.
+        .onChange(of: showSegmentation) { _, isShown in
+            if !isShown {
+                capturedImage = nil
+                capturedDepthMap = nil
+                capturedConfidenceMap = nil
+                openCamera()
+            }
+        }
     }
 
     /// Presents the camera if the device has one.
