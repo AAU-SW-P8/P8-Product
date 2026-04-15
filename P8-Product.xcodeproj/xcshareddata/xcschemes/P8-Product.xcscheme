@@ -79,6 +79,50 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "9740A0DA2F867E640077935D"
+               BuildableName = "ReminderTests.xctest"
+               BlueprintName = "ReminderTests"
+               ReferencedContainer = "container:P8-Product.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "9740A0E72F867EB50077935D"
+               BuildableName = "Remindertests.xctest"
+               BlueprintName = "Remindertests"
+               ReferencedContainer = "container:P8-Product.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "9740A0F62F867EE20077935D"
+               BuildableName = "ReminderOvertests.xctest"
+               BlueprintName = "ReminderOvertests"
+               ReferencedContainer = "container:P8-Product.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "9740A1032F867F300077935D"
+               BuildableName = "ReminderOverview.xctest"
+               BlueprintName = "ReminderOverview"
+               ReferencedContainer = "container:P8-Product.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "972E93A72F7BC67300BB8979"
                BuildableName = "P8-ProductUITests.xctest"
                BlueprintName = "P8-ProductUITests"
