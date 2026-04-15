@@ -85,14 +85,26 @@ class DataController {
             MoleScan.self
         ])
 
+        let arguments = ProcessInfo.processInfo.arguments
+
+        // Optional UI-test mode that persists across relaunches, isolated from production data.
+        if arguments.contains("-UITest_PersistentStore") {
+            if arguments.contains("-UITest_ResetStore") {
+                try? deleteStoreFiles(at: uiTestPersistentStoreURL)
+            }
+
+            let config = ModelConfiguration(schema: schema, url: uiTestPersistentStoreURL)
+            return try ModelContainer(for: schema, configurations: [config])
+        }
+
         // Detect if the app is running in a Continuous Integration (CI) environment
         // or during a unit/UI test run. UI tests launch the app as a separate
         // process that does not inherit `XCTestConfigurationFilePath`, so we also
         // honor an explicit launch argument to force an in-memory store.
         let isTesting = ProcessInfo.processInfo.environment["CI"] == "true" ||
                 ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil ||
-                ProcessInfo.processInfo.arguments.contains("-UITest_EmptyStore") ||
-                ProcessInfo.processInfo.arguments.contains("-UITest_InMemoryStore")
+                arguments.contains("-UITest_EmptyStore") ||
+                arguments.contains("-UITest_InMemoryStore")
 
         let config: ModelConfiguration
         if isTesting {
@@ -117,22 +129,38 @@ class DataController {
         return directory.appending(path: "default.store")
     }
 
+    /// Dedicated on-disk store for UI tests that need persistence across relaunches.
+    private static var uiTestPersistentStoreURL: URL {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("P8-Product-UITestStore", isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        } catch {
+            fatalError("Failed to create UI test store directory: \(error)")
+        }
+        return tempDir.appendingPathComponent("default.store", isDirectory: false)
+    }
+
     /// Manually removes the SQLite database files from the file system.
     ///
     /// This is used as a "nuclear option" when the `ModelContainer` cannot initialize
     /// due to schema mismatches or file corruption. It targets the main store,
     /// the Shared Memory (-shm) file, and the Write-Ahead Log (-wal) file.
     private static func deleteStoreFiles() throws {
-        let storeURL: URL = storeURL
-        let storePath: String = storeURL.path()
-        
+        try deleteStoreFiles(at: storeURL)
+    }
+
+    /// Removes a SQLite store and sidecar files for the given URL.
+    private static func deleteStoreFiles(at storeURL: URL) throws {
+        let storePath = storeURL.path()
+
         let relatedURLs: [URL] = [
             storeURL,
             URL(fileURLWithPath: storePath + "-shm"),
             URL(fileURLWithPath: storePath + "-wal")
         ]
 
-        for url: URL in relatedURLs where FileManager.default.fileExists(atPath: url.path()) {
+        for url in relatedURLs where FileManager.default.fileExists(atPath: url.path()) {
             try FileManager.default.removeItem(at: url)
         }
     }
@@ -200,6 +228,16 @@ class DataController {
             print("Failed to add person: \(error)")
         }
         return person
+    }
+
+    func rename(_ person: Person, to newName: String) {
+        let context: ModelContext = container.mainContext
+        person.name = newName
+        do {
+            try context.save()
+        } catch {
+            print("Failed to rename person: \(error)")
+        }
     }
 
 }

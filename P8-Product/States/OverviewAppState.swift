@@ -127,7 +127,7 @@ class OverviewAppState {
      */
     func confirmEdit() {
         if let person: Person = personToEdit, !editingName.isEmpty {
-            person.name = editingName // Updates the SwiftData Model
+            dataController.rename(person, to: editingName)
         }
         cancelEdit()
     }
