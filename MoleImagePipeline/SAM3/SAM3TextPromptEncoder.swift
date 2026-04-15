@@ -22,7 +22,7 @@ final class SAM3TextPromptEncoder {
     private static let moleToken:        Int32 = 23529  // "mole"
     private static let endOfTextToken:   Int32 = 49407  // <|endoftext|>
     private static let paddingToken:     Int32 = 0
-    private static let sequenceLength: Int = 32
+    private static let sequenceLength:   Int = 32
 
     /// The pre-computed text encoder output, ready to be passed to the decoder.
     let features: MLFeatureProvider
