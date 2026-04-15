@@ -71,9 +71,12 @@ struct CameraView: View {
                 }
             }
         }
-        // Open the camera as soon as the tab appears.
+        // Open the camera as soon as the tab appears, unless we already
+        // have a captured image or the segmentation view is showing.
         .onAppear {
-            openCamera()
+            if capturedImage == nil && !showSegmentation {
+                openCamera()
+            }
         }
         // Camera: choose AR or simple depending on device capabilities.
         .fullScreenCover(isPresented: $showCamera) {
