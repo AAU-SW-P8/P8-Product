@@ -127,8 +127,8 @@ class ReminderAppState {
         }
 
         let effectiveFrequencyLabel: String
-        if frequencyLabel == "Default", let person = appState.selectedPerson {
-            effectiveFrequencyLabel = appState.displayFrequency(for: person)
+        if frequencyLabel == "Default", let person = selectedPerson {
+            effectiveFrequencyLabel = displayFrequency(for: person)
         } else {
             effectiveFrequencyLabel = frequencyLabel
         }
