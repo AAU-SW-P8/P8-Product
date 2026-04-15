@@ -12,6 +12,21 @@ class Calculator {
     /// Filters out near-zero background noise (~p=0.004).
     private let minimumAlpha: UInt8 = 1
 
+    /// Per-pixel data extracted from the mask + depth map for a single selected mole.
+    /// Produced once and consumed by both area and diameter calculations.
+    private struct MoleSamples {
+        /// Image-pixel coordinates (in normalized image space) of every mole pixel.
+        var points: [CGPoint]
+        /// Probability (0…1) per entry in `points`, recovered from the mask alpha.
+        var weights: [Double]
+        /// Deduplicated depth samples (meters) covering the mole's footprint, after
+        /// confidence filtering and validity clamping.
+        var depths: [Float]
+        /// Camera focal lengths (pixels), as Doubles for downstream math.
+        var fx: Double
+        var fy: Double
+    }
+
     /// Calculates the physical area of a mole in mm² using the segmentation mask,
     /// LiDAR depth map, and camera intrinsics.
     ///
@@ -38,125 +53,20 @@ class Calculator {
         cameraIntrinsics: simd_float3x3? = nil,
         imageOrientation: UIImage.Orientation = .up
     ) -> CGFloat {
-        guard let depthMap = depthMap,
-              let intrinsics = cameraIntrinsics,
-              let box = segmentedImage.1.first else {
-            return 0.0
-        }
+        guard let samples = gatherMoleSamples(
+            from: segmentedImage,
+            depthMap: depthMap,
+            confidenceMap: confidenceMap,
+            cameraIntrinsics: cameraIntrinsics,
+            imageOrientation: imageOrientation
+        ) else { return 0.0 }
 
-        let maskImage = segmentedImage.0
-        let fx = intrinsics[0][0]
-        let fy = intrinsics[1][1]
+        let weightedPixelCount = samples.weights.reduce(0, +)
+        guard !samples.depths.isEmpty, weightedPixelCount > 0 else { return 0.0 }
 
-        guard fx > 0 && fy > 0 else { return 0.0 }
-
-        // Render the mask UIImage into a known RGBA bitmap for reliable pixel access
-        guard let renderedMask = renderToRGBA(image: maskImage) else { return 0.0 }
-        let maskPixels = renderedMask.pixels
-        let maskW = renderedMask.width
-        let maskH = renderedMask.height
-
-        // Lock depth map
-        CVPixelBufferLockBaseAddress(depthMap, .readOnly)
-        defer { CVPixelBufferUnlockBaseAddress(depthMap, .readOnly) }
-        guard let depthBase = CVPixelBufferGetBaseAddress(depthMap) else { return 0.0 }
-        let depthW = CVPixelBufferGetWidth(depthMap)
-        let depthH = CVPixelBufferGetHeight(depthMap)
-        let depthBytesPerRow = CVPixelBufferGetBytesPerRow(depthMap)
-
-        // Lock confidence map if available
-        let confBase: UnsafeMutableRawPointer?
-        let confBytesPerRow: Int
-        if let confidenceMap = confidenceMap {
-            CVPixelBufferLockBaseAddress(confidenceMap, .readOnly)
-            confBase = CVPixelBufferGetBaseAddress(confidenceMap)
-            confBytesPerRow = CVPixelBufferGetBytesPerRow(confidenceMap)
-        } else {
-            confBase = nil
-            confBytesPerRow = 0
-        }
-        defer {
-            if let confidenceMap = confidenceMap {
-                CVPixelBufferUnlockBaseAddress(confidenceMap, .readOnly)
-            }
-        }
-
-        // Compute sensor dimensions from orientation + normalized image size
-        let (sensorW, sensorH) = sensorDimensions(
-            normalizedWidth: maskW,
-            normalizedHeight: maskH,
-            orientation: imageOrientation
-        )
-        guard sensorW > 0 && sensorH > 0 else { return 0.0 }
-
-        // Clamp the bounding box to image bounds
-        let minX = max(0, Int(floor(box.minX)))
-        let minY = max(0, Int(floor(box.minY)))
-        let maxX = min(maskW - 1, Int(ceil(box.maxX)) - 1)
-        let maxY = min(maskH - 1, Int(ceil(box.maxY)) - 1)
-
-        guard minX <= maxX, minY <= maxY else { return 0.0 }
-
-        // Pass 1: accumulate probability-weighted pixel count and collect
-        // deduplicated depth samples from the depth map.
-        let alphaScale = Double(maskAlphaMax) * 255.0
-        var weightedPixelCount: Double = 0.0
-        var depthValues: [Float] = []
-        var sampledDepthPixels = Set<Int>()
-
-        for ny in minY...maxY {
-            for nx in minX...maxX {
-                // Check alpha in the mask image (offset 3 = alpha in RGBA)
-                let pixelOffset = (ny * maskW + nx) * 4
-                let alpha = maskPixels[pixelOffset + 3]
-                guard alpha >= minimumAlpha else { continue }
-
-                // Weight by recovered probability (clamped to [0, 1])
-                let probability = min(1.0, Double(alpha) / alphaScale)
-                weightedPixelCount += probability
-
-                // Map normalized image coords to sensor coords
-                let (sx, sy) = normalizedToSensor(
-                    nx: nx, ny: ny,
-                    normalizedWidth: maskW, normalizedHeight: maskH,
-                    orientation: imageOrientation
-                )
-
-                // Map sensor coords to depth map coords
-                let dx = sx * depthW / sensorW
-                let dy = sy * depthH / sensorH
-                guard dx >= 0 && dx < depthW && dy >= 0 && dy < depthH else { continue }
-
-                // Only sample each depth pixel once (many camera pixels
-                // map to the same depth pixel at the lower resolution)
-                let depthIndex = dy * depthW + dx
-                guard !sampledDepthPixels.contains(depthIndex) else { continue }
-                sampledDepthPixels.insert(depthIndex)
-
-                // Check confidence (skip low confidence depth readings)
-                if let confBase = confBase {
-                    let confPtr = confBase.advanced(by: dy * confBytesPerRow)
-                        .assumingMemoryBound(to: UInt8.self)
-                    let confidence = confPtr[dx]
-                    guard confidence >= 1 else { continue } // require medium or high
-                }
-
-                // Read depth value
-                let depthPtr = depthBase.advanced(by: dy * depthBytesPerRow)
-                    .assumingMemoryBound(to: Float32.self)
-                let depth = depthPtr[dx]
-                guard depth > 0.05 && depth < 2.0 else { continue }
-
-                depthValues.append(depth)
-            }
-        }
-
-        guard !depthValues.isEmpty, weightedPixelCount > 0 else { return 0.0 }
-
-        // Pass 2: use the median depth to compute total physical area.
-        // Median is more robust to LiDAR noise than per-pixel depth.
-        let d = median(of: depthValues)
-        let totalArea = weightedPixelCount * (d * d) / (Double(fx) * Double(fy))
+        // Median depth is more robust to LiDAR noise than per-pixel depth.
+        let d = median(of: samples.depths)
+        let totalArea = weightedPixelCount * (d * d) / (samples.fx * samples.fy)
 
         // Convert m² to mm²
         return CGFloat(totalArea * 1_000_000)
@@ -179,26 +89,68 @@ class Calculator {
         cameraIntrinsics: simd_float3x3? = nil,
         imageOrientation: UIImage.Orientation = .up
     ) -> CGFloat {
+        guard let samples = gatherMoleSamples(
+            from: segmentedImage,
+            depthMap: depthMap,
+            confidenceMap: confidenceMap,
+            cameraIntrinsics: cameraIntrinsics,
+            imageOrientation: imageOrientation
+        ) else { return 0.0 }
+
+        guard !samples.depths.isEmpty, samples.points.count >= 2 else { return 0.0 }
+
+        let d = median(of: samples.depths)
+        let hull = convexHull(of: samples.points)
+
+        // Brute-force max distance among hull vertices. Convert pixel deltas to
+        // physical deltas via depth & focal length, then take Euclidean distance.
+        let invFx = 1.0 / samples.fx
+        let invFy = 1.0 / samples.fy
+        var maxSquared: Double = 0
+        for i in 0..<hull.count {
+            for j in (i + 1)..<hull.count {
+                let pdx = Double(hull[i].x - hull[j].x) * invFx
+                let pdy = Double(hull[i].y - hull[j].y) * invFy
+                let sq = pdx * pdx + pdy * pdy
+                if sq > maxSquared { maxSquared = sq }
+            }
+        }
+
+        let diameterMeters = sqrt(maxSquared) * d
+        return CGFloat(diameterMeters * 1_000)
+    }
+
+    // MARK: - Sampling
+
+    /// Walks the mask's bounding box once, producing the mole-pixel positions,
+    /// per-pixel mask probabilities, and a deduplicated set of valid depth samples.
+    /// Returns `nil` when prerequisites (depth map, intrinsics, bounding box,
+    /// renderable mask, valid clamped box) are missing.
+    private func gatherMoleSamples(
+        from segmentedImage: (UIImage, [CGRect]),
+        depthMap: CVPixelBuffer?,
+        confidenceMap: CVPixelBuffer?,
+        cameraIntrinsics: simd_float3x3?,
+        imageOrientation: UIImage.Orientation
+    ) -> MoleSamples? {
         guard let depthMap = depthMap,
               let intrinsics = cameraIntrinsics,
               let box = segmentedImage.1.first else {
-            return 0.0
+            return nil
         }
 
-        let maskImage = segmentedImage.0
         let fx = intrinsics[0][0]
         let fy = intrinsics[1][1]
+        guard fx > 0 && fy > 0 else { return nil }
 
-        guard fx > 0 && fy > 0 else { return 0.0 }
-
-        guard let renderedMask = renderToRGBA(image: maskImage) else { return 0.0 }
+        guard let renderedMask = renderToRGBA(image: segmentedImage.0) else { return nil }
         let maskPixels = renderedMask.pixels
         let maskW = renderedMask.width
         let maskH = renderedMask.height
 
         CVPixelBufferLockBaseAddress(depthMap, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(depthMap, .readOnly) }
-        guard let depthBase = CVPixelBufferGetBaseAddress(depthMap) else { return 0.0 }
+        guard let depthBase = CVPixelBufferGetBaseAddress(depthMap) else { return nil }
         let depthW = CVPixelBufferGetWidth(depthMap)
         let depthH = CVPixelBufferGetHeight(depthMap)
         let depthBytesPerRow = CVPixelBufferGetBytesPerRow(depthMap)
@@ -224,17 +176,18 @@ class Calculator {
             normalizedHeight: maskH,
             orientation: imageOrientation
         )
-        guard sensorW > 0 && sensorH > 0 else { return 0.0 }
+        guard sensorW > 0 && sensorH > 0 else { return nil }
 
         let minX = max(0, Int(floor(box.minX)))
         let minY = max(0, Int(floor(box.minY)))
         let maxX = min(maskW - 1, Int(ceil(box.maxX)) - 1)
         let maxY = min(maskH - 1, Int(ceil(box.maxY)) - 1)
+        guard minX <= maxX, minY <= maxY else { return nil }
 
-        guard minX <= maxX, minY <= maxY else { return 0.0 }
-
-        var molePoints: [CGPoint] = []
-        var depthValues: [Float] = []
+        let alphaScale = Double(maskAlphaMax) * 255.0
+        var points: [CGPoint] = []
+        var weights: [Double] = []
+        var depths: [Float] = []
         var sampledDepthPixels = Set<Int>()
 
         for ny in minY...maxY {
@@ -243,7 +196,8 @@ class Calculator {
                 let alpha = maskPixels[pixelOffset + 3]
                 guard alpha >= minimumAlpha else { continue }
 
-                molePoints.append(CGPoint(x: nx, y: ny))
+                points.append(CGPoint(x: nx, y: ny))
+                weights.append(min(1.0, Double(alpha) / alphaScale))
 
                 let (sx, sy) = normalizedToSensor(
                     nx: nx, ny: ny,
@@ -255,6 +209,8 @@ class Calculator {
                 let dy = sy * depthH / sensorH
                 guard dx >= 0 && dx < depthW && dy >= 0 && dy < depthH else { continue }
 
+                // Only sample each depth pixel once (many camera pixels
+                // map to the same depth pixel at the lower resolution).
                 let depthIndex = dy * depthW + dx
                 guard !sampledDepthPixels.contains(depthIndex) else { continue }
                 sampledDepthPixels.insert(depthIndex)
@@ -263,7 +219,7 @@ class Calculator {
                     let confPtr = confBase.advanced(by: dy * confBytesPerRow)
                         .assumingMemoryBound(to: UInt8.self)
                     let confidence = confPtr[dx]
-                    guard confidence >= 1 else { continue }
+                    guard confidence >= 1 else { continue } // require medium or high
                 }
 
                 let depthPtr = depthBase.advanced(by: dy * depthBytesPerRow)
@@ -271,31 +227,17 @@ class Calculator {
                 let depth = depthPtr[dx]
                 guard depth > 0.05 && depth < 2.0 else { continue }
 
-                depthValues.append(depth)
+                depths.append(depth)
             }
         }
 
-        guard !depthValues.isEmpty, molePoints.count >= 2 else { return 0.0 }
-
-        let d = median(of: depthValues)
-        let hull = convexHull(of: molePoints)
-
-        // Brute-force max distance among hull vertices. Convert pixel deltas to
-        // physical deltas via depth & focal length, then take Euclidean distance.
-        let invFx = 1.0 / Double(fx)
-        let invFy = 1.0 / Double(fy)
-        var maxSquared: Double = 0
-        for i in 0..<hull.count {
-            for j in (i + 1)..<hull.count {
-                let pdx = Double(hull[i].x - hull[j].x) * invFx
-                let pdy = Double(hull[i].y - hull[j].y) * invFy
-                let sq = pdx * pdx + pdy * pdy
-                if sq > maxSquared { maxSquared = sq }
-            }
-        }
-
-        let diameterMeters = sqrt(maxSquared) * d
-        return CGFloat(diameterMeters * 1_000)
+        return MoleSamples(
+            points: points,
+            weights: weights,
+            depths: depths,
+            fx: Double(fx),
+            fy: Double(fy)
+        )
     }
 
     // MARK: - Helpers
