@@ -22,7 +22,7 @@ struct MoleDetailView: View {
                 Image(systemName: "photo.on.rectangle.angled")
                     .font(.system(size: 48))
                     .foregroundColor(.secondary)
-                Text("No scans yet")
+                Text(NSLocalizedString("moleDetail.empty.title", tableName: "Localizable", bundle: .main, value: "No scans yet", comment: "Shown when a mole has no scans"))
                     .font(.headline)
                     .foregroundColor(.secondary)
                     .padding(.top, 8)
@@ -44,3 +44,4 @@ struct MoleDetailView: View {
         }
     }
 }
+

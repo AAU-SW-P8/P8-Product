@@ -37,7 +37,7 @@ struct MoleSegmentationTestView: View {
     @State private var isProcessing = false
 
     /// Status text shown beneath the image.
-    @State private var statusMessage: String = "Ready"
+    @State private var statusMessage: String = NSLocalizedString("seg.status.ready", tableName: "Localizable", bundle: .main, value: "Ready", comment: "Initial status message for segmentation view")
 
     /// Unified alert state — one source of truth so the view only needs a single `.alert` modifier.
     /// SwiftUI doesn't reliably support multiple `.alert` modifiers on the same view chain, so we
@@ -76,34 +76,34 @@ struct MoleSegmentationTestView: View {
                     loadingOverlay
                 }
             }
-            .navigationTitle("Mole Segmentation")
+            .navigationTitle(NSLocalizedString("seg.nav.title", tableName: "Localizable", bundle: .main, value: "Mole Segmentation", comment: "Navigation title for mole segmentation"))
             .toolbar { toolbarContent }
             .sheet(isPresented: $showSettings) {
                 settingsSheet
             }
-            .confirmationDialog("Who is this scan for?", isPresented: $showPersonPicker, titleVisibility: .visible) {
+            .confirmationDialog(NSLocalizedString("seg.personPicker.title", tableName: "Localizable", bundle: .main, value: "Who is this scan for?", comment: "Title for person picker dialog"), isPresented: $showPersonPicker, titleVisibility: .visible) {
                 ForEach(people) { person in
                     Button(person.name) {
                         selectedPersonForScan = person
                         resegment()
                     }
                 }
-                Button("Cancel", role: .cancel) {}
+                Button(NSLocalizedString("common.cancel", tableName: "Localizable", bundle: .main, value: "Cancel", comment: "Cancel button"), role: .cancel) {}
             }
-            .confirmationDialog("Mole Action", isPresented: $showMoleActionDialog, titleVisibility: .visible) {
-                Button("New Mole") {
+            .confirmationDialog(NSLocalizedString("seg.moleAction.title", tableName: "Localizable", bundle: .main, value: "Mole Action", comment: "Title for mole action dialog"), isPresented: $showMoleActionDialog, titleVisibility: .visible) {
+                Button(NSLocalizedString("seg.moleAction.new", tableName: "Localizable", bundle: .main, value: "New Mole", comment: "Create a new mole")) {
                     if let person = selectedPersonForScan {
                         addMole(to: person, from: testImage, in: selectedBoxForMole)
                     }
                 }
                 if let person = selectedPersonForScan, !person.moles.isEmpty {
-                    Button("Existing Mole") {
+                    Button(NSLocalizedString("seg.moleAction.existing", tableName: "Localizable", bundle: .main, value: "Existing Mole", comment: "Add to existing mole")) {
                         showExistingMolePicker = true
                     }
                 }
-                Button("Cancel", role: .cancel) {}
+                Button(NSLocalizedString("common.cancel", tableName: "Localizable", bundle: .main, value: "Cancel", comment: "Cancel button"), role: .cancel) {}
             }
-            .confirmationDialog("Select Existing Mole", isPresented: $showExistingMolePicker, titleVisibility: .visible) {
+            .confirmationDialog(NSLocalizedString("seg.existingMolePicker.title", tableName: "Localizable", bundle: .main, value: "Select Existing Mole", comment: "Title for existing mole picker"), isPresented: $showExistingMolePicker, titleVisibility: .visible) {
                 if let person = selectedPersonForScan {
                     ForEach(person.moles) { mole in
                         Button(mole.name) {
@@ -111,13 +111,13 @@ struct MoleSegmentationTestView: View {
                         }
                     }
                 }
-                Button("Cancel", role: .cancel) {}
+                Button(NSLocalizedString("common.cancel", tableName: "Localizable", bundle: .main, value: "Cancel", comment: "Cancel button"), role: .cancel) {}
             }
             .alert(item: $activeAlert) { alert in
                 Alert(
                     title: Text(alert.title),
                     message: Text(alert.message),
-                    dismissButton: .default(Text("OK"))
+                    dismissButton: .default(Text(NSLocalizedString("common.ok", tableName: "Localizable", bundle: .main, value: "OK", comment: "OK button")))
                 )
             }
         }
@@ -173,7 +173,7 @@ struct MoleSegmentationTestView: View {
                                             if selectedPersonForScan != nil {
                                                 showMoleActionDialog = true
                                             } else {
-                                                activeAlert = .error("Please segment again to select a person.")
+                                                activeAlert = .error(NSLocalizedString("seg.error.selectPersonAgain", tableName: "Localizable", bundle: .main, value: "Please segment again to select a person.", comment: "Prompt to re-segment when no person is selected"))
                                             }
                                         }
                                 }
@@ -241,7 +241,7 @@ struct MoleSegmentationTestView: View {
     
     private func startSegmentationFlow() {
         if people.isEmpty {
-            activeAlert = .error("Please add a person in the Overview first.")
+            activeAlert = .error(NSLocalizedString("seg.error.addPersonFirst", tableName: "Localizable", bundle: .main, value: "Please add a person in the Overview first.", comment: "Prompt to add a person before segmenting"))
         } else if people.count == 1 {
             selectedPersonForScan = people[0]
             resegment()
@@ -257,7 +257,7 @@ struct MoleSegmentationTestView: View {
 
         // These UI-related state changes are performed on the main actor.
         isProcessing = true
-        statusMessage = "Segmenting…"
+        statusMessage = NSLocalizedString("seg.status.segmenting", tableName: "Localizable", bundle: .main, value: "Segmenting…", comment: "Status while segmentation is running")
         let confidenceThreshold = self.confidenceThreshold
         let nmsThreshold = self.nmsThreshold
         // Don't clear cache if we're just re-segmenting the same image with different thresholds.
@@ -270,13 +270,13 @@ struct MoleSegmentationTestView: View {
                 await MainActor.run {
                     self.maskOverlay = result?.0
                     self.detectedBoxes = result?.1 ?? []
-                    self.statusMessage = result != nil ? "Segmentation complete. Long press a mole to add it." : "No moles detected"
+                    self.statusMessage = result != nil ? NSLocalizedString("seg.status.completeLongPress", tableName: "Localizable", bundle: .main, value: "Segmentation complete. Long press a mole to add it.", comment: "Shown when segmentation completes with results") : NSLocalizedString("seg.status.noMoles", tableName: "Localizable", bundle: .main, value: "No moles detected", comment: "Shown when no moles are detected")
                     self.isProcessing = false
                 }
             } catch {
                 await MainActor.run {
-                    self.activeAlert = .error("Segmentation failed: \(error.localizedDescription)")
-                    self.statusMessage = "Error"
+                    self.activeAlert = .error(String(format: NSLocalizedString("seg.error.failedFormat", tableName: "Localizable", bundle: .main, value: "Segmentation failed: %@", comment: "Segmentation failed message with error description"), error.localizedDescription))
+                    self.statusMessage = NSLocalizedString("seg.status.error", tableName: "Localizable", bundle: .main, value: "Error", comment: "Generic error status")
                     self.isProcessing = false
                 }
             }
@@ -289,7 +289,7 @@ struct MoleSegmentationTestView: View {
         maskOverlay = nil
         detectedBoxes = []
         selectedPersonForScan = nil
-        statusMessage = "Cleared"
+        statusMessage = NSLocalizedString("seg.status.cleared", tableName: "Localizable", bundle: .main, value: "Cleared", comment: "Shown after clearing segmentation")
         modelLoader.segmentor?.clearCache()
     }
     
@@ -317,8 +317,8 @@ struct MoleSegmentationTestView: View {
         modelContext.insert(scan)
         
         let mole = Mole(
-            name: "Mole \(person.moles.count + 1)",
-            bodyPart: "Unassigned",
+            name: String(format: NSLocalizedString("mole.defaultName.format", tableName: "Localizable", bundle: .main, value: "Mole %d", comment: "Default mole name with index"), person.moles.count + 1),
+            bodyPart: NSLocalizedString("mole.bodyPart.unassigned", tableName: "Localizable", bundle: .main, value: "Unassigned", comment: "Unassigned body part label"),
             isReminderActive: false,
             reminderFrequency: nil,
             nextDueDate: nil,
@@ -334,8 +334,8 @@ struct MoleSegmentationTestView: View {
         )
         modelContext.insert(instance)
         
-        statusMessage = "Added mole to \(person.name)!"
-        activeAlert = .success("Successfully saved scan.")
+        statusMessage = String(format: NSLocalizedString("seg.status.addedMoleTo.format", tableName: "Localizable", bundle: .main, value: "Added mole to %@!", comment: "Status after adding mole to a person"), person.name)
+        activeAlert = .success(NSLocalizedString("seg.success.savedScan", tableName: "Localizable", bundle: .main, value: "Successfully saved scan.", comment: "Alert message when scan saved successfully"))
     }
 
     private func addToExistingMole(_ mole: Mole, from image: UIImage?, in box: CGRect?) {
@@ -369,8 +369,8 @@ struct MoleSegmentationTestView: View {
         )
         modelContext.insert(instance)
         
-        statusMessage = "Added scan to \(mole.name)!"
-        activeAlert = .success("Successfully saved scan.")
+        statusMessage = String(format: NSLocalizedString("seg.status.addedScanTo.format", tableName: "Localizable", bundle: .main, value: "Added scan to %@!", comment: "Status after adding scan to an existing mole"), mole.name)
+        activeAlert = .success(NSLocalizedString("seg.success.savedScan", tableName: "Localizable", bundle: .main, value: "Successfully saved scan.", comment: "Alert message when scan saved successfully"))
     }
 
     // MARK: - Alert state
@@ -392,8 +392,8 @@ struct MoleSegmentationTestView: View {
 
         var title: String {
             switch self {
-            case .error:   return "Error"
-            case .success: return "Success"
+            case .error:   return NSLocalizedString("common.error.title", tableName: "Localizable", bundle: .main, value: "Error", comment: "Generic error title")
+            case .success: return NSLocalizedString("common.success.title", tableName: "Localizable", bundle: .main, value: "Success", comment: "Generic success title")
             }
         }
 
@@ -410,10 +410,10 @@ struct MoleSegmentationTestView: View {
     private var settingsSheet: some View {
         NavigationStack {
             List {
-                Section("Detection Thresholds") {
+                Section(NSLocalizedString("seg.settings.section.detection", tableName: "Localizable", bundle: .main, value: "Detection Thresholds", comment: "Section title for detection thresholds")) {
                     VStack(alignment: .leading) {
                         HStack {
-                            Text("Confidence:")
+                            Text(NSLocalizedString("seg.settings.confidence", tableName: "Localizable", bundle: .main, value: "Confidence:", comment: "Confidence threshold label"))
                             Spacer()
                             Text(String(format: "%.2f", confidenceThreshold))
                                 .monospacedDigit()
@@ -423,23 +423,23 @@ struct MoleSegmentationTestView: View {
                     
                     VStack(alignment: .leading) {
                         HStack {
-                            Text("NMS Overlap:")
+                            Text(NSLocalizedString("seg.settings.nmsOverlap", tableName: "Localizable", bundle: .main, value: "NMS Overlap:", comment: "NMS overlap label"))
                             Spacer()
                             Text(String(format: "%.2f", nmsThreshold))
                                 .monospacedDigit()
                         }
                         Slider(value: $nmsThreshold, in: 0.00...1.00, step: 0.05)
-                        Text("Higher values allow more overlapping boxes.")
+                        Text(NSLocalizedString("seg.settings.nmsHint", tableName: "Localizable", bundle: .main, value: "Higher values allow more overlapping boxes.", comment: "Hint for NMS overlap"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
             }
-            .navigationTitle("Parameters")
+            .navigationTitle(NSLocalizedString("seg.settings.nav.title", tableName: "Localizable", bundle: .main, value: "Parameters", comment: "Settings navigation title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                    Button(NSLocalizedString("common.done", tableName: "Localizable", bundle: .main, value: "Done", comment: "Done button")) {
                         showSettings = false
                     }
                 }
@@ -470,9 +470,9 @@ struct MoleSegmentationTestView: View {
             Image(systemName: "photo")
                 .font(.system(size: 60))
                 .foregroundStyle(.secondary)
-            Text("No test image found")
+            Text(NSLocalizedString("seg.placeholder.noImageTitle", tableName: "Localizable", bundle: .main, value: "No test image found", comment: "Title when no test image is present"))
                 .font(.headline)
-            Text("Add an image named 'test_mole_image' to Assets.xcassets")
+            Text(NSLocalizedString("seg.placeholder.noImageMessage", tableName: "Localizable", bundle: .main, value: "Add an image named 'test_mole_image' to Assets.xcassets", comment: "Message instructing how to add test image"))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -488,13 +488,13 @@ struct MoleSegmentationTestView: View {
                 Button {
                     showSettings = true
                 } label: {
-                    Label("Settings", systemImage: "slider.horizontal.3")
+                    Label(NSLocalizedString("seg.toolbar.settings", tableName: "Localizable", bundle: .main, value: "Settings", comment: "Settings button label"), systemImage: "slider.horizontal.3")
                 }
                 .disabled(modelLoader.segmentor == nil || isProcessing)
 
-                Button("Segment") { startSegmentationFlow() }
+                Button(NSLocalizedString("seg.toolbar.segment", tableName: "Localizable", bundle: .main, value: "Segment", comment: "Segment button")) { startSegmentationFlow() }
                     .disabled(modelLoader.segmentor == nil || isProcessing)
-                Button("Clear") { clearSegmentation() }
+                Button(NSLocalizedString("seg.toolbar.clear", tableName: "Localizable", bundle: .main, value: "Clear", comment: "Clear button")) { clearSegmentation() }
                     .disabled(maskOverlay == nil)
             }
         }

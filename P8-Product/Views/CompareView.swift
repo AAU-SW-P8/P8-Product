@@ -61,7 +61,7 @@ private struct CompareContentView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text("Compare")
+            Text(NSLocalizedString("compare.title", tableName: "Localizable", bundle: .main, value: "Compare", comment: "Compare view title"))
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -75,12 +75,12 @@ private struct CompareContentView: View {
                 Image(systemName: "photo.on.rectangle.angled")
                     .font(.system(size: 48))
                     .foregroundColor(.secondary)
-                Text("No data yet")
+                Text(NSLocalizedString("compare.empty.title", tableName: "Localizable", bundle: .main, value: "No data yet", comment: "Empty state title when there is no data"))
                     .font(.headline)
                     .foregroundColor(.secondary)
                     .padding(.top, 8)
                     .accessibilityIdentifier("emptyStateTitle")
-                Text("Add a person and capture some moles to compare them here.")
+                Text(NSLocalizedString("compare.empty.message", tableName: "Localizable", bundle: .main, value: "Add a person and capture some moles to compare them here.", comment: "Empty state message when there is no data"))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -91,30 +91,30 @@ private struct CompareContentView: View {
                 selectorBar
                     .padding(.top, 8)
 
-                /// Shows different prompts based on the state of the selected person and mole, guiding the user to select a person, select a mole, or capture scans if none exist. If scans are available, it shows the carousels and chart for comparison.
+                /// Shows different prompts based on the state of the selected person and mole, guiding the user to select a person/mole or capture scans if none exist. If scans are available, it shows the carousels and chart for comparison.
                 if scans.isEmpty {
                     Spacer()
                     Image(systemName: "photo")
                         .font(.system(size: 36))
                         .foregroundColor(.gray.opacity(0.4))
                     if appState.selectedPerson == nil {
-                        Text("Select a person")
+                        Text(NSLocalizedString("compare.prompt.selectPerson", tableName: "Localizable", bundle: .main, value: "Select a person", comment: "Prompt to select a person"))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .accessibilityIdentifier("selectPersonPrompt")
                     } 
                     else if !selectedPersonHasAnyScans {
-                        Text("You haven't captured any moles for \(appState.selectedPerson!.name) yet")
+                        Text(String(format: NSLocalizedString("compare.prompt.noScansForPerson", tableName: "Localizable", bundle: .main, value: "You haven't captured any moles for %@ yet", comment: "Prompt when selected person has no scans"), appState.selectedPerson!.name))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .accessibilityIdentifier("makeScanBeforeCompareMessage")
                     } else if appState.selectedMole == nil {
-                        Text("Select a mole")
+                        Text(NSLocalizedString("compare.prompt.selectMole", tableName: "Localizable", bundle: .main, value: "Select a mole", comment: "Prompt to select a mole"))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .accessibilityIdentifier("selectMolePrompt")
                     } else {
-                        Text("No scans for \(appState.selectedMole!.name)")
+                        Text(String(format: NSLocalizedString("compare.prompt.noScansForMole", tableName: "Localizable", bundle: .main, value: "No scans for %@", comment: "Message when selected mole has no scans"), appState.selectedMole!.name))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .accessibilityIdentifier("noScansMessage")
@@ -147,10 +147,10 @@ private struct CompareContentView: View {
                             
                             // The section containing the metric selection and the chart, which allows users to analyze the evolution of the mole's characteristics over time based on the available scans.
                             VStack (spacing: 2) {
-                                Text("Choose a metric evolution:")
+                                Text(NSLocalizedString("compare.metric.chooseEvolution", tableName: "Localizable", bundle: .main, value: "Choose a metric evolution:", comment: "Prompt above metric picker"))
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
-                                Picker("Metric", selection: $appState.selectedMetric) {
+                                Picker(NSLocalizedString("compare.metric.pickerLabel", tableName: "Localizable", bundle: .main, value: "Metric", comment: "Metric picker label"), selection: $appState.selectedMetric) {
                                     ForEach(ChartMetric.allCases) { metric in
                                         Text(metric.title).tag(metric)
                                     }
@@ -207,13 +207,13 @@ private struct CompareContentView: View {
     private var selectorBar: some View {
         HStack {
             Picker(
-                "Person",
+                NSLocalizedString("compare.personPicker.label", tableName: "Localizable", bundle: .main, value: "Person", comment: "Person picker label"),
                 selection: Binding(
                     get: { appState.selectedPerson },
                     set: { appState.selectPerson($0) }
                 )
             ) {
-                Text("Select Person").tag(nil as Person?)
+                Text(NSLocalizedString("compare.personPicker.placeholder", tableName: "Localizable", bundle: .main, value: "Select Person", comment: "Placeholder for person picker")).tag(nil as Person?)
                 ForEach(people) { person in
                     Text(person.name).tag(person as Person?)
                 }
@@ -241,7 +241,7 @@ private struct CompareContentView: View {
                     }
                 } label: {
                     HStack(spacing: 4) {
-                        Text(appState.selectedMole?.name ?? "Select Mole")
+                        Text(appState.selectedMole?.name ?? NSLocalizedString("compare.molePicker.placeholder", tableName: "Localizable", bundle: .main, value: "Select Mole", comment: "Placeholder for mole picker"))
                         Image(systemName: "chevron.up.chevron.down")
                             .font(.caption2)
                     }

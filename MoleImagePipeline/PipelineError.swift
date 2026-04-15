@@ -16,13 +16,13 @@ enum PipelineError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .modelNotFound(let name):
-            return "Could not find model: \(name)"
+            return String(format: NSLocalizedString("pipeline.error.modelNotFound.format", tableName: "Localizable", bundle: .main, value: "Could not find model: %@", comment: "Model not found error with name placeholder"), name)
         case .invalidImage:
-            return "Invalid image - could not convert to CGImage"
+            return NSLocalizedString("pipeline.error.invalidImage", tableName: "Localizable", bundle: .main, value: "Invalid image - could not convert to CGImage", comment: "Invalid image error" )
         case .renderFailed:
-            return "Failed to render or process image data"
+            return NSLocalizedString("pipeline.error.renderFailed", tableName: "Localizable", bundle: .main, value: "Failed to render or process image data", comment: "Render failed error" )
         case .unexpectedModelOutput:
-            return "Model output did not contain expected 'Identity' feature"
+            return NSLocalizedString("pipeline.error.unexpectedModelOutput", tableName: "Localizable", bundle: .main, value: "Model output did not contain expected 'Identity' feature", comment: "Unexpected model output error" )
         }
     }
 }

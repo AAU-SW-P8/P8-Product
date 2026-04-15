@@ -35,10 +35,10 @@ struct CameraView: View {
                     .ignoresSafeArea()
 
                 VStack(spacing: 12) {
-                    Text("Opening camera...")
+                    Text(NSLocalizedString("camera.opening", tableName: "Localizable", bundle: .main, value: "Opening camera...", comment: "Shown while opening AR camera"))
                         .font(.headline)
                         .foregroundColor(.white)
-                    Text("If camera is closed, tap anywhere to open again")
+                    Text(NSLocalizedString("camera.hint.tapToOpen", tableName: "Localizable", bundle: .main, value: "If camera is closed, tap anywhere to open again", comment: "Hint to reopen camera"))
                         .font(.subheadline)
                         .foregroundColor(.white.opacity(0.8))
                 }
@@ -81,15 +81,15 @@ struct CameraView: View {
                     .font(.system(size: 56))
                     .foregroundStyle(.secondary)
 
-                Text("AR capture is unavailable in Simulator")
+                Text(NSLocalizedString("camera.sim.unavailable", tableName: "Localizable", bundle: .main, value: "AR capture is unavailable in Simulator", comment: "Title shown when AR is unavailable in Simulator"))
                     .font(.title3.weight(.semibold))
 
-                Text("Run on a LiDAR-equipped iPhone or iPad to use the camera flow. In Simulator, a placeholder image is shown so the app still runs.")
+                Text(NSLocalizedString("camera.sim.instructions", tableName: "Localizable", bundle: .main, value: "Run on a LiDAR-equipped iPhone or iPad to use the camera flow. In Simulator, a placeholder image is shown so the app still runs.", comment: "Instructions for Simulator fallback"))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 24)
 
-                Button("Load Placeholder Image") {
+                Button(NSLocalizedString("camera.sim.loadPlaceholder", tableName: "Localizable", bundle: .main, value: "Load Placeholder Image", comment: "Load placeholder image button")) {
                     selectedImage = UIImage(systemName: "camera.macro")
                 }
                 .buttonStyle(.borderedProminent)
@@ -141,7 +141,7 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         
         // Check if LiDAR is available
         guard ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh) else {
-            showAlert(message: "LiDAR is not available on this device")
+            showAlert(message: NSLocalizedString("camera.lidarUnavailable", tableName: "Localizable", bundle: .main, value: "LiDAR is not available on this device", comment: "Alert shown when LiDAR is unavailable"))
             return
         }
         
@@ -185,7 +185,7 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         displayLabel.textAlignment = .center
         displayLabel.font = .systemFont(ofSize: 28, weight: .bold)
         displayLabel.textColor = .white
-        displayLabel.text = "35.00 cm"
+        displayLabel.text = String(format: NSLocalizedString("camera.measurement.format", tableName: "Localizable", bundle: .main, value: "%.2f cm", comment: "Format for distance measurement in cm"), 35.00)
         measurementDisplay.addSubview(displayLabel)
         
         // Center crosshair
@@ -222,7 +222,7 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         // Capture button
         captureButton = UIButton(type: .system)
         captureButton.translatesAutoresizingMaskIntoConstraints = false
-        captureButton.setTitle("Capture", for: .normal)
+        captureButton.setTitle(NSLocalizedString("camera.capture", tableName: "Localizable", bundle: .main, value: "Capture", comment: "Capture button"), for: .normal)
         captureButton.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
         captureButton.backgroundColor = .systemGray
         captureButton.setTitleColor(.white, for: .normal)
@@ -234,7 +234,7 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         // Cancel button
         cancelButton = UIButton(type: .system)
         cancelButton.translatesAutoresizingMaskIntoConstraints = false
-        cancelButton.setTitle("Cancel", for: .normal)
+        cancelButton.setTitle(NSLocalizedString("common.cancel", tableName: "Localizable", bundle: .main, value: "Cancel", comment: "Cancel button"), for: .normal)
         cancelButton.titleLabel?.font = .systemFont(ofSize: 16)
         cancelButton.setTitleColor(.white, for: .normal)
         cancelButton.addTarget(self, action: #selector(cancel), for: .touchUpInside)
@@ -401,7 +401,7 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         
         // Get the measurement display label and update it
         if let displayLabel = measurementDisplay.subviews.first(where: { $0 is UILabel }) as? UILabel {
-            displayLabel.text = String(format: "%.2f cm", distanceInCm)
+            displayLabel.text = String(format: NSLocalizedString("camera.measurement.format", tableName: "Localizable", bundle: .main, value: "%.2f cm", comment: "Format for distance measurement in cm"), distanceInCm)
         }
         
         // Enable button if within target range
@@ -427,8 +427,8 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
     }
     
     private func showAlert(message: String) {
-        let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default) { [weak self] _ in
+        let alert = UIAlertController(title: NSLocalizedString("common.error.title", tableName: "Localizable", bundle: .main, value: "Error", comment: "Generic error title"), message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: NSLocalizedString("common.ok", tableName: "Localizable", bundle: .main, value: "OK", comment: "OK button"), style: .default) { [weak self] _ in
             self?.onCancel?()
         })
         present(alert, animated: true)
@@ -439,3 +439,4 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         arSession?.pause()
     }
 }
+
