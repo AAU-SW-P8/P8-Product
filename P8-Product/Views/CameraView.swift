@@ -7,7 +7,7 @@ import SwiftUI
 import ARKit
 
 /// The main capture tab. Opens the camera automatically on appear, waits for
-/// the user to take a photo, then hands the image to `MoleSegmentationTestView`.
+/// the user to take a photo, then hands the image to `MoleSegmentationView`.
 ///
 /// On LiDAR-equipped devices the AR camera (with distance guidance) is used;
 /// on other devices a standard `UIImagePickerController` camera is presented.
