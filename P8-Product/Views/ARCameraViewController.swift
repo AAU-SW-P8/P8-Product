@@ -77,7 +77,6 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         setupMeasurementDisplay()
         setupCrosshair()
         setupCenterCircle()
-        setupTriangleIndicator()
         setupCaptureButton()
         setupCancelButton()
         activateConstraints()
@@ -133,24 +132,6 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         view.addSubview(centerCircle)
     }
 
-    private var triangleView: UIView!
-
-    private func setupTriangleIndicator() {
-        triangleView = UIView()
-        triangleView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(triangleView)
-
-        let path = UIBezierPath()
-        path.move(to: CGPoint(x: 10, y: 0))
-        path.addLine(to: CGPoint(x: 20, y: 20))
-        path.addLine(to: CGPoint(x: 0, y: 20))
-        path.close()
-
-        let layer = CAShapeLayer()
-        layer.path = path.cgPath
-        layer.fillColor = Self.overlayRed.cgColor
-        triangleView.layer.addSublayer(layer)
-    }
 
     private func setupCaptureButton() {
         captureButton = UIButton(type: .system)
@@ -186,11 +167,6 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
             centerCircle.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             centerCircle.widthAnchor.constraint(equalToConstant: 16),
             centerCircle.heightAnchor.constraint(equalToConstant: 16),
-
-            triangleView.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: 50),
-            triangleView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: 15),
-            triangleView.widthAnchor.constraint(equalToConstant: 20),
-            triangleView.heightAnchor.constraint(equalToConstant: 20),
 
             measurementDisplay.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
             measurementDisplay.centerXAnchor.constraint(equalTo: view.centerXAnchor),

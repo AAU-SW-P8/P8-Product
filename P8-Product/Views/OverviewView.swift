@@ -40,7 +40,6 @@ private struct OverviewContentView: View {
                 Divider()
                 moleListView
                 Spacer()
-                newScanButton
             }
             .fullScreenCover(isPresented: $appState.cameraShowing) {
                 ARCameraView(capturedImage: $appState.capturedImage,
@@ -217,31 +216,6 @@ private struct OverviewContentView: View {
             .compactMap(\.moleScan)
             .sorted { $0.captureDate > $1.captureDate }
             .first
-    }
-    
-    private var newScanButton: some View {
-        Button(action: {
-            if appState.selectedPerson != nil {
-                appState.cameraShowing = true
-            }
-        }) {
-            HStack {
-                Image(systemName: "plus.circle")
-                    .font(.system(size: 24))
-                Text("NEW SCAN")
-                    .font(.system(size: 18, weight: .semibold))
-            }
-            .foregroundColor(.primary)
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color(.systemBackground))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-            )
-            .padding(.horizontal)
-            .padding(.vertical, 12)
-        }
     }
 }
 
