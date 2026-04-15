@@ -77,7 +77,6 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
     private func setupUI() {
         setupMeasurementDisplay()
         setupCrosshair()
-        setupCenterCircle()
         setupCaptureButton()
         setupCancelButton()
         activateConstraints()
@@ -138,19 +137,6 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         }
     }
 
-    private var centerCircle: UIView!
-
-    private func setupCenterCircle() {
-        centerCircle = UIView()
-        centerCircle.translatesAutoresizingMaskIntoConstraints = false
-        centerCircle.layer.borderColor = Self.overlayRed.cgColor
-        centerCircle.layer.borderWidth = 3
-        centerCircle.backgroundColor = .clear
-        centerCircle.layer.cornerRadius = 8
-        view.addSubview(centerCircle)
-    }
-
-
     private func setupCaptureButton() {
         captureButton = UIButton(type: .system)
         captureButton.translatesAutoresizingMaskIntoConstraints = false
@@ -180,11 +166,6 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
             centerCrosshair.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             centerCrosshair.widthAnchor.constraint(equalToConstant: 80),
             centerCrosshair.heightAnchor.constraint(equalToConstant: 80),
-
-            centerCircle.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            centerCircle.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            centerCircle.widthAnchor.constraint(equalToConstant: 16),
-            centerCircle.heightAnchor.constraint(equalToConstant: 16),
 
             measurementDisplay.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
             measurementDisplay.centerXAnchor.constraint(equalTo: view.centerXAnchor),
