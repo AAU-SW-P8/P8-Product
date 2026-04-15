@@ -94,7 +94,7 @@ class ReminderAppState {
      */
     func reminderModeBinding(for mole: Mole) -> Binding<String> {
         Binding(
-            get: { reminderMode(for: mole) },
+            get: { self.reminderMode(for: mole) },
             set: { newValue in
                 switch newValue {
                 case "Enabled":
