@@ -4,7 +4,7 @@
 //
 //  Tests for the ImageCarousel view, covering image loading
 //  and swipe navigation between scans. The tests reach the
-//  carousel through CompareView since its dual-carousel layout
+//  carousel through MoleDetailView's Evolution page since its dual-carousel layout
 //  exposes stable accessibility identifiers for each carousel.
 //
 //  Mock data assumed (see MockData.insertSampleData):
@@ -29,8 +29,7 @@ final class ImageCarouselUITests: XCTestCase {
         app.launchArguments.append("-UITest_InMemoryStore")
         app.launch()
 
-        // The dual carousel lives in the Compare tab.
-        Helpers.openCompareTab(in: app)
+        Helpers.openOverviewTab(in: app)
     }
 
     // MARK: - Image Loading
@@ -50,7 +49,7 @@ final class ImageCarouselUITests: XCTestCase {
     }
 
     func testSingleScanCarouselLoadsImage() {
-        // Back Mole renders through the single-carousel branch in CompareView,
+        // Back Mole renders through the single-carousel branch in MoleDetailView,
         // which doesn't tag the carousel with leftCarousel/rightCarousel ids,
         // so we look at the metadata instead and assert at least one image
         // exists in the application's element tree.
