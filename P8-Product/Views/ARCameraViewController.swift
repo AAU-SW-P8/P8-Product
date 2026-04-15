@@ -26,12 +26,14 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
     private var captureButton: UIButton!
     private var measurementDisplay: UIView!
     private var displayLabel: UILabel!
+    private var confidenceLabel: UILabel!
     private var cancelButton: UIButton!
     private var lidarPointsLayer: CAShapeLayer!
 
     // MARK: - State
 
     private var currentDistance: Float = 100.0
+    private var currentConfidence: ARConfidenceLevel? = nil
 
     // MARK: - Lifecycle
 
@@ -114,6 +116,14 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         displayLabel.textColor = .white
         displayLabel.text = "35.00 cm"
         measurementDisplay.addSubview(displayLabel)
+
+        confidenceLabel = UILabel()
+        confidenceLabel.translatesAutoresizingMaskIntoConstraints = false
+        confidenceLabel.textAlignment = .center
+        confidenceLabel.font = .systemFont(ofSize: 14, weight: .regular)
+        confidenceLabel.textColor = .white
+        confidenceLabel.text = "Confidence: --"
+        measurementDisplay.addSubview(confidenceLabel)
     }
 
     private var centerCrosshair: UIView!
@@ -175,6 +185,9 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
             displayLabel.topAnchor.constraint(equalTo: measurementDisplay.topAnchor, constant: 8),
             displayLabel.centerXAnchor.constraint(equalTo: measurementDisplay.centerXAnchor),
 
+            confidenceLabel.topAnchor.constraint(equalTo: displayLabel.bottomAnchor, constant: 4),
+            confidenceLabel.centerXAnchor.constraint(equalTo: measurementDisplay.centerXAnchor),
+
             captureButton.bottomAnchor.constraint(equalTo: measurementDisplay.topAnchor, constant: -30),
             captureButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             captureButton.widthAnchor.constraint(equalToConstant: 200),
@@ -190,8 +203,16 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
     func session(_ session: ARSession, didUpdate frame: ARFrame) {
         guard arView != nil else { return }
 
-        if let distance = closestDepthDistance(from: frame) ?? raycastDistance(from: frame) {
+        if let (distance, confidence) = closestDepthAndConfidence(from: frame) {
             currentDistance = distance
+            currentConfidence = confidence
+            DispatchQueue.main.async { [weak self] in
+                self?.updateMeasurementDisplay()
+                self?.updateLidarDots(from: frame)
+            }
+        } else if let distance = raycastDistance(from: frame) {
+            currentDistance = distance
+            currentConfidence = nil
             DispatchQueue.main.async { [weak self] in
                 self?.updateMeasurementDisplay()
                 self?.updateLidarDots(from: frame)
@@ -201,12 +222,27 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
 
     // MARK: - Depth Measurement
 
-    private func closestDepthDistance(from frame: ARFrame) -> Float? {
+    private func closestDepthAndConfidence(from frame: ARFrame) -> (Float, ARConfidenceLevel)? {
         guard let sceneDepth = frame.sceneDepth else { return nil }
 
         let depthMap = sceneDepth.depthMap
+        let confidenceMap = sceneDepth.confidenceMap
+
         CVPixelBufferLockBaseAddress(depthMap, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(depthMap, .readOnly) }
+
+        var confidenceBaseAddress: UnsafeMutableRawPointer? = nil
+        var confidenceBytesPerRow = 0
+        if let confMap = confidenceMap {
+            CVPixelBufferLockBaseAddress(confMap, .readOnly)
+            confidenceBaseAddress = CVPixelBufferGetBaseAddress(confMap)
+            confidenceBytesPerRow = CVPixelBufferGetBytesPerRow(confMap)
+        }
+        defer {
+            if let confMap = confidenceMap {
+                CVPixelBufferUnlockBaseAddress(confMap, .readOnly)
+            }
+        }
 
         guard let baseAddress = CVPixelBufferGetBaseAddress(depthMap) else { return nil }
 
@@ -226,18 +262,32 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         let yEnd = Int(CGFloat(height) * (1.0 + cropHeightRatio) / 2.0)
 
         var minDistance: Float = .greatestFiniteMagnitude
+        var bestConfidenceRaw: UInt8 = 0
 
         for y in max(0, yStart)..<min(height, yEnd) {
             let rowPtr = baseAddress.advanced(by: y * bytesPerRow).assumingMemoryBound(to: Float32.self)
+            
+            var confRowPtr: UnsafeMutablePointer<UInt8>? = nil
+            if let confBase = confidenceBaseAddress {
+                confRowPtr = confBase.advanced(by: y * confidenceBytesPerRow).assumingMemoryBound(to: UInt8.self)
+            }
+
             for x in max(0, xStart)..<min(width, xEnd) {
                 let depth = rowPtr[x]
                 if depth > 0.05 && depth < minDistance {
                     minDistance = depth
+                    if let confPtr = confRowPtr {
+                        bestConfidenceRaw = confPtr[x]
+                    }
                 }
             }
         }
 
-        return minDistance < .greatestFiniteMagnitude ? minDistance : nil
+        if minDistance < .greatestFiniteMagnitude {
+            let confidence = ARConfidenceLevel(rawValue: Int(bestConfidenceRaw)) ?? .low
+            return (minDistance, confidence)
+        }
+        return nil
     }
 
     private func updateLidarDots(from frame: ARFrame) {
@@ -299,6 +349,21 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
     private func updateMeasurementDisplay() {
         let distanceInCm = currentDistance * 100
         displayLabel.text = String(format: "%.2f cm", distanceInCm)
+
+        if let confidence = currentConfidence {
+            switch confidence {
+            case .low:
+                confidenceLabel.text = "Confidence: Low"
+            case .medium:
+                confidenceLabel.text = "Confidence: Medium"
+            case .high:
+                confidenceLabel.text = "Confidence: High"
+            @unknown default:
+                confidenceLabel.text = "Confidence: --"
+            }
+        } else {
+            confidenceLabel.text = "Confidence: --"
+        }
 
         let isInRange = abs(currentDistance - targetDistance) <= distanceTolerance
 
