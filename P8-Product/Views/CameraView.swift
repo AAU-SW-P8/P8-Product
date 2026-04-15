@@ -76,9 +76,12 @@ struct CameraView: View {
                 }
             }
         }
-        // Open the camera as soon as the tab appears.
+        // Open the camera as soon as the tab appears, unless we already
+        // have a captured image or the segmentation view is showing.
         .onAppear {
-            openCamera()
+            if capturedImage == nil && !showSegmentation {
+                openCamera()
+            }
         }
         // Camera: choose AR or simple depending on device capabilities.
         .fullScreenCover(isPresented: $showCamera) {
@@ -97,6 +100,16 @@ struct CameraView: View {
         .onChange(of: capturedImage) {
             if capturedImage != nil {
                 showSegmentation = true
+            }
+        }
+        // When the user taps back from segmentation, reset state and
+        // reopen the camera instead of landing on the placeholder.
+        .onChange(of: showSegmentation) { _, isShown in
+            if !isShown {
+                capturedImage = nil
+                capturedDepthMap = nil
+                capturedConfidenceMap = nil
+                openCamera()
             }
         }
     }
