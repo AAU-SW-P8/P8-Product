@@ -28,6 +28,7 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
     private var measurementDisplay: UIView!
     private var displayLabel: UILabel!
     private var cancelButton: UIButton!
+    private var lidarPointsLayer: CAShapeLayer!
 
     // MARK: - State
 
@@ -45,6 +46,7 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
 
         setupARView()
         setupUI()
+        setupLidarPointsLayer()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -80,6 +82,23 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         setupCaptureButton()
         setupCancelButton()
         activateConstraints()
+    }
+
+    private func setupLidarPointsLayer() {
+        lidarPointsLayer = CAShapeLayer()
+        lidarPointsLayer.frame = view.bounds
+        
+        // Use a mask to only show dots inside the red box (80x80 centered)
+        let maskSize: CGFloat = 80
+        let maskRect = CGRect(x: view.bounds.midX - maskSize/2,
+                              y: view.bounds.midY - maskSize/2,
+                              width: maskSize,
+                              height: maskSize)
+        let maskLayer = CAShapeLayer()
+        maskLayer.path = UIBezierPath(rect: maskRect).cgPath
+        lidarPointsLayer.mask = maskLayer
+        
+        view.layer.addSublayer(lidarPointsLayer)
     }
 
     private func setupMeasurementDisplay() {
@@ -195,6 +214,7 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
             currentDistance = distance
             DispatchQueue.main.async { [weak self] in
                 self?.updateMeasurementDisplay()
+                self?.updateLidarDots(from: frame)
             }
         }
     }
@@ -214,11 +234,22 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         let height = CVPixelBufferGetHeight(depthMap)
         let bytesPerRow = CVPixelBufferGetBytesPerRow(depthMap)
 
+        // The red box is 80x80 in the center of the view.
+        // We crop the depth map search area to match this central region.
+        let viewSize = view.bounds.size
+        let cropWidthRatio = 80.0 / viewSize.width
+        let cropHeightRatio = 80.0 / viewSize.height
+        
+        let xStart = Int(CGFloat(width) * (1.0 - cropWidthRatio) / 2.0)
+        let xEnd = Int(CGFloat(width) * (1.0 + cropWidthRatio) / 2.0)
+        let yStart = Int(CGFloat(height) * (1.0 - cropHeightRatio) / 2.0)
+        let yEnd = Int(CGFloat(height) * (1.0 + cropHeightRatio) / 2.0)
+
         var minDistance: Float = .greatestFiniteMagnitude
 
-        for y in 0..<height {
+        for y in max(0, yStart)..<min(height, yEnd) {
             let rowPtr = baseAddress.advanced(by: y * bytesPerRow).assumingMemoryBound(to: Float32.self)
-            for x in 0..<width {
+            for x in max(0, xStart)..<min(width, xEnd) {
                 let depth = rowPtr[x]
                 if depth > 0.05 && depth < minDistance {
                     minDistance = depth
@@ -227,6 +258,44 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         }
 
         return minDistance < .greatestFiniteMagnitude ? minDistance : nil
+    }
+
+    private func updateLidarDots(from frame: ARFrame) {
+        guard let sceneDepth = frame.sceneDepth else {
+            lidarPointsLayer.path = nil
+            return
+        }
+
+        let depthMap = sceneDepth.depthMap
+        CVPixelBufferLockBaseAddress(depthMap, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(depthMap, .readOnly) }
+
+        guard let baseAddress = CVPixelBufferGetBaseAddress(depthMap) else { return }
+
+        let width = CVPixelBufferGetWidth(depthMap)
+        let height = CVPixelBufferGetHeight(depthMap)
+        let bytesPerRow = CVPixelBufferGetBytesPerRow(depthMap)
+
+        let viewSize = view.bounds.size
+        let dotPath = UIBezierPath()
+        let dotSize: CGFloat = 2.0
+
+        // Subsample the depth map to avoid too many dots
+        let step = 4
+        for y in stride(from: 0, to: height, by: step) {
+            let rowPtr = baseAddress.advanced(by: y * bytesPerRow).assumingMemoryBound(to: Float32.self)
+            for x in stride(from: 0, to: width, by: step) {
+                let depth = rowPtr[x]
+                if depth > 0.05 && depth < 2.0 { // Only show points within 2 meters
+                    let vx = CGFloat(x) / CGFloat(width) * viewSize.width
+                    let vy = CGFloat(y) / CGFloat(height) * viewSize.height
+                    dotPath.append(UIBezierPath(ovalIn: CGRect(x: vx - dotSize/2, y: vy - dotSize/2, width: dotSize, height: dotSize)))
+                }
+            }
+        }
+
+        lidarPointsLayer.path = dotPath.cgPath
+        lidarPointsLayer.fillColor = UIColor.white.withAlphaComponent(0.6).cgColor
     }
 
     private func raycastDistance(from frame: ARFrame) -> Float? {
