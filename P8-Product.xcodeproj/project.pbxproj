@@ -47,6 +47,7 @@
 				UITests/ImageCarouselUITests.swift,
 				UITests/ProductUITests.swift,
 				UITests/ProductUITestsLaunchTests.swift,
+				UITests/ReminderViewUITests.swift,
 				UITests/TabStateUITests.swift,
 			);
 			target = 972E93A72F7BC67300BB8979 /* P8-ProductUITests */;
@@ -54,26 +55,35 @@
 		97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				ChartViewTest.swift,
+				ReminderOverview/ReminderOverview.swift,
+				SAMPipelineTests/SAM3DecoderTests.swift,
+				SAMPipelineTests/SAM3DetectionTests.swift,
+				SAMPipelineTests/SAM3FeatureNamesTests.swift,
+				SAMPipelineTests/SAM3ImagePreprocessorTests.swift,
+				SAMPipelineTests/SAM3ModelsTests.swift,
+				SAMPipelineTests/TestHelpers.swift,
 				UITests/CompareViewUITests.swift,
 				UITests/Helpers.swift,
 				UITests/ImageCarouselUITests.swift,
 				UITests/ProductUITests.swift,
 				UITests/ProductUITestsLaunchTests.swift,
+				UITests/ReminderViewUITests.swift,
 				UITests/TabStateUITests.swift,
-			);
-			target = 97C2DB192F6AB3F100454255 /* PipelineTests */;
-		};
-		97C2DB302F6AB49400454255 /* Exceptions for "MoleImagePipeline" folder in "P8-Product" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"models/sam3.1-coreml-fp16/.gitattributes",
 			);
 			target = F1845EED2F59945F00E27D2B /* P8-Product */;
 		};
-		97C2DB312F6AB49400454255 /* Exceptions for "MoleImagePipeline" folder in "PipelineTests" target */ = {
+		97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				"models/sam3.1-coreml-fp16/.gitattributes",
+				ChartViewTest.swift,
+				ReminderOverview/ReminderOverview.swift,
+				SAMPipelineTests/SAM3DecoderTests.swift,
+				SAMPipelineTests/SAM3DetectionTests.swift,
+				SAMPipelineTests/SAM3FeatureNamesTests.swift,
+				SAMPipelineTests/SAM3ImagePreprocessorTests.swift,
+				SAMPipelineTests/SAM3ModelsTests.swift,
+				SAMPipelineTests/TestHelpers.swift,
 			);
 			target = 97C2DB192F6AB3F100454255 /* PipelineTests */;
 		};
@@ -82,10 +92,6 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		97C2DAEC2F6AAFA600454255 /* MoleImagePipeline */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				97C2DB302F6AB49400454255 /* Exceptions for "MoleImagePipeline" folder in "P8-Product" target */,
-				97C2DB312F6AB49400454255 /* Exceptions for "MoleImagePipeline" folder in "PipelineTests" target */,
-			);
 			path = MoleImagePipeline;
 			sourceTree = "<group>";
 		};

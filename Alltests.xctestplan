@@ -20,15 +20,15 @@
       ],
       "target" : {
         "containerPath" : "container:P8-Product.xcodeproj",
-        "identifier" : "972E93A72F7BC67300BB8979",
-        "name" : "P8-ProductUITests"
+        "identifier" : "97C2DB192F6AB3F100454255",
+        "name" : "PipelineTests"
       }
     },
     {
       "target" : {
         "containerPath" : "container:P8-Product.xcodeproj",
-        "identifier" : "97C2DB192F6AB3F100454255",
-        "name" : "PipelineTests"
+        "identifier" : "972E93A72F7BC67300BB8979",
+        "name" : "P8-ProductUITests"
       }
     }
   ],

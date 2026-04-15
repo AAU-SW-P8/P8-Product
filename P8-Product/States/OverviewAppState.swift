@@ -6,7 +6,7 @@ import CoreVideo
 @MainActor
 @Observable
 class OverviewAppState {
-    // The selected person is shared across the app through SelectionState, so that both Overview and Compare views stay in sync without needing to pass the selection through the view hierarchy.
+    // The selected person is shared across the app through SelectionState, so that all views stay in sync without needing to pass the selection through the view hierarchy.
     @ObservationIgnored private let selectionState = SelectionState.shared
 
     // MARK: - Persistent Data Selection
