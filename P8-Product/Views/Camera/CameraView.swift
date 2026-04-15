@@ -7,10 +7,10 @@ import SwiftUI
 import ARKit
 
 /// The main capture tab. Opens the camera automatically on appear, waits for
-/// the user to take a photo, then hands the image to `MoleSegmentationTestView`.
+/// the user to take a photo, then hands the image to `MoleSegmentationView`.
 ///
 /// On LiDAR-equipped devices the AR camera (with distance guidance) is used;
-/// on other devices a standard `UIImagePickerController` camera is presented.
+/// On other devices a standard `UIImagePickerController` camera is presented.
 /// In the Simulator (no physical camera) the view stays on a placeholder screen.
 struct CameraView: View {
 
@@ -38,38 +38,18 @@ struct CameraView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                Color.black
-                    .ignoresSafeArea()
-
-                // Shown briefly while the camera is opening, or when the user
-                // dismisses the camera without taking a photo.
-                VStack(spacing: 12) {
-                    Text("Opening camera...")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                    Text("If camera is closed, tap anywhere to open again")
-                        .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.8))
+            placeholder
+                // Let the user re-open the camera by tapping the background.
+                .onTapGesture {
+                    if !showCamera && !showSegmentation {
+                        openCamera()
+                    }
                 }
-                .multilineTextAlignment(.center)
-                .padding(24)
-            }
-            // Let the user re-open the camera by tapping the background.
-            .onTapGesture {
-                if !showCamera && !showSegmentation {
-                    openCamera()
+                // Navigate to segmentation within the NavigationStack so the
+                // tab bar stays visible and the user can navigate back.
+                .navigationDestination(isPresented: $showSegmentation) {
+                    segmentationDestination
                 }
-            }
-            // Navigate to segmentation within the NavigationStack so the
-            // tab bar stays visible and the user can navigate back.
-            .navigationDestination(isPresented: $showSegmentation) {
-                if let capturedImage {
-                    MoleSegmentationView(inputImage: capturedImage,
-                                         depthMap: capturedDepthMap,
-                                         confidenceMap: capturedConfidenceMap)
-                }
-            }
         }
         // Open the camera as soon as the tab appears, unless we already
         // have a captured image or the segmentation view is showing.
@@ -80,15 +60,7 @@ struct CameraView: View {
         }
         // Camera: choose AR or simple depending on device capabilities.
         .fullScreenCover(isPresented: $showCamera) {
-            if supportsARCapture {
-                ARCameraView(capturedImage: $capturedImage,
-                             capturedDepthMap: $capturedDepthMap,
-                             capturedConfidenceMap: $capturedConfidenceMap)
-                    .ignoresSafeArea()
-            } else {
-                BasicCameraView(capturedImage: $capturedImage)
-                    .ignoresSafeArea()
-            }
+            cameraCover
         }
         // As soon as the camera sets capturedImage, move to segmentation.
         .onChange(of: capturedImage) {
@@ -107,6 +79,58 @@ struct CameraView: View {
             }
         }
     }
+
+    // MARK: - Subviews
+
+    /// Background shown briefly while the camera is opening, or when the user
+    /// dismisses the camera without taking a photo. Tapping it re-opens the
+    /// camera via the surrounding `.onTapGesture`.
+    private var placeholder: some View {
+        ZStack {
+            Color.black
+                .ignoresSafeArea()
+
+            VStack(spacing: 12) {
+                Text("Opening camera...")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                Text("If camera is closed, tap anywhere to open again")
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.8))
+            }
+            .multilineTextAlignment(.center)
+            .padding(24)
+        }
+    }
+
+    /// Full-screen camera UI: the AR capture flow on LiDAR-equipped devices,
+    /// falling back to the plain `UIImagePickerController` wrapper elsewhere.
+    @ViewBuilder
+    private var cameraCover: some View {
+        if supportsARCapture {
+            ARCameraView(capturedImage: $capturedImage,
+                         capturedDepthMap: $capturedDepthMap,
+                         capturedConfidenceMap: $capturedConfidenceMap)
+                .ignoresSafeArea()
+        } else {
+            BasicCameraView(capturedImage: $capturedImage)
+                .ignoresSafeArea()
+        }
+    }
+
+    /// Destination pushed onto the navigation stack once a photo has been
+    /// captured. Renders nothing until `capturedImage` is non-nil, which in
+    /// practice is always true when this destination is presented.
+    @ViewBuilder
+    private var segmentationDestination: some View {
+        if let capturedImage {
+            MoleSegmentationView(inputImage: capturedImage,
+                                 depthMap: capturedDepthMap,
+                                 confidenceMap: capturedConfidenceMap)
+        }
+    }
+
+    // MARK: - Actions
 
     /// Presents the camera if the device has one.
     private func openCamera() {
