@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import CoreVideo
 import simd
 
 struct ARCameraView: UIViewControllerRepresentable {

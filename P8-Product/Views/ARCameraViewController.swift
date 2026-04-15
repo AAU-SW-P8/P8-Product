@@ -13,7 +13,7 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
     // MARK: - Constants
 
     private static let overlayRed = UIColor(red: 1.0, green: 0.3, blue: 0.3, alpha: 1.0)
-    private let targetDistance: Float = 0.20   // 35 cm
+    private let targetDistance: Float = 0.35   // 35 cm
     private let distanceTolerance: Float = 0.05 // ±5 cm
 
     // MARK: - Callbacks
@@ -354,8 +354,6 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         let confidenceMap = frame.sceneDepth?.confidenceMap
         let intrinsics = frame.camera.intrinsics
 
-        print(depthMap.debugDescription)
-        print(confidenceMap.debugDescription)
         onCapture?(image, depthMap, confidenceMap, intrinsics)
     }
 

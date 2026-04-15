@@ -5,8 +5,7 @@ import simd
 class Calculator {
 
     /// Peak alpha the mask renderer applies to a fully-confident pixel.
-    /// Must match `SegmentationRenderer.maskAlphaMax`.
-    private let maskAlphaMax: Float = 0.5
+    private let maskAlphaMax: Float = SegmentationRendererValues.maskAlphaMax
 
     /// Minimum alpha to consider a pixel as potentially part of the mole.
     /// Filters out near-zero background noise (~p=0.004).
@@ -319,19 +318,26 @@ class Calculator {
         orientation: UIImage.Orientation
     ) -> (Int, Int) {
         switch orientation {
+        case .up:
+            return (nx, ny)
         case .right:
             // Portrait (sensor landscape, rotated 90° CW to display)
-            // Reverse: sx = ny, sy = normW - 1 - nx
             return (ny, normalizedWidth - 1 - nx)
         case .left:
             // Portrait upside-down (sensor landscape, rotated 90° CCW)
-            // Reverse: sx = normH - 1 - ny, sy = nx
             return (normalizedHeight - 1 - ny, nx)
         case .down:
             // Landscape flipped (180° rotation)
             return (normalizedWidth - 1 - nx, normalizedHeight - 1 - ny)
-        default:
-            // .up or mirrored variants: identity mapping
+        case .upMirrored:
+            return (normalizedWidth - 1 - nx, ny)
+        case .downMirrored:
+            return (nx, normalizedHeight - 1 - ny)
+        case .leftMirrored:
+            return (ny, nx)
+        case .rightMirrored:
+            return (normalizedHeight - 1 - ny, normalizedWidth - 1 - nx)
+        @unknown default:
             return (nx, ny)
         }
     }

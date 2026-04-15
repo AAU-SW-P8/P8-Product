@@ -35,7 +35,7 @@ final class SegmentationRenderer {
     ]
 
     /// Peak alpha applied to a fully-confident mask pixel.
-    private static let maskAlphaMax: Float = 0.5
+    private static let maskAlphaMax: Float = SegmentationRendererValues.maskAlphaMax
 
     /// Renders an annotated copy of `baseImage` plus the pixel-space bounding
     /// boxes derived from each detection's mask.
