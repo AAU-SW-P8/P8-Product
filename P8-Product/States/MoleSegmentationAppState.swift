@@ -124,7 +124,12 @@ class MoleSegmentationAppState {
     func handleNewMoleSelection() {
         guard let person: Person = selectedPersonForScan, let image: UIImage = testImage, let box: CGRect = selectedBoxForMole else { return }
         if let cropped: UIImage = cropImage(image, to: box) {
-            dataController.addMoleAndScan(to: person, image: cropped, area: calculateSelectedMoleArea())
+            dataController.addMoleAndScan(
+                to: person,
+                image: cropped,
+                area: calculateSelectedMoleArea(),
+                diameter: calculateSelectedMoleDiameter()
+            )
             statusMessage = "Added mole to \(person.name)!"
             activeAlert = .success("Successfully saved scan.")
         }
@@ -143,10 +148,15 @@ class MoleSegmentationAppState {
         
         // 1. Crop the image here in the AppState
         if let cropped: UIImage = cropImage(image, to: box) {
-            
+
             // 2. Pass the finished image to the DataController
-            dataController.addToExistingMole(mole: mole, image: cropped, area: calculateSelectedMoleArea())
-            
+            dataController.addToExistingMole(
+                mole: mole,
+                image: cropped,
+                area: calculateSelectedMoleArea(),
+                diameter: calculateSelectedMoleDiameter()
+            )
+
             // 3. Update UI state
             statusMessage = "Added scan to \(mole.name)!"
             activeAlert = .success("Successfully saved scan.")
@@ -172,7 +182,27 @@ class MoleSegmentationAppState {
         guard areaMM2.isFinite, areaMM2 > 0 else { return 0 }
         return Float(areaMM2)
     }
-    
+
+    /// Computes the mole diameter in mm (max distance between mole pixels) for the
+    /// currently selected detection. Returns `0` when depth or mask data is unavailable.
+    private func calculateSelectedMoleDiameter() -> Float {
+        guard let maskOnlyImage: UIImage = maskOnlyImage,
+              let selectedBox: CGRect = selectedBoxForMole else {
+            return 0
+        }
+
+        let diameterMM = calculator.calculateDiameter(
+            from: (maskOnlyImage, [selectedBox]),
+            depthMap: depthMap,
+            confidenceMap: confidenceMap,
+            cameraIntrinsics: cameraIntrinsics,
+            imageOrientation: capturedImageOrientation
+        )
+
+        guard diameterMM.isFinite, diameterMM > 0 else { return 0 }
+        return Float(diameterMM)
+    }
+
     /**
      Crops the given image to the specified box with some padding, ensuring the crop stays within the image bounds. 
      Uses `UIGraphicsImageRenderer` for efficient cropping while maintaining the original image's scale. 

@@ -162,6 +162,142 @@ class Calculator {
         return CGFloat(totalArea * 1_000_000)
     }
 
+    /// Estimates the mole diameter in mm as the largest distance between any two
+    /// mole pixels (Feret diameter) — a robust proxy for the longest visible axis.
+    ///
+    /// The mask pixels (alpha ≥ `minimumAlpha`) within the bounding box are reduced
+    /// to their convex hull, and the maximum pairwise distance among hull vertices
+    /// is converted to physical units using the median LiDAR depth and the camera's
+    /// focal lengths.
+    ///
+    /// Parameters mirror `calculateArea`. Returns `0` when depth/intrinsics are
+    /// unavailable or fewer than two mole pixels are present.
+    func calculateDiameter(
+        from segmentedImage: (UIImage, [CGRect]),
+        depthMap: CVPixelBuffer?,
+        confidenceMap: CVPixelBuffer?,
+        cameraIntrinsics: simd_float3x3? = nil,
+        imageOrientation: UIImage.Orientation = .up
+    ) -> CGFloat {
+        guard let depthMap = depthMap,
+              let intrinsics = cameraIntrinsics,
+              let box = segmentedImage.1.first else {
+            return 0.0
+        }
+
+        let maskImage = segmentedImage.0
+        let fx = intrinsics[0][0]
+        let fy = intrinsics[1][1]
+
+        guard fx > 0 && fy > 0 else { return 0.0 }
+
+        guard let renderedMask = renderToRGBA(image: maskImage) else { return 0.0 }
+        let maskPixels = renderedMask.pixels
+        let maskW = renderedMask.width
+        let maskH = renderedMask.height
+
+        CVPixelBufferLockBaseAddress(depthMap, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(depthMap, .readOnly) }
+        guard let depthBase = CVPixelBufferGetBaseAddress(depthMap) else { return 0.0 }
+        let depthW = CVPixelBufferGetWidth(depthMap)
+        let depthH = CVPixelBufferGetHeight(depthMap)
+        let depthBytesPerRow = CVPixelBufferGetBytesPerRow(depthMap)
+
+        let confBase: UnsafeMutableRawPointer?
+        let confBytesPerRow: Int
+        if let confidenceMap = confidenceMap {
+            CVPixelBufferLockBaseAddress(confidenceMap, .readOnly)
+            confBase = CVPixelBufferGetBaseAddress(confidenceMap)
+            confBytesPerRow = CVPixelBufferGetBytesPerRow(confidenceMap)
+        } else {
+            confBase = nil
+            confBytesPerRow = 0
+        }
+        defer {
+            if let confidenceMap = confidenceMap {
+                CVPixelBufferUnlockBaseAddress(confidenceMap, .readOnly)
+            }
+        }
+
+        let (sensorW, sensorH) = sensorDimensions(
+            normalizedWidth: maskW,
+            normalizedHeight: maskH,
+            orientation: imageOrientation
+        )
+        guard sensorW > 0 && sensorH > 0 else { return 0.0 }
+
+        let minX = max(0, Int(floor(box.minX)))
+        let minY = max(0, Int(floor(box.minY)))
+        let maxX = min(maskW - 1, Int(ceil(box.maxX)) - 1)
+        let maxY = min(maskH - 1, Int(ceil(box.maxY)) - 1)
+
+        guard minX <= maxX, minY <= maxY else { return 0.0 }
+
+        var molePoints: [CGPoint] = []
+        var depthValues: [Float] = []
+        var sampledDepthPixels = Set<Int>()
+
+        for ny in minY...maxY {
+            for nx in minX...maxX {
+                let pixelOffset = (ny * maskW + nx) * 4
+                let alpha = maskPixels[pixelOffset + 3]
+                guard alpha >= minimumAlpha else { continue }
+
+                molePoints.append(CGPoint(x: nx, y: ny))
+
+                let (sx, sy) = normalizedToSensor(
+                    nx: nx, ny: ny,
+                    normalizedWidth: maskW, normalizedHeight: maskH,
+                    orientation: imageOrientation
+                )
+
+                let dx = sx * depthW / sensorW
+                let dy = sy * depthH / sensorH
+                guard dx >= 0 && dx < depthW && dy >= 0 && dy < depthH else { continue }
+
+                let depthIndex = dy * depthW + dx
+                guard !sampledDepthPixels.contains(depthIndex) else { continue }
+                sampledDepthPixels.insert(depthIndex)
+
+                if let confBase = confBase {
+                    let confPtr = confBase.advanced(by: dy * confBytesPerRow)
+                        .assumingMemoryBound(to: UInt8.self)
+                    let confidence = confPtr[dx]
+                    guard confidence >= 1 else { continue }
+                }
+
+                let depthPtr = depthBase.advanced(by: dy * depthBytesPerRow)
+                    .assumingMemoryBound(to: Float32.self)
+                let depth = depthPtr[dx]
+                guard depth > 0.05 && depth < 2.0 else { continue }
+
+                depthValues.append(depth)
+            }
+        }
+
+        guard !depthValues.isEmpty, molePoints.count >= 2 else { return 0.0 }
+
+        let d = median(of: depthValues)
+        let hull = convexHull(of: molePoints)
+
+        // Brute-force max distance among hull vertices. Convert pixel deltas to
+        // physical deltas via depth & focal length, then take Euclidean distance.
+        let invFx = 1.0 / Double(fx)
+        let invFy = 1.0 / Double(fy)
+        var maxSquared: Double = 0
+        for i in 0..<hull.count {
+            for j in (i + 1)..<hull.count {
+                let pdx = Double(hull[i].x - hull[j].x) * invFx
+                let pdy = Double(hull[i].y - hull[j].y) * invFy
+                let sq = pdx * pdx + pdy * pdy
+                if sq > maxSquared { maxSquared = sq }
+            }
+        }
+
+        let diameterMeters = sqrt(maxSquared) * d
+        return CGFloat(diameterMeters * 1_000)
+    }
+
     // MARK: - Helpers
 
     /// Returns the median of a non-empty array of Float values.
@@ -256,5 +392,37 @@ class Calculator {
             // .up or mirrored variants: identity mapping
             return (nx, ny)
         }
+    }
+
+    /// Andrew's monotone chain — O(n log n). Returns hull vertices in CCW order.
+    private func convexHull(of points: [CGPoint]) -> [CGPoint] {
+        guard points.count > 2 else { return points }
+        let sorted = points.sorted { a, b in
+            a.x != b.x ? a.x < b.x : a.y < b.y
+        }
+
+        func cross(_ o: CGPoint, _ a: CGPoint, _ b: CGPoint) -> CGFloat {
+            (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
+        }
+
+        var lower: [CGPoint] = []
+        for p in sorted {
+            while lower.count >= 2 && cross(lower[lower.count - 2], lower[lower.count - 1], p) <= 0 {
+                lower.removeLast()
+            }
+            lower.append(p)
+        }
+
+        var upper: [CGPoint] = []
+        for p in sorted.reversed() {
+            while upper.count >= 2 && cross(upper[upper.count - 2], upper[upper.count - 1], p) <= 0 {
+                upper.removeLast()
+            }
+            upper.append(p)
+        }
+
+        lower.removeLast()
+        upper.removeLast()
+        return lower + upper
     }
 }
