@@ -1,7 +1,6 @@
 import SwiftUI
 import SwiftData
 import UIKit
-import CoreVideo
 
 @MainActor
 @Observable
