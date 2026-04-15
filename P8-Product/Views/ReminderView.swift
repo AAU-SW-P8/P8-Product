@@ -29,7 +29,7 @@ struct ReminderView: View {
                         sectionContainer(title: "Default Reminder Enabled") {
                             Toggle("Reminder Enabled", isOn: $appState.reminderEnabled)
                                 .onChange(of: appState.reminderEnabled) { _, newValue in
-                                    appState.selectedPerson?.defaultReminderEnabled = newValue
+                                    appState.setDefaultReminderEnabled(newValue)
                                 }
                         }
 
@@ -42,7 +42,7 @@ struct ReminderView: View {
                             .pickerStyle(.menu)
                             .accessibilityIdentifier("defaultReminderFrequencyPicker")
                             .onChange(of: appState.defaultFrequency) { _, newValue in
-                                appState.selectedPerson?.defaultReminderFrequency = newValue
+                                appState.setDefaultFrequency(newValue)
                                 updateFrequencyFollowDefaultMoles()
                             }
                         }
@@ -68,7 +68,7 @@ struct ReminderView: View {
                                             HStack {
                                                 Text("Reminder Enabled")
                                                     .font(.subheadline.weight(.semibold))
-                                                Picker("Reminder Mode", selection: reminderModeBinding(for: mole)) {
+                                                Picker("Reminder Mode", selection: appState.reminderModeBinding(for: mole)) {
                                                     Text("Default").tag("Default")
                                                     Text("Enabled").tag("Enabled")
                                                     Text("Disabled").tag("Disabled")
@@ -106,13 +106,13 @@ struct ReminderView: View {
             }
             .onAppear {
                 if appState.selectedPerson == nil {
-                    appState.selectedPerson = people.first
+                    appState.setSelectedPerson(people.first)
                 }
                 appState.syncSelectionState()
             }
             .onChange(of: people) { _, newValue in
                 if appState.selectedPerson == nil, let first = newValue.first {
-                    appState.selectedPerson = first
+                    appState.setSelectedPerson(first)
                 }
                 appState.syncSelectionState()
             }
@@ -210,30 +210,7 @@ struct ReminderView: View {
         Binding(
             get: { displayFrequency(for: mole) },
             set: { newValue in
-                updateReminder(for: mole, frequencyLabel: newValue)
-            }
-        )
-    }
-    /**
-     Creates a two-way binding for the reminder mode segmented options.
-
-     - Parameter mole: The mole whose reminder mode should be read and updated.
-     - Returns: A `Binding<String>` for `Default`, `Enabled`, or `Disabled`.
-     */
-    private func reminderModeBinding(for mole: Mole) -> Binding<String> {
-        Binding(
-            get: { reminderMode(for: mole) },
-            set: { newValue in
-                switch newValue {
-                case "Enabled":
-                    mole.followDefaultReminderEnabled = false
-                    mole.isReminderActive = true
-                case "Disabled":
-                    mole.followDefaultReminderEnabled = false
-                    mole.isReminderActive = false
-                default:
-                    mole.followDefaultReminderEnabled = true
-                }
+                appState.updateReminder(for: mole, frequencyLabel: newValue)
             }
         )
     }
@@ -245,7 +222,7 @@ struct ReminderView: View {
      - Returns: A view containing the three reminder mode options.
      */
     private func reminderModeSelector(for mole: Mole) -> some View {
-        let selection = reminderModeBinding(for: mole)
+        let selection = appState.reminderModeBinding(for: mole)
         let options = ["Default", "Enabled", "Disabled"]
 
         return HStack(spacing: 8) {
@@ -264,19 +241,6 @@ struct ReminderView: View {
                 .buttonStyle(.plain)
             }
         }
-    }
-
-    /**
-     Resolves the current reminder mode label for a mole.
-
-     - Parameter mole: The mole whose reminder mode should be evaluated.
-     - Returns: `Default`, `Enabled`, or `Disabled`.
-     */
-    private func reminderMode(for mole: Mole) -> String {
-        if mole.followDefaultReminderEnabled ?? true {
-            return "Default"
-        }
-        return mole.isReminderActive ? "Enabled" : "Disabled"
     }
 
     /**
@@ -316,54 +280,12 @@ struct ReminderView: View {
         return "Default"
     }
 
-        /**
-         Updates a mole's reminder configuration and recalculates next due date.
-
-         - Parameters:
-             - mole: The mole being updated.
-             - frequencyLabel: The selected frequency label (`Default`, `Weekly`, `Monthly`, or `Quarterly`).
-         */
-    private func updateReminder(for mole: Mole, frequencyLabel: String) {
-        if frequencyLabel == "Default" {
-            mole.followDefault = true
-            mole.reminderFrequency = nil
-        } else {
-            mole.followDefault = false
-            mole.reminderFrequency = Frequency(rawValue: frequencyLabel.lowercased())
-        }
-
-        let effectiveFrequencyLabel: String
-        if frequencyLabel == "Default", let person = appState.selectedPerson {
-            effectiveFrequencyLabel = appState.displayFrequency(for: person)
-        } else {
-            effectiveFrequencyLabel = frequencyLabel
-        }
-
-        let calendar = Calendar.current
-        let lastCheckIn = mole.instances.compactMap { $0.moleScan?.captureDate }.max()
-        guard let lastCheckIn else { return }
-
-        let nextDueDate: Date?
-        switch effectiveFrequencyLabel {
-        case "Weekly":
-            nextDueDate = calendar.date(byAdding: .weekOfYear, value: 1, to: lastCheckIn)
-        case "Monthly":
-            nextDueDate = calendar.date(byAdding: .month, value: 1, to: lastCheckIn)
-        case "Quarterly":
-            nextDueDate = calendar.date(byAdding: .month, value: 3, to: lastCheckIn)
-        default:
-            nextDueDate = nil
-        }
-
-        mole.nextDueDate = max(Date(), nextDueDate ?? Date())
-    }
-
     /**
      Reapplies default frequency logic to all moles that follow defaults.
      */
     private func updateFrequencyFollowDefaultMoles() {
         for mole in selectedPersonMoles where mole.followDefault ?? true {
-            updateReminder(for: mole, frequencyLabel: "Default")
+            appState.updateReminder(for: mole, frequencyLabel: "Default")
         }
     }
 }

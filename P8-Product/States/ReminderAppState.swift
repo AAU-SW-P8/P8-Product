@@ -86,4 +86,109 @@ class ReminderAppState {
         }
     }
 
+    /**
+     Creates a two-way binding for the reminder mode segmented options.
+
+     - Parameter mole: The mole whose reminder mode should be read and updated.
+     - Returns: A `Binding<String>` for `Default`, `Enabled`, or `Disabled`.
+     */
+    func reminderModeBinding(for mole: Mole) -> Binding<String> {
+        Binding(
+            get: { reminderMode(for: mole) },
+            set: { newValue in
+                switch newValue {
+                case "Enabled":
+                    mole.followDefaultReminderEnabled = false
+                    mole.isReminderActive = true
+                case "Disabled":
+                    mole.followDefaultReminderEnabled = false
+                    mole.isReminderActive = false
+                default:
+                    mole.followDefaultReminderEnabled = true
+                }
+            }
+        )
+    }
+
+    /**
+    Updates a mole's reminder configuration and recalculates next due date.
+
+    - Parameters:
+        - mole: The mole being updated.
+        - frequencyLabel: The selected frequency label (`Default`, `Weekly`, `Monthly`, or `Quarterly`).
+    */
+    func updateReminder(for mole: Mole, frequencyLabel: String) {
+        if frequencyLabel == "Default" {
+            mole.followDefault = true
+            mole.reminderFrequency = nil
+        } else {
+            mole.followDefault = false
+            mole.reminderFrequency = Frequency(rawValue: frequencyLabel.lowercased())
+        }
+
+        let effectiveFrequencyLabel: String
+        if frequencyLabel == "Default", let person = appState.selectedPerson {
+            effectiveFrequencyLabel = appState.displayFrequency(for: person)
+        } else {
+            effectiveFrequencyLabel = frequencyLabel
+        }
+
+        let calendar = Calendar.current
+        let lastCheckIn = mole.instances.compactMap { $0.moleScan?.captureDate }.max()
+        guard let lastCheckIn else { return }
+
+        let nextDueDate: Date?
+        switch effectiveFrequencyLabel {
+        case "Weekly":
+            nextDueDate = calendar.date(byAdding: .weekOfYear, value: 1, to: lastCheckIn)
+        case "Monthly":
+            nextDueDate = calendar.date(byAdding: .month, value: 1, to: lastCheckIn)
+        case "Quarterly":
+            nextDueDate = calendar.date(byAdding: .month, value: 3, to: lastCheckIn)
+        default:
+            nextDueDate = nil
+        }
+
+        mole.nextDueDate = max(Date(), nextDueDate ?? Date())
+    }
+
+    /**
+     Resolves the current reminder mode label for a mole.
+
+     - Parameter mole: The mole whose reminder mode should be evaluated.
+     - Returns: `Default`, `Enabled`, or `Disabled`.
+     */
+    func reminderMode(for mole: Mole) -> String {
+        if mole.followDefaultReminderEnabled ?? true {
+            return "Default"
+        }
+        return mole.isReminderActive ? "Enabled" : "Disabled"
+    }
+
+    /**
+     Sets the default reminder enabled state for the selected person.
+
+     - Parameter newValue: The new value for the default reminder enabled state.
+     */
+    func setDefaultReminderEnabled(_ newValue: Bool) {
+            selectedPerson?.defaultReminderEnabled = newValue
+    }
+
+    /**
+     Sets the default reminder frequency for the selected person.
+
+     - Parameter newValue: The new value for the default reminder frequency.
+     */
+    func setDefaultFrequency(_ newValue: String) {
+        selectedPerson?.defaultReminderFrequency = newValue
+    }
+
+    /**
+     Sets the selected person in the selection state.
+
+     - Parameter newValue: The new `Person` to be selected, or `nil` to clear the selection.
+     */
+    func setSelectedPerson(_ newValue: Person?) {
+        selectedPerson = newValue
+    }
 }
