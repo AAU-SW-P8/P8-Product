@@ -131,7 +131,6 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         view.addSubview(centerCircle)
     }
 
-    private var triangleView: UIView!
 
     private func setupCaptureButton() {
         captureButton = UIButton(type: .system)
@@ -167,11 +166,6 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
             centerCircle.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             centerCircle.widthAnchor.constraint(equalToConstant: 16),
             centerCircle.heightAnchor.constraint(equalToConstant: 16),
-
-            triangleView.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: 50),
-            triangleView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: 15),
-            triangleView.widthAnchor.constraint(equalToConstant: 20),
-            triangleView.heightAnchor.constraint(equalToConstant: 20),
 
             measurementDisplay.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
             measurementDisplay.centerXAnchor.constraint(equalTo: view.centerXAnchor),
