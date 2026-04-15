@@ -15,7 +15,7 @@ import UIKit
 ///
 /// The pipeline is composed of three CoreML models:
 ///   1. **Vision encoder** — turns the image into FPN feature maps.
-///   2. **Text encoder** — turns the prompt `"moles"` into a text embedding
+///   2. **Text encoder** — turns the prompt `"mole"` into a text embedding
 ///   3. **Decoder** — fuses the two and produces masks, boxes, and scores.
 ///
 /// `MoleSegmentor`
@@ -30,7 +30,7 @@ class MoleSegmentor {
 
     // MARK: - Init
 
-    /// Loads the three SAM 3.1 models from the app bundle and pre-encodes the fixed `"moles"` text prompt.
+    /// Loads the three SAM 3.1 models from the app bundle and pre-encodes the fixed `"mole"` text prompt.
     /// This is `async` because compiling the vision encoder on first launch can take several seconds.
     ///
     /// - Throws: `PipelineError.modelNotFound` if any model resource is missing,
@@ -51,7 +51,7 @@ class MoleSegmentor {
 
     // MARK: - Public API
 
-    /// Segments moles in the given image using the prompt `"moles"`.
+    /// Segments moles in the given image using the prompt `"mole"`.
     ///
     /// - Parameters:
     ///   - image: The full-resolution photo to segment.
