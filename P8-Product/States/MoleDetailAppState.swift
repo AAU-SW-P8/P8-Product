@@ -84,6 +84,18 @@ final class MoleDetailAppState {
 		selectedEvolutionBottomIndex = min(selectedEvolutionBottomIndex, maxIndex)
 	}
 
+	func dismissIfSelectedPersonChanged() {
+		let activeMolePersonID: UUID? = activeMole.person?.id
+		let globallySelectedPersonID: UUID? = selectionState.selectedPerson?.id
+
+		guard activeMolePersonID != globallySelectedPersonID else {
+			return
+		}
+
+		selectionState.selectedMole = nil
+		shouldDismissDetailView = true
+	}
+
 	func requestDeleteSelectedDetailInstance() {
 		guard let instance: MoleInstance = ImageCarousel.selectedInstance(in: scans, at: selectedIndex, for: activeMole) else {
 			return

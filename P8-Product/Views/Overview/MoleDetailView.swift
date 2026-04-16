@@ -204,6 +204,9 @@ struct MoleDetailView: View {
         .onChange(of: appState.scans.count) {
             appState.clampSelectedIndicesIfNeeded()
         }
+        .onChange(of: SelectionState.shared.selectedPerson?.id) {
+            appState.dismissIfSelectedPersonChanged()
+        }
         .onChange(of: appState.shouldDismissDetailView) { _, shouldDismiss in
             guard shouldDismiss else { return }
             dismiss()
