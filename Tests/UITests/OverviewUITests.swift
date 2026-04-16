@@ -10,6 +10,7 @@ final class OverviewUITests: XCTestCase {
         launchApp(arguments: defaultLaunchArguments)
     }
 
+    // MARK: - Person Management
     func testUserCanRenamePerson() {
         Helpers.openOverviewTab(in: app)
 
@@ -168,7 +169,52 @@ final class OverviewUITests: XCTestCase {
 
         XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3), "Selection should fall back after deleting selected person")
     }
+    // MARK: - Mole Management
+    
+    func testCancelDeleteMoleFromOverviewKeepsMole() {
+        Helpers.openOverviewTab(in: app)
 
+        let moleName = "Back Mole"
+        Helpers.revealDeleteMoleSwipeAction(for: moleName, in: app)
+
+        let deleteButton = app.buttons["overviewDeleteMoleButton_\(moleName)"]
+        XCTAssertTrue(deleteButton.waitForExistence(timeout: 2))
+        deleteButton.tap()
+
+        let deleteAlert = app.alerts["Delete Mole"]
+        XCTAssertTrue(deleteAlert.waitForExistence(timeout: 3))
+        deleteAlert.buttons["Cancel"].tap()
+
+        XCTAssertTrue(
+            app.staticTexts[moleName].waitForExistence(timeout: 3),
+            "Canceling delete should keep the mole in overview"
+        )
+    }
+
+    func testConfirmDeleteMoleFromOverviewRemovesMole() {
+        Helpers.openOverviewTab(in: app)
+
+        let moleName = "Back Mole"
+        Helpers.revealDeleteMoleSwipeAction(for: moleName, in: app)
+
+        let deleteButton = app.buttons["overviewDeleteMoleButton_\(moleName)"]
+        XCTAssertTrue(deleteButton.waitForExistence(timeout: 2))
+        deleteButton.tap()
+
+        let deleteAlert = app.alerts["Delete Mole"]
+        XCTAssertTrue(deleteAlert.waitForExistence(timeout: 3))
+        deleteAlert.buttons["Delete"].tap()
+
+        XCTAssertFalse(
+            app.staticTexts[moleName].waitForExistence(timeout: 2),
+            "Confirmed delete should remove the mole from overview"
+        )
+        XCTAssertTrue(app.staticTexts["Left Arm Mole"].exists)
+    }
+   
+        
+        
+    // MARK: - Persistent Storage
     func testRenamedPersonPersistsAfterRelaunch() {
         app.terminate()
         launchApp(arguments: ["-UITest_PersistentStore", "-UITest_ResetStore", "-SkipModelLoading"])
@@ -264,6 +310,34 @@ final class OverviewUITests: XCTestCase {
         XCTAssertFalse(
             app.staticTexts["Taylor"].exists,
             "Taylor should not be reachable in overview after being deleted and app relaunch"
+        )
+    }
+
+    func testDeletedMolePersistsAfterRelaunch() {
+        app.terminate()
+        launchApp(arguments: ["-UITest_PersistentStore", "-UITest_ResetStore", "-SkipModelLoading"])
+        Helpers.openOverviewTab(in: app)
+
+        let moleName = "Back Mole"
+        Helpers.revealDeleteMoleSwipeAction(for: moleName, in: app)
+
+        let deleteButton = app.buttons["overviewDeleteMoleButton_\(moleName)"]
+        XCTAssertTrue(deleteButton.waitForExistence(timeout: 2))
+        deleteButton.tap()
+
+        let deleteAlert = app.alerts["Delete Mole"]
+        XCTAssertTrue(deleteAlert.waitForExistence(timeout: 3))
+        deleteAlert.buttons["Delete"].tap()
+
+        XCTAssertFalse(app.staticTexts[moleName].exists, "Deleted mole should no longer exist")
+
+        app.terminate()
+        launchApp(arguments: ["-UITest_PersistentStore", "-SkipModelLoading"])
+        Helpers.openOverviewTab(in: app)
+
+        XCTAssertFalse(
+            app.staticTexts[moleName].exists,
+            "Deleted mole should not be reachable in overview after being deleted and app relaunch"
         )
     }
 

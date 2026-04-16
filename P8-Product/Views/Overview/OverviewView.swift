@@ -159,6 +159,7 @@ private struct OverviewContentView: View {
                             } label: {
                                 Label("Delete", systemImage: "trash.fill")
                             }
+                            .accessibilityIdentifier("overviewDeleteMoleButton_\(mole.name)")
                             .tint(.red)
                         }
                     }

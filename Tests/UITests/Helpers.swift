@@ -136,4 +136,22 @@ final class Helpers {
 
 		editAlert.buttons["Save"].tap()
 	}
+
+	static func revealDeleteMoleSwipeAction(for moleName: String, in app: XCUIApplication) {
+        let moleRowLabel = app.staticTexts[moleName].firstMatch
+        XCTAssertTrue(moleRowLabel.waitForExistence(timeout: 3), "Mole row should exist before swipe: \(moleName)")
+
+        let deleteButton = app.buttons["overviewDeleteMoleButton_\(moleName)"]
+        if !deleteButton.exists {
+            moleRowLabel.swipeLeft()
+        }
+        if !deleteButton.exists {
+            moleRowLabel.swipeLeft()
+        }
+
+        XCTAssertTrue(
+            deleteButton.waitForExistence(timeout: 2),
+            "Swipe action should reveal delete button for mole: \(moleName)"
+        )
+    }
 }

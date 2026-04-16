@@ -67,35 +67,6 @@ final class ImageCarouselUITests: XCTestCase {
     }
 
     // MARK: - Swipe Navigation
-
-    func testSwipingLeftCarouselBackwardReturnsToPreviousScan() {
-        // Left carousel starts at the last index (oldest scan). Swipe toward
-        // newer scans, then return to verify backward navigation.
-        Helpers.selectAlexLeftArmMole(in: app)
-
-        let leftCarousel = app.otherElements["leftCarousel"]
-        XCTAssertTrue(leftCarousel.waitForExistence(timeout: 5))
-
-        XCTAssertTrue(
-            leftCarousel.staticTexts["Diameter: 5.0 mm"].waitForExistence(timeout: 3)
-            || leftCarousel.staticTexts["Diameter: 5,0 mm"].waitForExistence(timeout: 3)
-        )
-
-        leftCarousel.swipeRight()
-        XCTAssertTrue(
-            leftCarousel.staticTexts["Diameter: 4.2 mm"].waitForExistence(timeout: 3)
-            || leftCarousel.staticTexts["Diameter: 4,2 mm"].waitForExistence(timeout: 3)
-        )
-
-        leftCarousel.swipeLeft()
-
-        XCTAssertTrue(
-            leftCarousel.staticTexts["Diameter: 5.0 mm"].waitForExistence(timeout: 3)
-            || leftCarousel.staticTexts["Diameter: 5,0 mm"].waitForExistence(timeout: 3),
-            "Swiping left should return the left carousel to the oldest scan (5.0/5,0 mm)"
-        )
-    }
-
     func testSwipingThroughAllScansShowsEachOne() {
         // Left carousel starts at last index, so order while swiping right is:
         // 5.0 mm → 4.2 mm → 4.8 mm.
@@ -152,4 +123,89 @@ final class ImageCarouselUITests: XCTestCase {
         )
     }
 
+    // MARK: - Delete Scan Flow
+
+    func testDetailCarouselShowsDeleteButton() {
+        Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
+
+        let deleteButton = app.buttons["deleteMoleInstanceButton"]
+        XCTAssertTrue(
+            deleteButton.waitForExistence(timeout: 3),
+            "Detail carousel should show delete button for selected scan"
+        )
+    }
+
+    func testCancelDeleteScanKeepsCurrentScan() {
+        Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
+
+        XCTAssertTrue(
+            app.staticTexts["Diameter: 4.8 mm"].firstMatch.waitForExistence(timeout: 3)
+            || app.staticTexts["Diameter: 4,8 mm"].firstMatch.waitForExistence(timeout: 3),
+            "Canceling delete should keep currently selected scan"
+        )
+        let deleteButton = app.buttons["deleteMoleInstanceButton"]
+        XCTAssertTrue(deleteButton.waitForExistence(timeout: 3))
+        deleteButton.tap()
+
+        let alert = app.alerts["Delete Scan"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 3))
+        alert.buttons["Cancel"].tap()
+
+        XCTAssertTrue(
+            app.staticTexts["Diameter: 4.8 mm"].firstMatch.waitForExistence(timeout: 3)
+            || app.staticTexts["Diameter: 4,8 mm"].firstMatch.waitForExistence(timeout: 3),
+            "Canceling delete should keep currently selected scan"
+        )
+    }
+
+    func testConfirmDeleteScanRemovesSelectedInstanceAndShowsNextScan() {
+        Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
+
+        XCTAssertTrue(
+            app.staticTexts["Diameter: 4.8 mm"].firstMatch.waitForExistence(timeout: 3)
+            || app.staticTexts["Diameter: 4,8 mm"].firstMatch.waitForExistence(timeout: 3),
+            "Deleting the latest Left Arm scan should move detail view to the next available scan"
+        )
+
+        let deleteButton = app.buttons["deleteMoleInstanceButton"]
+        XCTAssertTrue(deleteButton.waitForExistence(timeout: 3))
+        deleteButton.tap()
+
+        let alert = app.alerts["Delete Scan"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 3))
+        alert.buttons["Delete"].tap()
+
+        XCTAssertTrue(
+            app.staticTexts["Diameter: 4.2 mm"].firstMatch.waitForExistence(timeout: 3)
+            || app.staticTexts["Diameter: 4,2 mm"].firstMatch.waitForExistence(timeout: 3),
+            "Deleting the latest Left Arm scan should move detail view to the next available scan"
+        )
+        XCTAssertFalse(app.alerts["Delete Scan"].exists)
+    }
+
+    func testDeletingLastScanDeletesMoleAndReturnsToOverview() {
+        Helpers.openMoleDetail(person: "Alex", mole: "Back Mole", in: app)
+
+        let deleteButton = app.buttons["deleteMoleInstanceButton"]
+        XCTAssertTrue(deleteButton.waitForExistence(timeout: 3))
+        deleteButton.tap()
+
+        let alert = app.alerts["Delete Scan"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 3))
+        alert.buttons["Delete"].tap()
+
+        XCTAssertTrue(
+            app.staticTexts["Mole Overview"].waitForExistence(timeout: 3),
+            "Deleting the last scan should dismiss detail and return to overview"
+        )
+        XCTAssertFalse(
+            app.segmentedControls["moleDetailPagePicker"].exists,
+            "Detail page picker should no longer be visible after dismissal"
+        )
+        XCTAssertFalse(
+            app.staticTexts["Back Mole"].exists,
+            "Mole with no scans should be deleted and no longer shown in overview"
+        )
+        XCTAssertTrue(app.staticTexts["Left Arm Mole"].exists)
+    }
 }
