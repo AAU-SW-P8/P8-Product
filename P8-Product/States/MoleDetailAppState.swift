@@ -34,7 +34,7 @@ final class MoleDetailAppState {
 	var scans: [MoleScan] {
 		activeMole.instances
 			.compactMap(\.moleScan)
-			.sorted { $0.captureDate < $1.captureDate }
+			.sorted { $0.captureDate > $1.captureDate }
 	}
 
 	var molesForActivePerson: [Mole] {
@@ -57,14 +57,14 @@ final class MoleDetailAppState {
 	func handleAppear() {
 		selectionState.selectedPerson = initialMole.person
 		selectionState.selectedMole = initialMole
+		setDefaultEvolutionIndices()
 	}
 
 	func selectMole(_ mole: Mole) {
 		selectionState.selectedPerson = mole.person
 		selectionState.selectedMole = mole
 		selectedIndex = 0
-		selectedEvolutionTopIndex = 0
-		selectedEvolutionBottomIndex = 0
+		setDefaultEvolutionIndices()
 	}
 
 	func clampSelectedIndicesIfNeeded() {
@@ -72,5 +72,11 @@ final class MoleDetailAppState {
 		selectedIndex = min(selectedIndex, maxIndex)
 		selectedEvolutionTopIndex = min(selectedEvolutionTopIndex, maxIndex)
 		selectedEvolutionBottomIndex = min(selectedEvolutionBottomIndex, maxIndex)
+	}
+
+	private func setDefaultEvolutionIndices() {
+		let maxIndex = max(0, scans.count - 1)
+		selectedEvolutionTopIndex = maxIndex
+		selectedEvolutionBottomIndex = 0
 	}
 }

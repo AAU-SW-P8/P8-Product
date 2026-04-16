@@ -8,10 +8,10 @@
 //  exposes stable accessibility identifiers for each carousel.
 //
 //  Mock data assumed (see MockData.insertSampleData):
-//    Alex / "Left Arm Mole" — 3 scans, sorted ascending by capture date:
-//      1. alexScan4 (60 days ago) — diameter 5.0 mm, area 16.0 mm²
+//    Alex / "Left Arm Mole" — 3 scans shown latest-first in the carousel:
+//      1. alexScan2 ( 5 days ago) — diameter 4.8 mm, area 15.4 mm²
 //      2. alexScan1 (20 days ago) — diameter 4.2 mm, area 13.8 mm²
-//      3. alexScan2 ( 5 days ago) — diameter 4.8 mm, area 15.4 mm²
+//      3. alexScan4 (60 days ago) — diameter 5.0 mm, area 16.0 mm²
 //    Alex / "Back Mole" — 1 scan, diameter 3.6 mm, area 10.1 mm².
 //
 
@@ -69,29 +69,35 @@ final class ImageCarouselUITests: XCTestCase {
     // MARK: - Swipe Navigation
 
     func testSwipingLeftCarouselBackwardReturnsToPreviousScan() {
-        // Swipe forward then back; the carousel should return to the first scan.
+        // Left carousel starts at the last index (oldest scan). Swipe toward
+        // newer scans, then return to verify backward navigation.
         Helpers.selectAlexLeftArmMole(in: app)
 
         let leftCarousel = app.otherElements["leftCarousel"]
         XCTAssertTrue(leftCarousel.waitForExistence(timeout: 5))
 
-        leftCarousel.swipeLeft()
+        XCTAssertTrue(
+            leftCarousel.staticTexts["Diameter: 5.0 mm"].waitForExistence(timeout: 3)
+            || leftCarousel.staticTexts["Diameter: 5,0 mm"].waitForExistence(timeout: 3)
+        )
+
+        leftCarousel.swipeRight()
         XCTAssertTrue(
             leftCarousel.staticTexts["Diameter: 4.2 mm"].waitForExistence(timeout: 3)
             || leftCarousel.staticTexts["Diameter: 4,2 mm"].waitForExistence(timeout: 3)
         )
 
-        leftCarousel.swipeRight()
+        leftCarousel.swipeLeft()
 
         XCTAssertTrue(
             leftCarousel.staticTexts["Diameter: 5.0 mm"].waitForExistence(timeout: 3)
             || leftCarousel.staticTexts["Diameter: 5,0 mm"].waitForExistence(timeout: 3),
-            "Swiping right should return the left carousel to the first scan (5.0/5,0 mm)"
+            "Swiping left should return the left carousel to the oldest scan (5.0/5,0 mm)"
         )
     }
 
     func testSwipingThroughAllScansShowsEachOne() {
-        // Walk through all 3 scans of Left Arm Mole in order:
+        // Left carousel starts at last index, so order while swiping right is:
         // 5.0 mm → 4.2 mm → 4.8 mm.
         Helpers.selectAlexLeftArmMole(in: app)
 
@@ -102,14 +108,14 @@ final class ImageCarouselUITests: XCTestCase {
             || leftCarousel.staticTexts["Diameter: 5,0 mm"].waitForExistence(timeout: 3)
         )
 
-        leftCarousel.swipeLeft()
+        leftCarousel.swipeRight()
         XCTAssertTrue(
             leftCarousel.staticTexts["Diameter: 4.2 mm"].waitForExistence(timeout: 3)
             || leftCarousel.staticTexts["Diameter: 4,2 mm"].waitForExistence(timeout: 3),
             "Second swipe target should be the 4.2 mm scan"
         )
 
-        leftCarousel.swipeLeft()
+        leftCarousel.swipeRight()
         XCTAssertTrue(
             leftCarousel.staticTexts["Diameter: 4.8 mm"].waitForExistence(timeout: 3)
             || leftCarousel.staticTexts["Diameter: 4,8 mm"].waitForExistence(timeout: 3),
@@ -132,7 +138,7 @@ final class ImageCarouselUITests: XCTestCase {
         XCTAssertTrue(leftCarousel.waitForExistence(timeout: 5))
         XCTAssertTrue(rightCarousel.waitForExistence(timeout: 5))
 
-        leftCarousel.swipeLeft()
+        leftCarousel.swipeRight()
 
         XCTAssertTrue(
             leftCarousel.staticTexts["Diameter: 4.2 mm"].waitForExistence(timeout: 3)
@@ -140,9 +146,9 @@ final class ImageCarouselUITests: XCTestCase {
             "Left carousel should have advanced to the second scan"
         )
         XCTAssertTrue(
-            rightCarousel.staticTexts["Diameter: 5.0 mm"].exists
-            || rightCarousel.staticTexts["Diameter: 5,0 mm"].exists,
-            "Right carousel should remain on the first scan after swiping the left"
+            rightCarousel.staticTexts["Diameter: 4.8 mm"].exists
+            || rightCarousel.staticTexts["Diameter: 4,8 mm"].exists,
+            "Right carousel should remain on the latest scan after swiping the left"
         )
     }
 

@@ -100,9 +100,9 @@ final class MoleDetailFlowUITests: XCTestCase {
     //   • Person "Jordan" → Mole "Face Mole"     (Face) with 1 scan
     //                                  diameter  2.9 mm, area 6.6 mm²
     //
-    // For the multi-scan mole, scans are sorted ascending by capture date,
-    // so the carousel's first frame corresponds to the oldest scan
-    // (60 days ago: diameter 5.0 mm, area 16.0 mm²).
+    // For the multi-scan mole, the carousel is sorted descending by capture date,
+    // so the first frame corresponds to the latest scan
+    // (5 days ago: diameter 4.8 mm, area 15.4 mm²).
 
     func testOverviewContainsAllMockedPeople() {
         Helpers.openOverviewTab(in: app)
@@ -141,19 +141,19 @@ final class MoleDetailFlowUITests: XCTestCase {
     }
 
     func testLeftArmMoleShowsFirstScanDiameterAndArea() {
-        // Sorted by capture date, the first scan for Left Arm Mole is alexScan4
-        // (60 days ago) with diameter 5.0 mm and area 16.0 mm².
+        // With latest-first ordering, the first scan for Left Arm Mole is alexScan2
+        // (5 days ago) with diameter 4.8 mm and area 15.4 mm².
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
 
         XCTAssertTrue(
-            app.staticTexts["Diameter: 5.0 mm"].firstMatch.waitForExistence(timeout: 3)
-            || app.staticTexts["Diameter: 5,0 mm"].firstMatch.waitForExistence(timeout: 3),
-            "Carousel should display diameter 5.0/5,0 mm for the first Left Arm scan"
+            app.staticTexts["Diameter: 4.8 mm"].firstMatch.waitForExistence(timeout: 3)
+            || app.staticTexts["Diameter: 4,8 mm"].firstMatch.waitForExistence(timeout: 3),
+            "Carousel should display diameter 4.8/4,8 mm for the latest Left Arm scan"
         )
         XCTAssertTrue(
-            app.staticTexts["Area: 16.0 mm²"].firstMatch.exists
-            || app.staticTexts["Area: 16,0 mm²"].firstMatch.exists,
-            "Carousel should display area 16.0/16,0 mm² for the first Left Arm scan"
+            app.staticTexts["Area: 15.4 mm²"].firstMatch.exists
+            || app.staticTexts["Area: 15,4 mm²"].firstMatch.exists,
+            "Carousel should display area 15.4/15,4 mm² for the latest Left Arm scan"
         )
     }
 
