@@ -2,47 +2,41 @@ import UIKit
 import CoreVideo
 import simd
 
+/// Computes physical mole measurements from a segmentation mask, depth map,
+/// and camera intrinsics.
 class Calculator {
 
-    /// Peak alpha the mask renderer applies to a fully-confident pixel.
-    private let maskAlphaMax: Float = SegmentationRendererValues.maskAlphaMax
-
-    /// Minimum alpha to consider a pixel as potentially part of the mole.
-    /// Filters out near-zero background noise (~p=0.004).
-    private let minimumAlpha: UInt8 = 1
-
-    /// Minimum confidence accepted from ARKit's confidence map (0=low, 1=medium, 2=high).
-    private let minimumAcceptedConfidence: UInt8 = 1
-
-    /// Depth range (meters) considered physically plausible for skin captures.
-    private let validDepthRange: ClosedRange<Float> = 0.05...2.0
-
-    /// Unit conversions for returned measurements.
-    private let metersToMillimeters: Double = 1_000.0
-    private let squareMetersToSquareMillimeters: Double = 1_000_000.0
-
-    /// Per-pixel data extracted from the mask + depth map for a single selected mole.
-    /// Produced once and consumed by both area and diameter calculations.
+    /// Per-pixel data extracted from the selected mask region and aligned depth map.
     private struct MoleSamples {
-        /// Image-pixel coordinates (in normalized image space) of every mole pixel.
+        /// Pixel coordinates in normalized image space.
         var points: [CGPoint]
-        /// Probability (0…1) per entry in `points`, recovered from the mask alpha.
+        /// Mask probability per entry in `points`, derived from alpha.
         var weights: [Double]
-        /// Deduplicated depth samples (meters) covering the mole's footprint, after
-        /// confidence filtering and validity clamping.
+        /// Deduplicated valid depth samples in meters.
         var depths: [Float]
-        /// Camera focal lengths (pixels), as Doubles for downstream math.
+        /// Camera focal lengths in pixels.
         var fx: Double
         var fy: Double
     }
 
+    /// Physical mole measurements returned in millimeter units.
     struct MoleMeasurement {
+        /// Estimated area in square millimeters.
         let areaMM2: CGFloat
+
+        /// Estimated Feret diameter in millimeters.
         let diameterMM: CGFloat
     }
 
-    /// Computes both area and diameter from one shared sampling pass.
-    /// This avoids re-walking pixels/depth when callers need both metrics.
+    /// Computes area and diameter from one shared sampling pass.
+    ///
+    /// - Parameters:
+    ///   - segmentedImage: Tuple containing the mask image and selected bounding box.
+    ///   - depthMap: Float32 scene depth map in meters.
+    ///   - confidenceMap: Optional scene depth confidence map.
+    ///   - cameraIntrinsics: Camera intrinsics matrix from ARKit.
+    ///   - imageOrientation: Orientation of the captured image before normalization.
+    /// - Returns: A `MoleMeasurement`. Fields are `0` when required data is unavailable.
     func calculateMetrics(
         from segmentedImage: (UIImage, [CGRect]),
         depthMap: CVPixelBuffer?,
@@ -66,25 +60,15 @@ class Calculator {
         )
     }
 
-    /// Calculates the physical area of a mole in mm² using the segmentation mask,
-    /// LiDAR depth map, and camera intrinsics.
-    ///
-    /// For each mole pixel (identified via the mask image's alpha channel) within the
-    /// bounding box, the depth value is read from the depth map and combined with the
-    /// camera's focal lengths to compute the physical area that pixel covers. The sum
-    /// of all pixel areas gives the total mole area.
+    /// Calculates mole area in mm².
     ///
     /// - Parameters:
-    ///   - segmentedImage: A tuple of (mask-only UIImage, [bounding box]). The mask image
-    ///     should have alpha > 0 only on mole pixels. The array should contain exactly
-    ///     one CGRect — the bounding box of the selected mole in image-pixel coordinates.
-    ///   - depthMap: Float32 CVPixelBuffer from ARFrame.sceneDepth (values in meters).
-    ///   - confidenceMap: UInt8 CVPixelBuffer from ARFrame.sceneDepth (0=low, 1=medium, 2=high).
-    ///   - cameraIntrinsics: The 3x3 intrinsics matrix from ARFrame.camera.intrinsics.
-    ///   - imageOrientation: The UIImage.Orientation applied to the captured image before
-    ///     normalization. Needed to map normalized image coordinates back to sensor-aligned
-    ///     depth map coordinates.
-    /// - Returns: The mole area in mm², or 0 if depth data or intrinsics are unavailable.
+    ///   - segmentedImage: Tuple containing the mask image and selected bounding box.
+    ///   - depthMap: Float32 scene depth map in meters.
+    ///   - confidenceMap: Optional scene depth confidence map.
+    ///   - cameraIntrinsics: Camera intrinsics matrix from ARKit.
+    ///   - imageOrientation: Orientation of the captured image before normalization.
+    /// - Returns: Area in mm², or `0` when required data is unavailable.
     func calculateArea(
         from segmentedImage: (UIImage, [CGRect]),
         depthMap: CVPixelBuffer?,
@@ -101,16 +85,10 @@ class Calculator {
         ).areaMM2
     }
 
-    /// Estimates the mole diameter in mm as the largest distance between any two
-    /// mole pixels (Feret diameter) — a robust proxy for the longest visible axis.
+    /// Estimates mole diameter in mm using the largest hull-to-hull pixel distance.
     ///
-    /// The mask pixels (alpha ≥ `minimumAlpha`) within the bounding box are reduced
-    /// to their convex hull, and the maximum pairwise distance among hull vertices
-    /// is converted to physical units using the median LiDAR depth and the camera's
-    /// focal lengths.
-    ///
-    /// Parameters mirror `calculateArea`. Returns `0` when depth/intrinsics are
-    /// unavailable or fewer than two mole pixels are present.
+    /// Parameters mirror `calculateArea`.
+    /// - Returns: Diameter in mm, or `0` when required data is unavailable.
     func calculateDiameter(
         from segmentedImage: (UIImage, [CGRect]),
         depthMap: CVPixelBuffer?,
@@ -129,10 +107,15 @@ class Calculator {
 
     // MARK: - Sampling
 
-    /// Walks the mask's bounding box once, producing the mole-pixel positions,
-    /// per-pixel mask probabilities, and a deduplicated set of valid depth samples.
-    /// Returns `nil` when prerequisites (depth map, intrinsics, bounding box,
-    /// renderable mask, valid clamped box) are missing.
+    /// Samples mask pixels and aligned depth values inside the selected box.
+    ///
+    /// - Parameters:
+    ///   - segmentedImage: Tuple containing the mask image and selected bounding box.
+    ///   - depthMap: Float32 scene depth map in meters.
+    ///   - confidenceMap: Optional scene depth confidence map.
+    ///   - cameraIntrinsics: Camera intrinsics matrix from ARKit.
+    ///   - imageOrientation: Orientation of the captured image before normalization.
+    /// - Returns: A `MoleSamples` payload, or `nil` when required inputs are missing or invalid.
     private func gatherMoleSamples(
         from segmentedImage: (UIImage, [CGRect]),
         depthMap: CVPixelBuffer?,
@@ -189,7 +172,7 @@ class Calculator {
             return nil
         }
 
-        let alphaScale = Double(maskAlphaMax) * 255.0
+        let alphaScale = Double(SegmentationRendererValues.maskAlphaMax) * SegmentationRendererValues.alphaByteScale
         var points: [CGPoint] = []
         var weights: [Double] = []
         var depths: [Float] = []
@@ -202,9 +185,9 @@ class Calculator {
 
         for ny in bounds.minY...bounds.maxY {
             for nx in bounds.minX...bounds.maxX {
-                let pixelOffset = (ny * maskW + nx) * 4
-                let alpha = maskPixels[pixelOffset + 3]
-                guard alpha >= minimumAlpha else { continue }
+                let pixelOffset = (ny * maskW + nx) * CalculatorValues.rgbaBytesPerPixel
+                let alpha = maskPixels[pixelOffset + CalculatorValues.alphaChannelOffset]
+                guard alpha >= CalculatorValues.minimumMaskAlpha else { continue }
 
                 points.append(CGPoint(x: nx, y: ny))
                 weights.append(min(1.0, Double(alpha) / alphaScale))
@@ -219,8 +202,6 @@ class Calculator {
                 let dy = sy * depthH / sensorH
                 guard dx >= 0 && dx < depthW && dy >= 0 && dy < depthH else { continue }
 
-                // Only sample each depth pixel once (many camera pixels
-                // map to the same depth pixel at the lower resolution).
                 let depthIndex = dy * depthW + dx
                 guard !sampledDepthPixels.contains(depthIndex) else { continue }
                 sampledDepthPixels.insert(depthIndex)
@@ -229,13 +210,13 @@ class Calculator {
                     let confPtr = confBase.advanced(by: dy * confBytesPerRow)
                         .assumingMemoryBound(to: UInt8.self)
                     let confidence = confPtr[dx]
-                    guard confidence >= minimumAcceptedConfidence else { continue }
+                    guard confidence >= CalculatorValues.minimumAcceptedDepthConfidence else { continue }
                 }
 
                 let depthPtr = depthBase.advanced(by: dy * depthBytesPerRow)
                     .assumingMemoryBound(to: Float32.self)
                 let depth = depthPtr[dx]
-                guard validDepthRange.contains(depth) else { continue }
+                guard CalculatorValues.validDepthRangeMeters.contains(depth) else { continue }
 
                 depths.append(depth)
             }
@@ -250,18 +231,28 @@ class Calculator {
         )
     }
 
+    /// Computes area in mm² from sampled mask weights and depth values.
+    ///
+    /// - Parameter samples: Gathered mole samples for the current selection.
+    /// - Returns: Area in mm², or `0` when depth or weights are insufficient.
     private func computeAreaMM2(from samples: MoleSamples) -> CGFloat {
         let weightedPixelCount = samples.weights.reduce(0, +)
         guard !samples.depths.isEmpty, weightedPixelCount > 0 else { return 0.0 }
 
-        // Median depth is more robust to LiDAR noise than per-pixel depth.
         let depthMeters = median(of: samples.depths)
         let areaSquareMeters = weightedPixelCount * (depthMeters * depthMeters) / (samples.fx * samples.fy)
-        return CGFloat(areaSquareMeters * squareMetersToSquareMillimeters)
+        return CGFloat(areaSquareMeters * CalculatorValues.squareMetersToSquareMillimeters)
     }
 
+    /// Computes Feret-style diameter in mm from sampled points and depth values.
+    ///
+    /// - Parameter samples: Gathered mole samples for the current selection.
+    /// - Returns: Diameter in mm, or `0` when depth/points are insufficient.
     private func computeDiameterMM(from samples: MoleSamples) -> CGFloat {
-        guard !samples.depths.isEmpty, samples.points.count >= 2 else { return 0.0 }
+        guard !samples.depths.isEmpty,
+              samples.points.count >= CalculatorValues.minimumDiameterPointCount else {
+            return 0.0
+        }
 
         let depthMeters = median(of: samples.depths)
         let hull = convexHull(of: samples.points)
@@ -273,9 +264,16 @@ class Calculator {
         )
 
         let diameterMeters = sqrt(maxSquaredDistance) * depthMeters
-        return CGFloat(diameterMeters * metersToMillimeters)
+        return CGFloat(diameterMeters * CalculatorValues.metersToMillimeters)
     }
 
+    /// Returns the largest squared physical distance between all point pairs.
+    ///
+    /// - Parameters:
+    ///   - points: Convex hull vertices in image pixel coordinates.
+    ///   - invFx: Reciprocal x focal length.
+    ///   - invFy: Reciprocal y focal length.
+    /// - Returns: Maximum squared distance in normalized physical space.
     private func maxPairwiseSquaredDistance(in points: [CGPoint], invFx: Double, invFy: Double) -> Double {
         var maxSquared: Double = 0
         for i in 0..<points.count {
@@ -289,6 +287,13 @@ class Calculator {
         return maxSquared
     }
 
+    /// Clamps a floating-point selection box to valid pixel bounds.
+    ///
+    /// - Parameters:
+    ///   - box: Selection box in image coordinates.
+    ///   - width: Image width in pixels.
+    ///   - height: Image height in pixels.
+    /// - Returns: Inclusive integer bounds, or `nil` if the clamped box is empty.
     private func clampedPixelBounds(
         for box: CGRect,
         width: Int,
@@ -304,7 +309,10 @@ class Calculator {
 
     // MARK: - Helpers
 
-    /// Returns the median of a non-empty array of Float values.
+    /// Returns the median value of a non-empty Float array.
+    ///
+    /// - Parameter values: Float values to aggregate.
+    /// - Returns: Median value as `Double`.
     private func median(of values: [Float]) -> Double {
         let sorted = values.sorted()
         let n = sorted.count
@@ -315,7 +323,10 @@ class Calculator {
         }
     }
 
-    /// Renders a UIImage into a flat RGBA byte array for predictable pixel access.
+    /// Renders an image into a flat RGBA buffer for deterministic pixel access.
+    ///
+    /// - Parameter image: Source image.
+    /// - Returns: Pixel bytes with width/height metadata, or `nil` if rendering fails.
     private func renderToRGBA(image: UIImage) -> (pixels: [UInt8], width: Int, height: Int)? {
         let width: Int
         let height: Int
@@ -328,7 +339,7 @@ class Calculator {
         }
         guard width > 0 && height > 0 else { return nil }
 
-        let bytesPerRow = width * 4
+        let bytesPerRow = width * CalculatorValues.rgbaBytesPerPixel
         var pixels = [UInt8](repeating: 0, count: height * bytesPerRow)
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
@@ -343,7 +354,6 @@ class Calculator {
             bitmapInfo: bitmapInfo
         ) else { return nil }
 
-        // Flip the coordinate system so UIImage draws top-left origin
         context.translateBy(x: 0, y: CGFloat(height))
         context.scaleBy(x: 1, y: -1)
 
@@ -356,6 +366,12 @@ class Calculator {
 
     /// Returns the sensor pixel dimensions given the normalized image dimensions
     /// and the orientation that was applied during capture.
+    ///
+    /// - Parameters:
+    ///   - normalizedWidth: Width of the normalized image in pixels.
+    ///   - normalizedHeight: Height of the normalized image in pixels.
+    ///   - orientation: Orientation applied to the captured image.
+    /// - Returns: Sensor-aligned width and height in pixels.
     private func sensorDimensions(
         normalizedWidth: Int,
         normalizedHeight: Int,
@@ -363,16 +379,22 @@ class Calculator {
     ) -> (Int, Int) {
         switch orientation {
         case .right, .left, .rightMirrored, .leftMirrored:
-            // Portrait: sensor is landscape, so width/height are swapped
             return (normalizedHeight, normalizedWidth)
         default:
-            // Landscape or identity: sensor matches normalized
             return (normalizedWidth, normalizedHeight)
         }
     }
 
     /// Maps a pixel coordinate from the normalized (orientation-corrected) image
     /// back to the original sensor coordinate space.
+    ///
+    /// - Parameters:
+    ///   - nx: X coordinate in normalized image space.
+    ///   - ny: Y coordinate in normalized image space.
+    ///   - normalizedWidth: Width of normalized image in pixels.
+    ///   - normalizedHeight: Height of normalized image in pixels.
+    ///   - orientation: Orientation applied to the captured image.
+    /// - Returns: Sensor-space `(x, y)` coordinate.
     private func normalizedToSensor(
         nx: Int,
         ny: Int,
@@ -384,13 +406,10 @@ class Calculator {
         case .up:
             return (nx, ny)
         case .right:
-            // Portrait (sensor landscape, rotated 90° CW to display)
             return (ny, normalizedWidth - 1 - nx)
         case .left:
-            // Portrait upside-down (sensor landscape, rotated 90° CCW)
             return (normalizedHeight - 1 - ny, nx)
         case .down:
-            // Landscape flipped (180° rotation)
             return (normalizedWidth - 1 - nx, normalizedHeight - 1 - ny)
         case .upMirrored:
             return (normalizedWidth - 1 - nx, ny)
@@ -405,13 +424,17 @@ class Calculator {
         }
     }
 
-    /// Andrew's monotone chain — O(n log n). Returns hull vertices in CCW order.
+    /// Builds the convex hull of the input points using Andrew's monotone chain.
+    ///
+    /// - Parameter points: Input points in image pixel space.
+    /// - Returns: Hull vertices in counter-clockwise order.
     private func convexHull(of points: [CGPoint]) -> [CGPoint] {
         guard points.count > 2 else { return points }
         let sorted = points.sorted { a, b in
             a.x != b.x ? a.x < b.x : a.y < b.y
         }
 
+        /// Signed z-component of OA x OB used for turn direction tests.
         func cross(_ o: CGPoint, _ a: CGPoint, _ b: CGPoint) -> CGFloat {
             (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
         }
