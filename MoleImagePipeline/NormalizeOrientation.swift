@@ -23,16 +23,19 @@ extension UIImage {
     /// both paths agree.
     ///
     /// - Returns: A new `.up`-oriented `UIImage` whose pixel data has been
-    ///   rotated to match, or `self` if the image is already `.up`. Falls back
-    ///   to `self` if the graphics context fails to produce an image.
+    ///   rotated to match, or `self` if the image is already `.up`.
+    ///
+    /// Uses `UIGraphicsImageRenderer`, which is thread-safe and may therefore
+    /// be called from a detached task without touching the main thread.
     func normalizedOrientation() -> UIImage {
         guard imageOrientation != .up else { return self }
 
-        UIGraphicsBeginImageContextWithOptions(size, false, scale)
-        draw(in: CGRect(origin: .zero, size: size))
-        let normalized = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-
-        return normalized ?? self
+        let format = UIGraphicsImageRendererFormat.preferred()
+        format.scale = scale
+        format.opaque = false
+        let renderer = UIGraphicsImageRenderer(size: size, format: format)
+        return renderer.image { _ in
+            draw(in: CGRect(origin: .zero, size: size))
+        }
     }
 }
