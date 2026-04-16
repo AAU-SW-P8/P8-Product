@@ -124,11 +124,12 @@ class MoleSegmentationAppState {
     func handleNewMoleSelection() {
         guard let person: Person = selectedPersonForScan, let image: UIImage = testImage, let box: CGRect = selectedBoxForMole else { return }
         if let cropped: UIImage = cropImage(image, to: box) {
+            let measurement = calculateSelectedMoleMeasurement()
             dataController.addMoleAndScan(
                 to: person,
                 image: cropped,
-                area: calculateSelectedMoleArea(),
-                diameter: calculateSelectedMoleDiameter()
+                area: measurement.area,
+                diameter: measurement.diameter
             )
             statusMessage = "Added mole to \(person.name)!"
             activeAlert = .success("Successfully saved scan.")
@@ -148,13 +149,14 @@ class MoleSegmentationAppState {
         
         // 1. Crop the image here in the AppState
         if let cropped: UIImage = cropImage(image, to: box) {
+            let measurement = calculateSelectedMoleMeasurement()
 
             // 2. Pass the finished image to the DataController
             dataController.addToExistingMole(
                 mole: mole,
                 image: cropped,
-                area: calculateSelectedMoleArea(),
-                diameter: calculateSelectedMoleDiameter()
+                area: measurement.area,
+                diameter: measurement.diameter
             )
 
             // 3. Update UI state
@@ -163,15 +165,15 @@ class MoleSegmentationAppState {
         }
     }
 
-    /// Computes the physical mole area in mm² for the currently selected detection.
-    /// Returns `0` when depth or mask data is not available.
-    private func calculateSelectedMoleArea() -> Float {
+    /// Computes both physical measurements for the selected detection.
+    /// Returns `(0, 0)` when required mask/depth data is unavailable.
+    private func calculateSelectedMoleMeasurement() -> (area: Float, diameter: Float) {
         guard let maskOnlyImage: UIImage = maskOnlyImage,
               let selectedBox: CGRect = selectedBoxForMole else {
-            return 0
+            return (0, 0)
         }
 
-        let areaMM2 = calculator.calculateArea(
+        let measurement = calculator.calculateMetrics(
             from: (maskOnlyImage, [selectedBox]),
             depthMap: depthMap,
             confidenceMap: confidenceMap,
@@ -179,28 +181,9 @@ class MoleSegmentationAppState {
             imageOrientation: capturedImageOrientation
         )
 
-        guard areaMM2.isFinite, areaMM2 > 0 else { return 0 }
-        return Float(areaMM2)
-    }
-
-    /// Computes the mole diameter in mm (max distance between mole pixels) for the
-    /// currently selected detection. Returns `0` when depth or mask data is unavailable.
-    private func calculateSelectedMoleDiameter() -> Float {
-        guard let maskOnlyImage: UIImage = maskOnlyImage,
-              let selectedBox: CGRect = selectedBoxForMole else {
-            return 0
-        }
-
-        let diameterMM = calculator.calculateDiameter(
-            from: (maskOnlyImage, [selectedBox]),
-            depthMap: depthMap,
-            confidenceMap: confidenceMap,
-            cameraIntrinsics: cameraIntrinsics,
-            imageOrientation: capturedImageOrientation
-        )
-
-        guard diameterMM.isFinite, diameterMM > 0 else { return 0 }
-        return Float(diameterMM)
+        let area = measurement.areaMM2.isFinite && measurement.areaMM2 > 0 ? Float(measurement.areaMM2) : 0
+        let diameter = measurement.diameterMM.isFinite && measurement.diameterMM > 0 ? Float(measurement.diameterMM) : 0
+        return (area, diameter)
     }
 
     /**

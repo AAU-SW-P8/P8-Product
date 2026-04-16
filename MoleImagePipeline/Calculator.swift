@@ -11,6 +11,16 @@ class Calculator {
     /// Filters out near-zero background noise (~p=0.004).
     private let minimumAlpha: UInt8 = 1
 
+    /// Minimum confidence accepted from ARKit's confidence map (0=low, 1=medium, 2=high).
+    private let minimumAcceptedConfidence: UInt8 = 1
+
+    /// Depth range (meters) considered physically plausible for skin captures.
+    private let validDepthRange: ClosedRange<Float> = 0.05...2.0
+
+    /// Unit conversions for returned measurements.
+    private let metersToMillimeters: Double = 1_000.0
+    private let squareMetersToSquareMillimeters: Double = 1_000_000.0
+
     /// Per-pixel data extracted from the mask + depth map for a single selected mole.
     /// Produced once and consumed by both area and diameter calculations.
     private struct MoleSamples {
@@ -24,6 +34,36 @@ class Calculator {
         /// Camera focal lengths (pixels), as Doubles for downstream math.
         var fx: Double
         var fy: Double
+    }
+
+    struct MoleMeasurement {
+        let areaMM2: CGFloat
+        let diameterMM: CGFloat
+    }
+
+    /// Computes both area and diameter from one shared sampling pass.
+    /// This avoids re-walking pixels/depth when callers need both metrics.
+    func calculateMetrics(
+        from segmentedImage: (UIImage, [CGRect]),
+        depthMap: CVPixelBuffer?,
+        confidenceMap: CVPixelBuffer?,
+        cameraIntrinsics: simd_float3x3? = nil,
+        imageOrientation: UIImage.Orientation = .up
+    ) -> MoleMeasurement {
+        guard let samples = gatherMoleSamples(
+            from: segmentedImage,
+            depthMap: depthMap,
+            confidenceMap: confidenceMap,
+            cameraIntrinsics: cameraIntrinsics,
+            imageOrientation: imageOrientation
+        ) else {
+            return MoleMeasurement(areaMM2: 0, diameterMM: 0)
+        }
+
+        return MoleMeasurement(
+            areaMM2: computeAreaMM2(from: samples),
+            diameterMM: computeDiameterMM(from: samples)
+        )
     }
 
     /// Calculates the physical area of a mole in mm² using the segmentation mask,
@@ -52,23 +92,13 @@ class Calculator {
         cameraIntrinsics: simd_float3x3? = nil,
         imageOrientation: UIImage.Orientation = .up
     ) -> CGFloat {
-        guard let samples = gatherMoleSamples(
+        calculateMetrics(
             from: segmentedImage,
             depthMap: depthMap,
             confidenceMap: confidenceMap,
             cameraIntrinsics: cameraIntrinsics,
             imageOrientation: imageOrientation
-        ) else { return 0.0 }
-
-        let weightedPixelCount = samples.weights.reduce(0, +)
-        guard !samples.depths.isEmpty, weightedPixelCount > 0 else { return 0.0 }
-
-        // Median depth is more robust to LiDAR noise than per-pixel depth.
-        let d = median(of: samples.depths)
-        let totalArea = weightedPixelCount * (d * d) / (samples.fx * samples.fy)
-
-        // Convert m² to mm²
-        return CGFloat(totalArea * 1_000_000)
+        ).areaMM2
     }
 
     /// Estimates the mole diameter in mm as the largest distance between any two
@@ -88,35 +118,13 @@ class Calculator {
         cameraIntrinsics: simd_float3x3? = nil,
         imageOrientation: UIImage.Orientation = .up
     ) -> CGFloat {
-        guard let samples = gatherMoleSamples(
+        calculateMetrics(
             from: segmentedImage,
             depthMap: depthMap,
             confidenceMap: confidenceMap,
             cameraIntrinsics: cameraIntrinsics,
             imageOrientation: imageOrientation
-        ) else { return 0.0 }
-
-        guard !samples.depths.isEmpty, samples.points.count >= 2 else { return 0.0 }
-
-        let d = median(of: samples.depths)
-        let hull = convexHull(of: samples.points)
-
-        // Brute-force max distance among hull vertices. Convert pixel deltas to
-        // physical deltas via depth & focal length, then take Euclidean distance.
-        let invFx = 1.0 / samples.fx
-        let invFy = 1.0 / samples.fy
-        var maxSquared: Double = 0
-        for i in 0..<hull.count {
-            for j in (i + 1)..<hull.count {
-                let pdx = Double(hull[i].x - hull[j].x) * invFx
-                let pdy = Double(hull[i].y - hull[j].y) * invFy
-                let sq = pdx * pdx + pdy * pdy
-                if sq > maxSquared { maxSquared = sq }
-            }
-        }
-
-        let diameterMeters = sqrt(maxSquared) * d
-        return CGFloat(diameterMeters * 1_000)
+        ).diameterMM
     }
 
     // MARK: - Sampling
@@ -177,11 +185,9 @@ class Calculator {
         )
         guard sensorW > 0 && sensorH > 0 else { return nil }
 
-        let minX = max(0, Int(floor(box.minX)))
-        let minY = max(0, Int(floor(box.minY)))
-        let maxX = min(maskW - 1, Int(ceil(box.maxX)) - 1)
-        let maxY = min(maskH - 1, Int(ceil(box.maxY)) - 1)
-        guard minX <= maxX, minY <= maxY else { return nil }
+        guard let bounds = clampedPixelBounds(for: box, width: maskW, height: maskH) else {
+            return nil
+        }
 
         let alphaScale = Double(maskAlphaMax) * 255.0
         var points: [CGPoint] = []
@@ -189,8 +195,13 @@ class Calculator {
         var depths: [Float] = []
         var sampledDepthPixels = Set<Int>()
 
-        for ny in minY...maxY {
-            for nx in minX...maxX {
+        let estimatedPixelCount = max(0, (bounds.maxX - bounds.minX + 1) * (bounds.maxY - bounds.minY + 1))
+        points.reserveCapacity(estimatedPixelCount)
+        weights.reserveCapacity(estimatedPixelCount)
+        depths.reserveCapacity(min(estimatedPixelCount, depthW * depthH))
+
+        for ny in bounds.minY...bounds.maxY {
+            for nx in bounds.minX...bounds.maxX {
                 let pixelOffset = (ny * maskW + nx) * 4
                 let alpha = maskPixels[pixelOffset + 3]
                 guard alpha >= minimumAlpha else { continue }
@@ -218,13 +229,13 @@ class Calculator {
                     let confPtr = confBase.advanced(by: dy * confBytesPerRow)
                         .assumingMemoryBound(to: UInt8.self)
                     let confidence = confPtr[dx]
-                    guard confidence >= 1 else { continue } // require medium or high
+                    guard confidence >= minimumAcceptedConfidence else { continue }
                 }
 
                 let depthPtr = depthBase.advanced(by: dy * depthBytesPerRow)
                     .assumingMemoryBound(to: Float32.self)
                 let depth = depthPtr[dx]
-                guard depth > 0.05 && depth < 2.0 else { continue }
+                guard validDepthRange.contains(depth) else { continue }
 
                 depths.append(depth)
             }
@@ -237,6 +248,58 @@ class Calculator {
             fx: Double(fx),
             fy: Double(fy)
         )
+    }
+
+    private func computeAreaMM2(from samples: MoleSamples) -> CGFloat {
+        let weightedPixelCount = samples.weights.reduce(0, +)
+        guard !samples.depths.isEmpty, weightedPixelCount > 0 else { return 0.0 }
+
+        // Median depth is more robust to LiDAR noise than per-pixel depth.
+        let depthMeters = median(of: samples.depths)
+        let areaSquareMeters = weightedPixelCount * (depthMeters * depthMeters) / (samples.fx * samples.fy)
+        return CGFloat(areaSquareMeters * squareMetersToSquareMillimeters)
+    }
+
+    private func computeDiameterMM(from samples: MoleSamples) -> CGFloat {
+        guard !samples.depths.isEmpty, samples.points.count >= 2 else { return 0.0 }
+
+        let depthMeters = median(of: samples.depths)
+        let hull = convexHull(of: samples.points)
+
+        let maxSquaredDistance = maxPairwiseSquaredDistance(
+            in: hull,
+            invFx: 1.0 / samples.fx,
+            invFy: 1.0 / samples.fy
+        )
+
+        let diameterMeters = sqrt(maxSquaredDistance) * depthMeters
+        return CGFloat(diameterMeters * metersToMillimeters)
+    }
+
+    private func maxPairwiseSquaredDistance(in points: [CGPoint], invFx: Double, invFy: Double) -> Double {
+        var maxSquared: Double = 0
+        for i in 0..<points.count {
+            for j in (i + 1)..<points.count {
+                let pdx = Double(points[i].x - points[j].x) * invFx
+                let pdy = Double(points[i].y - points[j].y) * invFy
+                let sq = pdx * pdx + pdy * pdy
+                if sq > maxSquared { maxSquared = sq }
+            }
+        }
+        return maxSquared
+    }
+
+    private func clampedPixelBounds(
+        for box: CGRect,
+        width: Int,
+        height: Int
+    ) -> (minX: Int, minY: Int, maxX: Int, maxY: Int)? {
+        let minX = max(0, Int(floor(box.minX)))
+        let minY = max(0, Int(floor(box.minY)))
+        let maxX = min(width - 1, Int(ceil(box.maxX)) - 1)
+        let maxY = min(height - 1, Int(ceil(box.maxY)) - 1)
+        guard minX <= maxX, minY <= maxY else { return nil }
+        return (minX, minY, maxX, maxY)
     }
 
     // MARK: - Helpers
