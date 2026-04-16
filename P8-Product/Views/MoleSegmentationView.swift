@@ -7,8 +7,8 @@ import SwiftUI
 import SwiftData
 
 /**
- A SwiftUI view for testing and demonstrating the mole segmentation functionality using the SAM 3.1 model. 
- Displays a test image, allows the user to run segmentation, and shows the results with interactive bounding boxes. 
+ A SwiftUI view demonstrating the mole segmentation functionality using the SAM 3.1 model.
+ Displays a image, allows the user to run segmentation, and shows the results with interactive bounding boxes.
  Provides controls for adjusting detection parameters and handles the flow of selecting a person and adding new moles or scans based on the segmentation results.
  */
 struct MoleSegmentationView: View {
