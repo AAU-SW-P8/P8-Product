@@ -42,10 +42,10 @@
 		7AD89F892F87B66800A2C5F0 /* Exceptions for "Tests" folder in "P8-ProductUITests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				UITests/CameraViewUITests.swift,
 				UITests/CompareViewUITests.swift,
 				UITests/Helpers.swift,
 				UITests/ImageCarouselUITests.swift,
-				UITests/ProductUITests.swift,
 				UITests/ProductUITestsLaunchTests.swift,
 				UITests/ReminderViewUITests.swift,
 				UITests/TabStateUITests.swift,
@@ -55,10 +55,11 @@
 		97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				ReminderOverview/ReminderOverview.swift,
+				UITests/CameraViewUITests.swift,
 				UITests/CompareViewUITests.swift,
 				UITests/Helpers.swift,
 				UITests/ImageCarouselUITests.swift,
-				UITests/ProductUITests.swift,
 				UITests/ProductUITestsLaunchTests.swift,
 				UITests/ReminderViewUITests.swift,
 				UITests/TabStateUITests.swift,

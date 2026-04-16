@@ -8,12 +8,29 @@ import ARKit
 import RealityKit
 import simd
 
-class ARCameraViewController: UIViewController, ARSessionDelegate {
+/// UIKit view controller that drives the LiDAR-assisted capture flow.
+///
+/// Runs an `ARView` with scene-depth enabled, continuously measures the
+/// distance to the nearest surface in front of the camera, and only enables
+/// the capture button when the user is within ±`distanceTolerance` of
+/// `targetDistance`. Distance is derived from the LiDAR depth buffer when
+/// available, falling back to a raycast through screen center. On capture,
+/// the current camera frame is converted to a `UIImage` (with correct
+/// interface-orientation rotation) and delivered, together with the raw
+/// depth and confidence buffers, via the `onCapture` callback. `onCancel`
+/// is invoked when the user taps cancel or when LiDAR is unsupported.
+final class ARCameraViewController: UIViewController, ARSessionDelegate {
 
     // MARK: - Constants
 
+    /// Overlay color used for the out-of-range state (measurement pill + crosshair).
     private static let overlayRed = UIColor(red: 1.0, green: 0.3, blue: 0.3, alpha: 1.0)
+    /// Overlay color used for the in-range state (measurement pill).
+    private static let overlayGreen = UIColor(red: 0.2, green: 0.8, blue: 0.3, alpha: 0.9)
+    /// Desired subject distance in meters. Captures only become enabled
+    /// within `distanceTolerance` of this value.
     private let targetDistance: Float = 0.35   // 35 cm
+    /// Allowed deviation around `targetDistance`, in meters.
     private let distanceTolerance: Float = 0.05 // ±5 cm
 
     // MARK: - Callbacks
@@ -29,13 +46,19 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
     private var displayLabel: UILabel!
     private var cancelButton: UIButton!
     private var lidarPointsLayer: CAShapeLayer!
+    private var centerCrosshair: UIView!
 
     // MARK: - State
 
+    /// Most recent subject distance in meters, seeded to a large value so the
+    /// capture button starts disabled.
     private var currentDistance: Float = 100.0
 
     // MARK: - Lifecycle
 
+    /// Verifies LiDAR support, then builds the AR session and the capture UI.
+    /// Presents an error alert and surfaces `onCancel` if the device cannot
+    /// do scene-reconstruction meshing.
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -49,6 +72,10 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         setupLidarPointsLayer()
     }
 
+    /// Pauses the AR session when the controller goes off-screen so the
+    /// camera and LiDAR stop producing frames while hidden.
+    ///
+    /// - Parameter animated: Forwarded from UIKit.
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         arView?.session.pause()
@@ -56,6 +83,9 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
 
     // MARK: - AR Setup
 
+    /// Creates the `ARView`, registers as session delegate, and starts a
+    /// world-tracking configuration with mesh reconstruction and scene-depth
+    /// semantics when the hardware supports them.
     private func setupARView() {
         arView = ARView(frame: view.bounds)
         arView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -75,10 +105,11 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
 
     // MARK: - UI Setup
 
+    /// Builds every custom subview in a single pass and activates their
+    /// Auto Layout constraints.
     private func setupUI() {
         setupMeasurementDisplay()
         setupCrosshair()
-        setupCenterCircle()
         setupCaptureButton()
         setupCancelButton()
         activateConstraints()
@@ -118,8 +149,8 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         measurementDisplay.addSubview(displayLabel)
     }
 
-    private var centerCrosshair: UIView!
-
+    /// Creates the four-corner framing crosshair centered on the screen by
+    /// drawing each corner as a `CAShapeLayer` inside a container view.
     private func setupCrosshair() {
         centerCrosshair = UIView()
         centerCrosshair.translatesAutoresizingMaskIntoConstraints = false
@@ -139,19 +170,9 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         }
     }
 
-    private var centerCircle: UIView!
 
-    private func setupCenterCircle() {
-        centerCircle = UIView()
-        centerCircle.translatesAutoresizingMaskIntoConstraints = false
-        centerCircle.layer.borderColor = Self.overlayRed.cgColor
-        centerCircle.layer.borderWidth = 3
-        centerCircle.backgroundColor = .clear
-        centerCircle.layer.cornerRadius = 8
-        view.addSubview(centerCircle)
-    }
-
-
+    /// Builds the primary capture button. Starts disabled — it's only
+    /// enabled by `updateMeasurementDisplay` once the subject is in range.
     private func setupCaptureButton() {
         captureButton = UIButton(type: .system)
         captureButton.translatesAutoresizingMaskIntoConstraints = false
@@ -165,6 +186,7 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         view.addSubview(captureButton)
     }
 
+    /// Builds the cancel button anchored to the top-leading safe area.
     private func setupCancelButton() {
         cancelButton = UIButton(type: .system)
         cancelButton.translatesAutoresizingMaskIntoConstraints = false
@@ -175,17 +197,14 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         view.addSubview(cancelButton)
     }
 
+    /// Pins the crosshair, measurement pill, capture button, and cancel
+    /// button to the view with Auto Layout.
     private func activateConstraints() {
         NSLayoutConstraint.activate([
             centerCrosshair.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             centerCrosshair.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             centerCrosshair.widthAnchor.constraint(equalToConstant: 80),
             centerCrosshair.heightAnchor.constraint(equalToConstant: 80),
-
-            centerCircle.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            centerCircle.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            centerCircle.widthAnchor.constraint(equalToConstant: 16),
-            centerCircle.heightAnchor.constraint(equalToConstant: 16),
 
             measurementDisplay.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
             measurementDisplay.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -207,6 +226,15 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
 
     // MARK: - ARSessionDelegate
 
+    /// Called for every AR frame. Prefers the dense LiDAR depth map for a
+    /// minimum-distance estimate; falls back to a single raycast through the
+    /// screen center when depth data isn't available. Refreshes the on-screen
+    /// measurement asynchronously on the main queue.
+    ///
+    /// - Parameters:
+    ///   - session: The AR session emitting the frame (unused).
+    ///   - frame: The latest frame, containing camera imagery and optional
+    ///     scene-depth data.
     func session(_ session: ARSession, didUpdate frame: ARFrame) {
         guard arView != nil else { return }
 
@@ -221,6 +249,14 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
 
     // MARK: - Depth Measurement
 
+    /// Scans the entire LiDAR depth map for the closest non-trivial sample.
+    ///
+    /// Values below 5 cm are ignored because they are almost always sensor
+    /// noise or the user's finger occluding the lens.
+    ///
+    /// - Parameter frame: The AR frame whose `sceneDepth` should be inspected.
+    /// - Returns: The nearest valid depth in meters, or `nil` when the frame
+    ///   has no depth data or every sample was filtered out.
     private func closestDepthDistance(from frame: ARFrame) -> Float? {
         guard let sceneDepth = frame.sceneDepth else { return nil }
 
@@ -316,6 +352,9 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
 
     // MARK: - UI Updates
 
+    /// Refreshes the measurement label and recolors the pill/button according
+    /// to whether `currentDistance` is within tolerance of `targetDistance`.
+    /// Must be called on the main thread.
     private func updateMeasurementDisplay() {
         let distanceInCm = currentDistance * 100
         displayLabel.text = String(format: "%.2f cm", distanceInCm)
@@ -325,12 +364,15 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         captureButton.isEnabled = isInRange
         captureButton.backgroundColor = isInRange ? .systemGreen : .systemGray
         measurementDisplay.backgroundColor = isInRange
-            ? UIColor(red: 0.2, green: 0.8, blue: 0.3, alpha: 0.9)
+            ? Self.overlayGreen
             : Self.overlayRed.withAlphaComponent(0.9)
     }
 
     // MARK: - Actions
 
+    /// Grabs the current AR frame, converts its camera pixel buffer into a
+    /// correctly-oriented `UIImage`, and forwards the image together with the
+    /// frame's depth and confidence buffers through `onCapture`.
     @objc private func capturePhoto() {
         guard let frame = arView?.session.currentFrame else { return }
 
@@ -339,28 +381,21 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         let context = CIContext()
         guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return }
 
-        let orientationMap: [UIInterfaceOrientation: UIImage.Orientation] = [
-            .portrait: .right,
-            .portraitUpsideDown: .left,
-            .landscapeLeft: .up,
-            .landscapeRight: .down,
-        ]
-        let windowScene = view.window?.windowScene
-        let interfaceOrientation = windowScene?.effectiveGeometry.interfaceOrientation ?? .portrait
-        let imageOrientation = orientationMap[interfaceOrientation] ?? .right
-        let image = UIImage(cgImage: cgImage, scale: 1.0, orientation: imageOrientation)
+        let interfaceOrientation = view.window?.windowScene?.effectiveGeometry.interfaceOrientation ?? .portrait
+        let image = UIImage(cgImage: cgImage, scale: 1.0, orientation: Self.imageOrientation(for: interfaceOrientation))
 
-        let depthMap = frame.sceneDepth?.depthMap
-        let confidenceMap = frame.sceneDepth?.confidenceMap
-        let intrinsics = frame.camera.intrinsics
-
-        onCapture?(image, depthMap, confidenceMap, intrinsics)
+        onCapture?(image, frame.sceneDepth?.depthMap, frame.sceneDepth?.confidenceMap, frame.camera.intrinsics)
     }
 
+    /// Forwards the cancel action to the owning SwiftUI layer.
     @objc private func cancel() {
         onCancel?()
     }
 
+    /// Presents a simple error alert whose OK action invokes `onCancel` so
+    /// the presenting SwiftUI view can dismiss this controller.
+    ///
+    /// - Parameter message: The body text to display.
     private func showAlert(message: String) {
         let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default) { [weak self] _ in
@@ -371,6 +406,32 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
 
     // MARK: - Shape Helpers
 
+    /// Maps a UIKit interface orientation to the `UIImage.Orientation` that
+    /// rotates the AR camera's raw pixel buffer so it renders upright.
+    ///
+    /// - Parameter interfaceOrientation: The current window scene interface
+    ///   orientation.
+    /// - Returns: The matching image orientation, defaulting to `.right`
+    ///   (portrait) for unknown values.
+    private static func imageOrientation(for interfaceOrientation: UIInterfaceOrientation) -> UIImage.Orientation {
+        switch interfaceOrientation {
+        case .portrait:            return .right
+        case .portraitUpsideDown:  return .left
+        case .landscapeLeft:       return .up
+        case .landscapeRight:      return .down
+        default:                   return .right
+        }
+    }
+
+    /// Builds the four `UIBezierPath`s used to draw each corner of the
+    /// framing crosshair.
+    ///
+    /// - Parameters:
+    ///   - size: Side length of the square crosshair container.
+    ///   - cornerLength: Length of each corner stroke, measured along one
+    ///     edge of the square.
+    /// - Returns: Four paths in top-left, top-right, bottom-right, bottom-left
+    ///   order, each expressed in the container's local coordinate space.
     private static func crosshairCornerPaths(size: CGFloat, cornerLength: CGFloat) -> [UIBezierPath] {
         let tl = UIBezierPath()
         tl.move(to: CGPoint(x: 0, y: cornerLength))

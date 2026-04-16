@@ -21,11 +21,10 @@ class OverviewAppState {
     var showingEditPerson: Bool = false
     var showingDeleteAlert: Bool = false
     var showingDeleteMoleAlert: Bool = false
-    var cameraShowing: Bool = false
-    
+
     // MARK: - UI Animation State
     var slideEdge: Edge = .trailing
-    
+
     // MARK: - Temporary Data State
     var newPersonName: String = ""
     var editingName: String = ""
@@ -177,18 +176,5 @@ class OverviewAppState {
         dataController.delete(mole)
         
     }
-    
-    // MARK: - Camera & Scan Actions
-    
-    func processCapturedImage() {
-        guard let image: UIImage = capturedImage, let person: Person = selectedPerson else { return }
-        
-        dataController.addMoleAndScan(to: person, image: image)
-        
-        // Clean up
-        self.capturedImage = nil
-        self.capturedDepthMap = nil
-        self.capturedConfidenceMap = nil
-        self.capturedIntrinsics = nil
-    }
+
 }
