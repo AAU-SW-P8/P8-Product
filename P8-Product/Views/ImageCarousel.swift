@@ -23,6 +23,7 @@ struct ImageCarousel: View {
     let scans: [MoleScan]
     var mole: Mole? = nil
     @Binding var selectedIndex: Int
+    var onDeleteSelectedInstance: (() -> Void)? = nil
     var height: CGFloat = 200
     /// The safe index to use for display, ensuring it stays within bounds of the scans array.
     private var safeIndex: Int {
@@ -35,6 +36,12 @@ struct ImageCarousel: View {
     /// The currently selected instance based on the selected scan and optional mole filter, or nil if no scan is selected or no instance matches.
     private var selectedInstance: MoleInstance? {
         Self.selectedInstance(in: scans, at: selectedIndex, for: mole)
+    }
+
+    /// Stable identity of the currently selected scan, used by ScrollView paging.
+    private var selectedScanID: UUID? {
+        guard !scans.isEmpty else { return nil }
+        return scans[safeIndex].id
     }
 
     var body: some View {
@@ -51,7 +58,7 @@ struct ImageCarousel: View {
                                     .shadow(radius: 3)
                                     .padding(.horizontal, 8)
                                     .frame(width: geometry.size.width, height: height)
-                                    .id(index)
+                                    .id(scan.id)
                             } else {
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 12)
@@ -62,7 +69,7 @@ struct ImageCarousel: View {
                                 }
                                 .padding(.horizontal, 8)
                                 .frame(width: geometry.size.width, height: height)
-                                .id(index)
+                                .id(scan.id)
                             }
                         }
                     }
@@ -70,9 +77,11 @@ struct ImageCarousel: View {
                 }
                 .scrollTargetBehavior(.paging)
                 .scrollPosition(id: Binding(
-                    get: { safeIndex as Int? },
+                    get: { selectedScanID },
                     set: { newValue in
-                        if let newValue { selectedIndex = newValue }
+                        guard let newValue else { return }
+                        guard let newIndex = scans.firstIndex(where: { $0.id == newValue }) else { return }
+                        selectedIndex = newIndex
                     }
                 ), anchor: .center)
             }
@@ -92,6 +101,17 @@ struct ImageCarousel: View {
                     .font(.caption2)
                     .fontWeight(.semibold)
                     .foregroundColor(.secondary)
+                }
+
+                if let onDeleteSelectedInstance {
+                    HStack {
+                        Spacer()
+                        Button(role: .destructive, action: onDeleteSelectedInstance) {
+                            Image(systemName: "trash")
+                        }
+                        .accessibilityIdentifier("deleteMoleInstanceButton")
+                        .padding(.top, 4)
+                    }
                 }
             }
         }

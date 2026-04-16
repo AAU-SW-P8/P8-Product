@@ -7,9 +7,17 @@ import SwiftUI
 
 struct MoleDetailView: View {
     @State private var appState: MoleDetailAppState
+    @Environment(\.dismiss) private var dismiss
 
+    @MainActor
     init(mole: Mole) {
-        _appState = State(initialValue: MoleDetailAppState(mole: mole))
+        _appState = State(
+            initialValue: MoleDetailAppState(
+                mole: mole,
+                dataController: DataController.shared,
+                selectionState: SelectionState.shared
+            )
+        )
     }
 
     var body: some View {
@@ -39,7 +47,14 @@ struct MoleDetailView: View {
                     Spacer()
                 } else {
                     HStack(spacing: 0) {
-                        ImageCarousel(scans: appState.scans, mole: appState.activeMole, selectedIndex: $appState.selectedIndex)
+                        ImageCarousel(
+                            scans: appState.scans,
+                            mole: appState.activeMole,
+                            selectedIndex: $appState.selectedIndex,
+                            onDeleteSelectedInstance: {
+                                appState.requestDeleteSelectedDetailInstance()
+                            }
+                        )
                             .frame(maxWidth: 420)
                     }
                     .padding(.vertical, 12)
@@ -146,6 +161,16 @@ struct MoleDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .alert("Delete Scan", isPresented: $appState.showingDeleteDetailInstanceAlert) {
+            Button("Delete", role: .destructive) {
+                appState.confirmDeleteSelectedDetailInstance()
+            }
+            Button("Cancel", role: .cancel) {
+                appState.cancelDeleteSelectedDetailInstance()
+            }
+        } message: {
+            Text("Are you sure you want to delete this scan?")
+        }
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Menu {
@@ -178,6 +203,11 @@ struct MoleDetailView: View {
         }
         .onChange(of: appState.scans.count) {
             appState.clampSelectedIndicesIfNeeded()
+        }
+        .onChange(of: appState.shouldDismissDetailView) { _, shouldDismiss in
+            guard shouldDismiss else { return }
+            dismiss()
+            appState.consumeDismissRequest()
         }
     }
 }

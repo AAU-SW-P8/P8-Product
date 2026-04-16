@@ -199,22 +199,33 @@ class DataController {
     }
     
     func delete(_ person: Person) {
-        let context: ModelContext = container.mainContext
-        context.delete(person)
-        do {
-            try context.save()
-        } catch {
-            print("Failed to delete person: \(error)")
+        deleteAndSave(errorMessage: "Failed to delete person") { context in
+            context.delete(person)
         }
     }
     
     func delete(_ mole: Mole) {
+        deleteAndSave(errorMessage: "Failed to delete mole") { context in
+            context.delete(mole)
+        }
+    }
+
+    func delete(_ instance: MoleInstance) {
+        deleteAndSave(errorMessage: "Failed to delete mole instance") { context in
+            context.delete(instance)
+        }
+    }
+
+    private func deleteAndSave(
+        errorMessage: String,
+        performDelete: (ModelContext) -> Void
+    ) {
         let context: ModelContext = container.mainContext
-        context.delete(mole)
+        performDelete(context)
         do {
             try context.save()
         } catch {
-            print("Failed to delete mole: \(error)")
+            print("\(errorMessage): \(error)")
         }
     }
     
