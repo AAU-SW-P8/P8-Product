@@ -42,10 +42,10 @@
 		7AD89F892F87B66800A2C5F0 /* Exceptions for "Tests" folder in "P8-ProductUITests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				UITests/CameraViewUITests.swift,
 				UITests/CompareViewUITests.swift,
 				UITests/Helpers.swift,
 				UITests/ImageCarouselUITests.swift,
-				UITests/ProductUITests.swift,
 				UITests/ProductUITestsLaunchTests.swift,
 				UITests/ReminderViewUITests.swift,
 				UITests/TabStateUITests.swift,
@@ -55,35 +55,14 @@
 		97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				ChartViewTest.swift,
 				ReminderOverview/ReminderOverview.swift,
-				SAMPipelineTests/SAM3DecoderTests.swift,
-				SAMPipelineTests/SAM3DetectionTests.swift,
-				SAMPipelineTests/SAM3FeatureNamesTests.swift,
-				SAMPipelineTests/SAM3ImagePreprocessorTests.swift,
-				SAMPipelineTests/SAM3ModelsTests.swift,
-				SAMPipelineTests/TestHelpers.swift,
+				UITests/CameraViewUITests.swift,
 				UITests/CompareViewUITests.swift,
 				UITests/Helpers.swift,
 				UITests/ImageCarouselUITests.swift,
-				UITests/ProductUITests.swift,
 				UITests/ProductUITestsLaunchTests.swift,
 				UITests/ReminderViewUITests.swift,
 				UITests/TabStateUITests.swift,
-			);
-			target = F1845EED2F59945F00E27D2B /* P8-Product */;
-		};
-		97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				ChartViewTest.swift,
-				ReminderOverview/ReminderOverview.swift,
-				SAMPipelineTests/SAM3DecoderTests.swift,
-				SAMPipelineTests/SAM3DetectionTests.swift,
-				SAMPipelineTests/SAM3FeatureNamesTests.swift,
-				SAMPipelineTests/SAM3ImagePreprocessorTests.swift,
-				SAMPipelineTests/SAM3ModelsTests.swift,
-				SAMPipelineTests/TestHelpers.swift,
 			);
 			target = 97C2DB192F6AB3F100454255 /* PipelineTests */;
 		};
