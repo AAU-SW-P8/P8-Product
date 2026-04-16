@@ -26,7 +26,6 @@ struct MoleSegmentationView: View {
     /// Access the global SAM3 model loader
     @ObservedObject private var modelLoader = SAM3ModelLoader.shared
 
-    @Environment(\.modelContext) private var modelContext
     @Query(sort: \Person.createdAt)
     private var people: [Person]
     @State private var appState: MoleSegmentationAppState
