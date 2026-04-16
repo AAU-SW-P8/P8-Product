@@ -1,5 +1,5 @@
 //
-// SimpleCameraView.swift
+// BasicCameraView.swift
 // P8-Product
 //
 
@@ -49,13 +49,13 @@ struct BasicCameraView: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
 
     /// Delegate bridge between `UIImagePickerController`'s UIKit callbacks and
-    /// the SwiftUI bindings owned by `SimpleCameraView`.
+    /// the SwiftUI bindings owned by `BasicCameraView`.
     class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
         let parent: BasicCameraView
 
         /// Creates a coordinator bound to the given view.
         ///
-        /// - Parameter parent: The `SimpleCameraView` whose bindings should
+        /// - Parameter parent: The `BasicCameraView` whose bindings should
         ///   receive the captured image and dismissal signals.
         init(_ parent: BasicCameraView) {
             self.parent = parent
