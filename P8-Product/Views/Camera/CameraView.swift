@@ -5,6 +5,7 @@
 
 import SwiftUI
 import ARKit
+import simd
 
 /// The main capture tab. Opens the camera automatically on appear, waits for
 /// the user to take a photo, then hands the image to `MoleSegmentationView`.

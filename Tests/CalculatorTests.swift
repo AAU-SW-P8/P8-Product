@@ -170,6 +170,183 @@ struct CalculatorTests {
         #expect(abs(Double(area) - expected) < 1e-6)
     }
 
+    // MARK: - Guard path tests
+
+    @Test func calculateArea_nilDepthMap_returnsZero() throws {
+        let calculator = Calculator()
+        let mask = makeMaskImage(width: 1, height: 1, alphaByPixel: [255])
+        let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
+
+        let area = calculator.calculateArea(
+            from: (mask, [CGRect(x: 0, y: 0, width: 1, height: 1)]),
+            depthMap: nil,
+            confidenceMap: nil,
+            cameraIntrinsics: intrinsics,
+            imageOrientation: .up
+        )
+
+        #expect(area == 0.0)
+    }
+
+    @Test func calculateArea_nilIntrinsics_returnsZero() throws {
+        let calculator = Calculator()
+        let mask = makeMaskImage(width: 1, height: 1, alphaByPixel: [255])
+        let depth = try makeDepthPixelBuffer(width: 1, height: 1, values: [1])
+
+        let area = calculator.calculateArea(
+            from: (mask, [CGRect(x: 0, y: 0, width: 1, height: 1)]),
+            depthMap: depth,
+            confidenceMap: nil,
+            cameraIntrinsics: nil,
+            imageOrientation: .up
+        )
+
+        #expect(area == 0.0)
+    }
+
+    @Test func calculateArea_emptyBoundingBoxes_returnsZero() throws {
+        let calculator = Calculator()
+        let mask = makeMaskImage(width: 1, height: 1, alphaByPixel: [255])
+        let depth = try makeDepthPixelBuffer(width: 1, height: 1, values: [1])
+        let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
+
+        let area = calculator.calculateArea(
+            from: (mask, []),
+            depthMap: depth,
+            confidenceMap: nil,
+            cameraIntrinsics: intrinsics,
+            imageOrientation: .up
+        )
+
+        #expect(area == 0.0)
+    }
+
+    @Test func calculateArea_zeroFocalLength_returnsZero() throws {
+        let calculator = Calculator()
+        let mask = makeMaskImage(width: 1, height: 1, alphaByPixel: [255])
+        let depth = try makeDepthPixelBuffer(width: 1, height: 1, values: [1])
+        let intrinsics = makeIntrinsics(fx: 0, fy: 1000)
+
+        let area = calculator.calculateArea(
+            from: (mask, [CGRect(x: 0, y: 0, width: 1, height: 1)]),
+            depthMap: depth,
+            confidenceMap: nil,
+            cameraIntrinsics: intrinsics,
+            imageOrientation: .up
+        )
+
+        #expect(area == 0.0)
+    }
+
+    // MARK: - Diameter tests
+
+    @Test func calculateDiameter_twoAdjacentPixels_returnsOneMillimeter() throws {
+        let calculator = Calculator()
+        let mask = makeMaskImage(width: 2, height: 1, alphaByPixel: [255, 255])
+        let depth = try makeDepthPixelBuffer(width: 2, height: 1, values: [1, 1])
+        let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
+
+        let diameter = calculator.calculateDiameter(
+            from: (mask, [CGRect(x: 0, y: 0, width: 2, height: 1)]),
+            depthMap: depth,
+            confidenceMap: nil,
+            cameraIntrinsics: intrinsics,
+            imageOrientation: .up
+        )
+
+        // pdx = 1 / fx = 1e-3, depth = 1m → diameter = 1mm
+        #expect(abs(Double(diameter) - 1.0) < 1e-6)
+    }
+
+    @Test func calculateDiameter_singlePixel_returnsZero() throws {
+        let calculator = Calculator()
+        let mask = makeMaskImage(width: 1, height: 1, alphaByPixel: [255])
+        let depth = try makeDepthPixelBuffer(width: 1, height: 1, values: [1])
+        let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
+
+        let diameter = calculator.calculateDiameter(
+            from: (mask, [CGRect(x: 0, y: 0, width: 1, height: 1)]),
+            depthMap: depth,
+            confidenceMap: nil,
+            cameraIntrinsics: intrinsics,
+            imageOrientation: .up
+        )
+
+        // Only one masked point → below minimumDiameterPointCount.
+        #expect(diameter == 0.0)
+    }
+
+    @Test func calculateDiameter_allDepthsInvalid_returnsZero() throws {
+        let calculator = Calculator()
+        let mask = makeMaskImage(width: 2, height: 1, alphaByPixel: [255, 255])
+        let depth = try makeDepthPixelBuffer(width: 2, height: 1, values: [0.01, 3.0])
+        let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
+
+        let diameter = calculator.calculateDiameter(
+            from: (mask, [CGRect(x: 0, y: 0, width: 2, height: 1)]),
+            depthMap: depth,
+            confidenceMap: nil,
+            cameraIntrinsics: intrinsics,
+            imageOrientation: .up
+        )
+
+        #expect(diameter == 0.0)
+    }
+
+    @Test func calculateDiameter_nilDepthMap_returnsZero() throws {
+        let calculator = Calculator()
+        let mask = makeMaskImage(width: 2, height: 1, alphaByPixel: [255, 255])
+        let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
+
+        let diameter = calculator.calculateDiameter(
+            from: (mask, [CGRect(x: 0, y: 0, width: 2, height: 1)]),
+            depthMap: nil,
+            confidenceMap: nil,
+            cameraIntrinsics: intrinsics,
+            imageOrientation: .up
+        )
+
+        #expect(diameter == 0.0)
+    }
+
+    // MARK: - Combined metrics tests
+
+    @Test func calculateMetrics_returnsBothAreaAndDiameter() throws {
+        let calculator = Calculator()
+        let mask = makeMaskImage(width: 2, height: 1, alphaByPixel: [255, 255])
+        let depth = try makeDepthPixelBuffer(width: 2, height: 1, values: [1, 1])
+        let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
+
+        let metrics = calculator.calculateMetrics(
+            from: (mask, [CGRect(x: 0, y: 0, width: 2, height: 1)]),
+            depthMap: depth,
+            confidenceMap: nil,
+            cameraIntrinsics: intrinsics,
+            imageOrientation: .up
+        )
+
+        // 2 pixels at depth 1m with fx=fy=1000 → 2 mm², 1 mm across.
+        #expect(abs(Double(metrics.areaMM2) - 2.0) < 1e-6)
+        #expect(abs(Double(metrics.diameterMM) - 1.0) < 1e-6)
+    }
+
+    @Test func calculateMetrics_nilDepthMap_returnsZeros() throws {
+        let calculator = Calculator()
+        let mask = makeMaskImage(width: 1, height: 1, alphaByPixel: [255])
+        let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
+
+        let metrics = calculator.calculateMetrics(
+            from: (mask, [CGRect(x: 0, y: 0, width: 1, height: 1)]),
+            depthMap: nil,
+            confidenceMap: nil,
+            cameraIntrinsics: intrinsics,
+            imageOrientation: .up
+        )
+
+        #expect(metrics.areaMM2 == 0.0)
+        #expect(metrics.diameterMM == 0.0)
+    }
+
     // MARK: - Test helpers
 
     private func makeIntrinsics(fx: Float, fy: Float) -> simd_float3x3 {
@@ -290,5 +467,256 @@ struct CalculatorTests {
         }
 
         return pixelBuffer
+    }
+}
+
+@Suite("CalculatorHelper")
+struct CalculatorHelperTests {
+
+    // MARK: - median
+
+    @Test func median_oddCount_returnsMiddleValue() {
+        #expect(CalculatorHelper.median(of: [3, 1, 2]) == 2.0)
+    }
+
+    @Test func median_evenCount_returnsAverageOfTwoMiddles() {
+        #expect(CalculatorHelper.median(of: [4, 1, 3, 2]) == 2.5)
+    }
+
+    @Test func median_singleValue_returnsThatValue() {
+        #expect(CalculatorHelper.median(of: [7]) == 7.0)
+    }
+
+    @Test func median_duplicateValues_returnsDuplicate() {
+        #expect(CalculatorHelper.median(of: [5, 5, 5, 5]) == 5.0)
+    }
+
+    // MARK: - sensorDimensions
+
+    @Test func sensorDimensions_upOrientation_returnsOriginal() {
+        let (w, h) = CalculatorHelper.sensorDimensions(
+            normalizedWidth: 100,
+            normalizedHeight: 50,
+            orientation: .up
+        )
+        #expect(w == 100)
+        #expect(h == 50)
+    }
+
+    @Test func sensorDimensions_downOrientation_returnsOriginal() {
+        let (w, h) = CalculatorHelper.sensorDimensions(
+            normalizedWidth: 100,
+            normalizedHeight: 50,
+            orientation: .down
+        )
+        #expect(w == 100)
+        #expect(h == 50)
+    }
+
+    @Test func sensorDimensions_rightOrientation_swapsDimensions() {
+        let (w, h) = CalculatorHelper.sensorDimensions(
+            normalizedWidth: 100,
+            normalizedHeight: 50,
+            orientation: .right
+        )
+        #expect(w == 50)
+        #expect(h == 100)
+    }
+
+    @Test func sensorDimensions_leftOrientation_swapsDimensions() {
+        let (w, h) = CalculatorHelper.sensorDimensions(
+            normalizedWidth: 100,
+            normalizedHeight: 50,
+            orientation: .left
+        )
+        #expect(w == 50)
+        #expect(h == 100)
+    }
+
+    // MARK: - normalizedToSensor
+
+    @Test func normalizedToSensor_upOrientation_isIdentity() {
+        let (sx, sy) = CalculatorHelper.normalizedToSensor(
+            nx: 3, ny: 7,
+            normalizedWidth: 10, normalizedHeight: 20,
+            orientation: .up
+        )
+        #expect(sx == 3)
+        #expect(sy == 7)
+    }
+
+    @Test func normalizedToSensor_rightOrientation_mapsAsExpected() {
+        // right: (nx, ny) → (ny, normalizedWidth - 1 - nx)
+        let (sx, sy) = CalculatorHelper.normalizedToSensor(
+            nx: 2, ny: 4,
+            normalizedWidth: 10, normalizedHeight: 20,
+            orientation: .right
+        )
+        #expect(sx == 4)
+        #expect(sy == 7)
+    }
+
+    @Test func normalizedToSensor_leftOrientation_mapsAsExpected() {
+        // left: (nx, ny) → (normalizedHeight - 1 - ny, nx)
+        let (sx, sy) = CalculatorHelper.normalizedToSensor(
+            nx: 2, ny: 4,
+            normalizedWidth: 10, normalizedHeight: 20,
+            orientation: .left
+        )
+        #expect(sx == 15)
+        #expect(sy == 2)
+    }
+
+    @Test func normalizedToSensor_downOrientation_isPointReflection() {
+        // down: (nx, ny) → (W-1-nx, H-1-ny)
+        let (sx, sy) = CalculatorHelper.normalizedToSensor(
+            nx: 2, ny: 4,
+            normalizedWidth: 10, normalizedHeight: 20,
+            orientation: .down
+        )
+        #expect(sx == 7)
+        #expect(sy == 15)
+    }
+
+    @Test func normalizedToSensor_upMirrored_flipsHorizontally() {
+        let (sx, sy) = CalculatorHelper.normalizedToSensor(
+            nx: 2, ny: 4,
+            normalizedWidth: 10, normalizedHeight: 20,
+            orientation: .upMirrored
+        )
+        #expect(sx == 7)
+        #expect(sy == 4)
+    }
+
+    // MARK: - clampedPixelBounds
+
+    @Test func clampedPixelBounds_rectInside_returnsInclusiveBounds() {
+        let bounds = CalculatorHelper.clampedPixelBounds(
+            for: CGRect(x: 2, y: 3, width: 4, height: 5),
+            width: 100,
+            height: 100
+        )
+
+        #expect(bounds?.minX == 2)
+        #expect(bounds?.minY == 3)
+        // maxX = ceil(6) - 1 = 5, maxY = ceil(8) - 1 = 7
+        #expect(bounds?.maxX == 5)
+        #expect(bounds?.maxY == 7)
+    }
+
+    @Test func clampedPixelBounds_rectOverflowsImage_clampsToEdges() {
+        let bounds = CalculatorHelper.clampedPixelBounds(
+            for: CGRect(x: -5, y: -5, width: 100, height: 100),
+            width: 10,
+            height: 10
+        )
+
+        #expect(bounds?.minX == 0)
+        #expect(bounds?.minY == 0)
+        #expect(bounds?.maxX == 9)
+        #expect(bounds?.maxY == 9)
+    }
+
+    @Test func clampedPixelBounds_rectEntirelyOutside_returnsNil() {
+        let bounds = CalculatorHelper.clampedPixelBounds(
+            for: CGRect(x: 50, y: 50, width: 10, height: 10),
+            width: 10,
+            height: 10
+        )
+        #expect(bounds == nil)
+    }
+
+    @Test func clampedPixelBounds_zeroSizedRect_returnsNil() {
+        let bounds = CalculatorHelper.clampedPixelBounds(
+            for: CGRect(x: 5, y: 5, width: 0, height: 0),
+            width: 10,
+            height: 10
+        )
+        // minX = 5, maxX = ceil(5)-1 = 4 → minX > maxX
+        #expect(bounds == nil)
+    }
+
+    // MARK: - convexHull
+
+    @Test func convexHull_twoPoints_returnsInputUnchanged() {
+        let points = [CGPoint(x: 0, y: 0), CGPoint(x: 3, y: 4)]
+        let hull = CalculatorHelper.convexHull(of: points)
+        #expect(hull.count == 2)
+    }
+
+    @Test func convexHull_squareCorners_returnsAllFourVertices() {
+        let points = [
+            CGPoint(x: 0, y: 0),
+            CGPoint(x: 1, y: 0),
+            CGPoint(x: 1, y: 1),
+            CGPoint(x: 0, y: 1)
+        ]
+        let hull = CalculatorHelper.convexHull(of: points)
+        #expect(hull.count == 4)
+    }
+
+    @Test func convexHull_interiorPointIsOmitted() {
+        let points = [
+            CGPoint(x: 0, y: 0),
+            CGPoint(x: 2, y: 0),
+            CGPoint(x: 2, y: 2),
+            CGPoint(x: 0, y: 2),
+            CGPoint(x: 1, y: 1) // inside the square
+        ]
+        let hull = CalculatorHelper.convexHull(of: points)
+        #expect(hull.count == 4)
+        #expect(!hull.contains(CGPoint(x: 1, y: 1)))
+    }
+
+    @Test func convexHull_collinearPoints_returnsOnlyEndpoints() {
+        let points = [
+            CGPoint(x: 0, y: 0),
+            CGPoint(x: 1, y: 0),
+            CGPoint(x: 2, y: 0)
+        ]
+        let hull = CalculatorHelper.convexHull(of: points)
+        #expect(hull.count == 2)
+        #expect(hull.contains(CGPoint(x: 0, y: 0)))
+        #expect(hull.contains(CGPoint(x: 2, y: 0)))
+    }
+
+    // MARK: - maxPairwiseSquaredDistance
+
+    @Test func maxPairwiseSquaredDistance_twoPoints_returnsScaledSquaredDistance() {
+        let points = [CGPoint(x: 0, y: 0), CGPoint(x: 3, y: 4)]
+        let result = CalculatorHelper.maxPairwiseSquaredDistance(
+            in: points,
+            invFx: 1.0,
+            invFy: 1.0
+        )
+        // 3² + 4² = 25
+        #expect(abs(result - 25.0) < 1e-9)
+    }
+
+    @Test func maxPairwiseSquaredDistance_unitSquare_returnsDiagonalSquared() {
+        let points = [
+            CGPoint(x: 0, y: 0),
+            CGPoint(x: 1, y: 0),
+            CGPoint(x: 1, y: 1),
+            CGPoint(x: 0, y: 1)
+        ]
+        let result = CalculatorHelper.maxPairwiseSquaredDistance(
+            in: points,
+            invFx: 1.0,
+            invFy: 1.0
+        )
+        // diagonal² = 1² + 1² = 2
+        #expect(abs(result - 2.0) < 1e-9)
+    }
+
+    @Test func maxPairwiseSquaredDistance_scalesByInverseFocalLengths() {
+        let points = [CGPoint(x: 0, y: 0), CGPoint(x: 100, y: 0)]
+        let result = CalculatorHelper.maxPairwiseSquaredDistance(
+            in: points,
+            invFx: 1.0 / 1000.0,
+            invFy: 1.0 / 1000.0
+        )
+        // (100 / 1000)² = 0.01
+        #expect(abs(result - 0.01) < 1e-9)
     }
 }
