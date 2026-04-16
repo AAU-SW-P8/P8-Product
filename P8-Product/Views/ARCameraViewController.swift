@@ -29,11 +29,13 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
     private var confidenceLabel: UILabel!
     private var cancelButton: UIButton!
     private var lidarPointsLayer: CAShapeLayer!
+    private var flashlightButton: UIButton!
 
     // MARK: - State
 
     private var currentDistance: Float = 100.0
     private var currentConfidence: ARConfidenceLevel? = nil
+    private var isFlashlightOn: Bool = false
 
     // MARK: - Lifecycle
 
@@ -81,6 +83,7 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         setupCrosshair()
         setupCaptureButton()
         setupCancelButton()
+        setupFlashlightButton()
         activateConstraints()
     }
 
@@ -170,6 +173,17 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
         view.addSubview(cancelButton)
     }
 
+    private func setupFlashlightButton() {
+        flashlightButton = UIButton(type: .system)
+        flashlightButton.translatesAutoresizingMaskIntoConstraints = false
+        flashlightButton.setImage(UIImage(systemName: "bolt.slash.fill"), for: .normal)
+        flashlightButton.tintColor = .white
+        flashlightButton.backgroundColor = UIColor.black.withAlphaComponent(0.5)
+        flashlightButton.layer.cornerRadius = 20
+        flashlightButton.addTarget(self, action: #selector(toggleFlashlight), for: .touchUpInside)
+        view.addSubview(flashlightButton)
+    }
+
     private func activateConstraints() {
         NSLayoutConstraint.activate([
             centerCrosshair.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -195,6 +209,11 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
 
             cancelButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
             cancelButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 20),
+
+            flashlightButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            flashlightButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20),
+            flashlightButton.widthAnchor.constraint(equalToConstant: 40),
+            flashlightButton.heightAnchor.constraint(equalToConstant: 40),
         ])
     }
 
@@ -375,6 +394,34 @@ class ARCameraViewController: UIViewController, ARSessionDelegate {
     }
 
     // MARK: - Actions
+
+    @objc private func toggleFlashlight() {
+        let deviceType: AVCaptureDevice.DeviceType
+        if let format = arView.session.configuration?.videoFormat {
+            deviceType = format.captureDeviceType
+        } else {
+            deviceType = .builtInWideAngleCamera
+        }
+        
+        guard let device = AVCaptureDevice.default(deviceType, for: .video, position: .back),
+              device.hasTorch else { return }
+        
+        do {
+            try device.lockForConfiguration()
+            
+            isFlashlightOn.toggle()
+            device.torchMode = isFlashlightOn ? .on : .off
+            
+            let imageName = isFlashlightOn ? "bolt.fill" : "bolt.slash.fill"
+            let imageColor = isFlashlightOn ? UIColor.systemYellow : UIColor.white
+            flashlightButton.setImage(UIImage(systemName: imageName), for: .normal)
+            flashlightButton.tintColor = imageColor
+            
+            device.unlockForConfiguration()
+        } catch {
+            print("Failed to lock device for torch configuration: \(error)")
+        }
+    }
 
     @objc private func capturePhoto() {
         guard let frame = arView?.session.currentFrame else { return }
