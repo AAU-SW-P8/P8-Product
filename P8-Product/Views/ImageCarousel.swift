@@ -38,12 +38,6 @@ struct ImageCarousel: View {
         Self.selectedInstance(in: scans, at: selectedIndex, for: mole)
     }
 
-    /// Stable identity of the currently selected scan, used by ScrollView paging.
-    private var selectedScanID: UUID? {
-        guard !scans.isEmpty else { return nil }
-        return scans[safeIndex].id
-    }
-
     var body: some View {
         VStack(spacing: 4) {
             GeometryReader { geometry in
@@ -58,7 +52,7 @@ struct ImageCarousel: View {
                                     .shadow(radius: 3)
                                     .padding(.horizontal, 8)
                                     .frame(width: geometry.size.width, height: height)
-                                    .id(scan.id)
+                                    .id(index)
                             } else {
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 12)
@@ -69,7 +63,7 @@ struct ImageCarousel: View {
                                 }
                                 .padding(.horizontal, 8)
                                 .frame(width: geometry.size.width, height: height)
-                                .id(scan.id)
+                                .id(index)
                             }
                         }
                     }
@@ -77,11 +71,9 @@ struct ImageCarousel: View {
                 }
                 .scrollTargetBehavior(.paging)
                 .scrollPosition(id: Binding(
-                    get: { selectedScanID },
+                    get: { safeIndex as Int? },
                     set: { newValue in
-                        guard let newValue else { return }
-                        guard let newIndex = scans.firstIndex(where: { $0.id == newValue }) else { return }
-                        selectedIndex = newIndex
+                        if let newValue { selectedIndex = newValue }
                     }
                 ), anchor: .center)
             }
@@ -94,24 +86,34 @@ struct ImageCarousel: View {
                     .font(.caption2)
 
                 if let selectedInstance {
-                    VStack(spacing: 2) {
-                          Text("Diameter: \(Double(selectedInstance.diameter), specifier: "%.1f") mm")
-                        Text("Area: \(Double(selectedInstance.area), specifier: "%.1f") mm²")
-                    }
-                    .font(.caption2)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.secondary)
-                }
-
-                if let onDeleteSelectedInstance {
                     HStack {
+                        Color.clear
+                            .frame(width: 28, height: 1)
+
                         Spacer()
-                        Button(role: .destructive, action: onDeleteSelectedInstance) {
-                            Image(systemName: "trash")
+
+                        VStack(spacing: 2) {
+                            Text("Diameter: \(Double(selectedInstance.diameter), specifier: "%.1f") mm")
+                            Text("Area: \(Double(selectedInstance.area), specifier: "%.1f") mm²")
                         }
-                        .accessibilityIdentifier("deleteMoleInstanceButton")
-                        .padding(.top, 4)
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary)
+
+                        Spacer()
+
+                        if let onDeleteSelectedInstance {
+                            Button(role: .destructive, action: onDeleteSelectedInstance) {
+                                Image(systemName: "trash")
+                            }
+                            .frame(width: 28)
+                            .accessibilityIdentifier("deleteMoleInstanceButton")
+                        } else {
+                            Color.clear
+                                .frame(width: 28, height: 1)
+                        }
                     }
+                    .padding(.top, 4)
                 }
             }
         }
