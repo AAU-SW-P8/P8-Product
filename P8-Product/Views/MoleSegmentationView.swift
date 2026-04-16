@@ -7,14 +7,46 @@ import SwiftUI
 import SwiftData
 
 /**
- A SwiftUI view for testing and demonstrating the mole segmentation functionality using the SAM 3.1 model. 
- Displays a test image, allows the user to run segmentation, and shows the results with interactive bounding boxes. 
+ A SwiftUI view demonstrating the mole segmentation functionality using the SAM 3.1 model.
+ Displays a image, allows the user to run segmentation, and shows the results with interactive bounding boxes.
  Provides controls for adjusting detection parameters and handles the flow of selecting a person and adding new moles or scans based on the segmentation results.
  */
-struct MoleSegmentationTestView: View {
+struct MoleSegmentationView: View {
+    // MARK: - Constants
+
+    /// Side length of the square crop region sent to the model, in image pixels.
+    private let cropSize: CGFloat = 500
+
+    /// Depth map from the AR camera's LiDAR sensor (nil for non-AR captures).
+    private let depthMap: CVPixelBuffer?
+
+    /// Confidence map for the depth data (nil for non-AR captures).
+    private let confidenceMap: CVPixelBuffer?
+
+    /// Access the global SAM3 model loader
+    @ObservedObject private var modelLoader = SAM3ModelLoader.shared
+
     @Query(sort: \Person.createdAt)
     private var people: [Person]
-    @State private var appState: MoleSegmentationAppState = MoleSegmentationAppState(dataController: .shared)
+    @State private var appState: MoleSegmentationAppState
+
+    // MARK: - Init
+
+    /// Creates a segmentation view for the given image and optional depth data.
+    ///
+    /// - Parameters:
+    ///   - inputImage: The image to segment. Pass `nil` to show a placeholder.
+    ///   - depthMap: LiDAR depth map captured alongside the image. `nil` for non-AR captures.
+    ///   - confidenceMap: Confidence values for each depth pixel. `nil` for non-AR captures.
+    init(inputImage: UIImage?, depthMap: CVPixelBuffer? = nil, confidenceMap: CVPixelBuffer? = nil) {
+        self.depthMap = depthMap
+        self.confidenceMap = confidenceMap
+        let state = MoleSegmentationAppState(dataController: .shared)
+        if let inputImage {
+            state.testImage = inputImage
+        }
+        _appState = State(initialValue: state)
+    }
 
     // MARK: - UI-Only State (Gestures)
     @State private var currentZoom: Double = 0.0
@@ -23,55 +55,53 @@ struct MoleSegmentationTestView: View {
     @State private var lastOffset: CGSize = .zero
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                if let image: UIImage = appState.testImage {
-                    imageContent(image: image)
-                } else {
-                    noImagePlaceholder
-                }
+        ZStack {
+            if let image: UIImage = appState.testImage {
+                imageContent(image: image)
+            } else {
+                noImagePlaceholder
+            }
 
-                if appState.isProcessing {
-                    loadingOverlay
+            if appState.isProcessing {
+                loadingOverlay
+            }
+        }
+        .navigationTitle("Mole Segmentation")
+        .toolbar { toolbarContent }
+        .sheet(isPresented: $appState.showSettings) {
+            // Assuming settingsSheet is extracted
+            settingsSheet
+        }
+        .confirmationDialog("Who is this scan for?", isPresented: $appState.showPersonPicker) {
+            ForEach(people) { person in
+                Button(person.name) {
+                    appState.selectedPersonForScan = person
+                    appState.resegment()
                 }
             }
-            .navigationTitle("Mole Segmentation")
-            .toolbar { toolbarContent }
-            .sheet(isPresented: $appState.showSettings) {
-                // Assuming settingsSheet is extracted
-                settingsSheet
+            Button("Cancel", role: .cancel) {}
+        }
+        .confirmationDialog("Mole Action", isPresented: $appState.showMoleActionDialog) {
+            Button("New Mole") { appState.handleNewMoleSelection() }
+            if let person: Person = appState.selectedPersonForScan, !person.moles.isEmpty {
+                Button("Existing Mole") { appState.showExistingMolePicker = true }
             }
-            .confirmationDialog("Who is this scan for?", isPresented: $appState.showPersonPicker) {
-                ForEach(people) { person in
-                    Button(person.name) {
-                        appState.selectedPersonForScan = person
-                        appState.resegment()
-                    }
+            Button("Cancel", role: .cancel) {}
+        }
+        .confirmationDialog("Select Existing Mole", isPresented: $appState.showExistingMolePicker) {
+            if let person: Person = appState.selectedPersonForScan {
+                ForEach(person.moles) { mole in
+                    Button(mole.name) { appState.handleExistingMoleSelection(mole: mole) }
                 }
-                Button("Cancel", role: .cancel) {}
             }
-            .confirmationDialog("Mole Action", isPresented: $appState.showMoleActionDialog) {
-                Button("New Mole") { appState.handleNewMoleSelection() }
-                if let person: Person = appState.selectedPersonForScan, !person.moles.isEmpty {
-                    Button("Existing Mole") { appState.showExistingMolePicker = true }
-                }
-                Button("Cancel", role: .cancel) {}
-            }
-            .confirmationDialog("Select Existing Mole", isPresented: $appState.showExistingMolePicker) {
-                if let person: Person = appState.selectedPersonForScan {
-                    ForEach(person.moles) { mole in
-                        Button(mole.name) { appState.handleExistingMoleSelection(mole: mole) }
-                    }
-                }
-                Button("Cancel", role: .cancel) {}
-            }
-            .alert(item: $appState.activeAlert) { alert in
-                Alert(title: Text(alert.title), message: Text(alert.message), dismissButton: .default(Text("OK")))
-            }
+            Button("Cancel", role: .cancel) {}
+        }
+        .alert(item: $appState.activeAlert) { alert in
+            Alert(title: Text(alert.title), message: Text(alert.message), dismissButton: .default(Text("OK")))
         }
     }
 
-    // MARK: - Image layer
+    // MARK: - Subviews
 
     /**
      A view builder that renders the main image content, including the original image, the segmentation mask overlay, and interactive bounding boxes. 
@@ -312,5 +342,9 @@ struct MoleSegmentationTestView: View {
 // MARK: - Preview
 
 #Preview {
-    MoleSegmentationTestView()
+    NavigationStack {
+        MoleSegmentationView(inputImage: UIImage(named: "test_mole_image"),
+                             depthMap: nil,
+                             confidenceMap: nil)
+    }
 }

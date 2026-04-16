@@ -64,6 +64,12 @@ class MoleSegmentor {
     func segment(image: UIImage, confidenceThreshold: Float = 0.3, nmsThreshold: Float = 1.0) throws -> (UIImage, [CGRect])? {
         let clock = ContinuousClock()
 
+        // Normalize orientation so that cgImage pixels match the visual orientation.
+        // Camera photos often have .imageOrientation = .right, which means the raw
+        // cgImage is rotated 90° relative to what UIImage.draw renders. Flattening
+        // here ensures the preprocessor, model, and renderer all see the same layout.
+        let image = image.normalizedOrientation()
+
         // 1. Encode image (cached on repeat calls with the same UIImage instance).
         print("Encoding image…")
         var visionOutput: MLFeatureProvider!
