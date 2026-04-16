@@ -41,17 +41,6 @@ private struct OverviewContentView: View {
                 moleListView
                 Spacer()
             }
-            .fullScreenCover(isPresented: $appState.cameraShowing) {
-                ARCameraView(capturedImage: $appState.capturedImage,
-                             capturedDepthMap: $appState.capturedDepthMap,
-                             capturedConfidenceMap: $appState.capturedConfidenceMap)
-                    .ignoresSafeArea()
-            }
-            .onChange(of: appState.capturedImage) { _, newImage in
-                if newImage != nil {
-                    appState.processCapturedImage()
-                }
-            }
             .onAppear {
                 appState.initializeSelectionIfNeeded(with: people)
             }

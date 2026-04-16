@@ -1,6 +1,5 @@
 import SwiftUI
 import SwiftData
-import UIKit
 
 @MainActor
 @Observable
@@ -19,21 +18,17 @@ class OverviewAppState {
     var showingEditPerson: Bool = false
     var showingDeleteAlert: Bool = false
     var showingDeleteMoleAlert: Bool = false
-    var cameraShowing: Bool = false
-    
+
     // MARK: - UI Animation State
     var slideEdge: Edge = .trailing
-    
+
     // MARK: - Temporary Data State
     var newPersonName: String = ""
     var editingName: String = ""
     var personToEdit: Person?
     var personToDelete: Person?
     var moleToDelete: Mole?
-    var capturedImage: UIImage?
-    var capturedDepthMap: CVPixelBuffer?
-    var capturedConfidenceMap: CVPixelBuffer?
-    
+
     private let dataController: DataController
     
     init(dataController: DataController) {
@@ -172,19 +167,6 @@ class OverviewAppState {
         guard let mole: Mole = moleToDelete else { return}
 
         dataController.delete(mole)
-        
-    }
-    
-    // MARK: - Camera & Scan Actions
-    
-    func processCapturedImage() {
-        guard let image: UIImage = capturedImage, let person: Person = selectedPerson else { return }
-        
-        dataController.addMoleAndScan(to: person, image: image)
-        
-        // Clean up
-        self.capturedImage = nil
-        self.capturedDepthMap = nil
-        self.capturedConfidenceMap = nil
+
     }
 }
