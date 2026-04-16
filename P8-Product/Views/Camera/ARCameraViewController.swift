@@ -1,0 +1,580 @@
+//
+// ARCameraViewController.swift
+// P8-Product
+//
+
+import UIKit
+import ARKit
+import RealityKit
+
+/// UIKit view controller that drives the LiDAR-assisted capture flow.
+///
+/// Runs an `ARView` with scene-depth enabled, continuously measures the
+/// distance to the nearest surface in front of the camera, and only enables
+/// the capture button when the user is within ±`distanceTolerance` of
+/// `targetDistance`. Distance is derived from the LiDAR depth buffer when
+/// available, falling back to a raycast through screen center. On capture,
+/// the current camera frame is converted to a `UIImage` (with correct
+/// interface-orientation rotation) and delivered, together with the raw
+/// depth and confidence buffers, via the `onCapture` callback. `onCancel`
+/// is invoked when the user taps cancel or when LiDAR is unsupported.
+final class ARCameraViewController: UIViewController, ARSessionDelegate {
+
+    // MARK: - Callbacks
+
+    /// Invoked with the captured color image plus the matching depth and
+    /// confidence buffers (both may be `nil` if depth wasn't produced).
+    var onCapture: ((UIImage, CVPixelBuffer?, CVPixelBuffer?) -> Void)?
+    /// Invoked when the user cancels or the device cannot provide LiDAR data.
+    var onCancel: (() -> Void)?
+
+    // MARK: - Subviews
+
+    private var arView: ARView!
+    private var captureButton: UIButton!
+    private var measurementDisplay: UIView!
+    private var displayLabel: UILabel!
+    private var confidenceLabel: UILabel!
+    private var cancelButton: UIButton!
+    private var lidarPointsLayer: CAShapeLayer!
+    private var flashlightButton: UIButton!
+    private var centerCrosshair: UIView!
+
+    // MARK: - State
+
+    /// Most recent subject distance in meters, seeded to a large value so the
+    /// capture button starts disabled.
+    private var currentDistance: Float = ARCameraConstants.Measurement.initialDistance
+    private var currentConfidence: ARConfidenceLevel? = nil
+    private var isFlashlightOn: Bool = false
+
+    // MARK: - Lifecycle
+
+    /// Verifies LiDAR support, then builds the AR session and the capture UI.
+    /// Presents an error alert and surfaces `onCancel` if the device cannot
+    /// do scene-reconstruction meshing.
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        guard ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh) else {
+            showAlert(message: "LiDAR is not available on this device")
+            return
+        }
+
+        setupARView()
+        setupUI()
+        setupLidarPointsLayer()
+    }
+
+    /// Pauses the AR session when the controller goes off-screen so the
+    /// camera and LiDAR stop producing frames while hidden.
+    ///
+    /// - Parameter animated: Forwarded from UIKit.
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        arView?.session.pause()
+    }
+
+    // MARK: - AR Setup
+
+    /// Creates the `ARView`, registers as session delegate, and starts a
+    /// world-tracking configuration with mesh reconstruction and scene-depth
+    /// semantics when the hardware supports them.
+    private func setupARView() {
+        arView = ARView(frame: view.bounds)
+        arView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.addSubview(arView)
+
+        arView.session.delegate = self
+
+        let configuration = ARWorldTrackingConfiguration()
+        configuration.sceneReconstruction = .mesh
+        if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
+            configuration.frameSemantics.insert(.sceneDepth)
+        }
+        configuration.environmentTexturing = .automatic
+
+        arView.session.run(configuration)
+    }
+
+    // MARK: - UI Setup
+
+    /// Builds every custom subview in a single pass and activates their
+    /// Auto Layout constraints.
+    private func setupUI() {
+        setupMeasurementDisplay()
+        setupCrosshair()
+        setupCaptureButton()
+        setupCancelButton()
+        setupFlashlightButton()
+        activateConstraints()
+    }
+
+    /// Initializes and configures the layer used to render LiDAR depth points.
+    /// The layer is masked to only show points within the central crosshair region.
+    private func setupLidarPointsLayer() {
+        lidarPointsLayer = CAShapeLayer()
+        lidarPointsLayer.frame = view.bounds
+        
+        // Use a mask to only show dots inside the red box (80x80 centered)
+        let maskSize = ARCameraConstants.UI.crosshairSize
+        let maskRect = CGRect(x: view.bounds.midX - maskSize/2,
+                              y: view.bounds.midY - maskSize/2,
+                              width: maskSize,
+                              height: maskSize)
+        let maskLayer = CAShapeLayer()
+        maskLayer.path = UIBezierPath(rect: maskRect).cgPath
+        lidarPointsLayer.mask = maskLayer
+        
+        view.layer.addSublayer(lidarPointsLayer)
+    }
+
+    /// Creates the rounded measurement pill at the bottom of the screen and
+    /// the centered label inside it.
+    private func setupMeasurementDisplay() {
+        measurementDisplay = UIView()
+        measurementDisplay.translatesAutoresizingMaskIntoConstraints = false
+        measurementDisplay.backgroundColor = ARCameraConstants.Colors.overlayRed.withAlphaComponent(ARCameraConstants.UI.measurementDisplayBackgroundAlpha)
+        measurementDisplay.layer.cornerRadius = ARCameraConstants.UI.measurementDisplayCornerRadius
+        measurementDisplay.clipsToBounds = true
+        view.addSubview(measurementDisplay)
+
+        displayLabel = UILabel()
+        displayLabel.translatesAutoresizingMaskIntoConstraints = false
+        displayLabel.textAlignment = .center
+        displayLabel.font = .systemFont(ofSize: ARCameraConstants.UI.displayLabelFontSize, weight: .bold)
+        displayLabel.textColor = .white
+        displayLabel.text = "35.00 cm"
+        measurementDisplay.addSubview(displayLabel)
+
+        confidenceLabel = UILabel()
+        confidenceLabel.translatesAutoresizingMaskIntoConstraints = false
+        confidenceLabel.textAlignment = .center
+        confidenceLabel.font = .systemFont(ofSize: ARCameraConstants.UI.confidenceLabelFontSize, weight: .regular)
+        confidenceLabel.textColor = .white
+        confidenceLabel.text = "Confidence: --"
+        measurementDisplay.addSubview(confidenceLabel)
+    }
+
+    /// Creates the four-corner framing crosshair centered on the screen by
+    /// drawing each corner as a `CAShapeLayer` inside a container view.
+    private func setupCrosshair() {
+        centerCrosshair = UIView()
+        centerCrosshair.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(centerCrosshair)
+
+        let size = ARCameraConstants.UI.crosshairSize
+        let cornerLength = ARCameraConstants.UI.crosshairCornerLength
+        let paths = Self.crosshairCornerPaths(size: size, cornerLength: cornerLength)
+
+        for path in paths {
+            let layer = CAShapeLayer()
+            layer.path = path.cgPath
+            layer.strokeColor = ARCameraConstants.Colors.overlayRed.cgColor
+            layer.lineWidth = ARCameraConstants.UI.crosshairLineWidth
+            layer.fillColor = UIColor.clear.cgColor
+            centerCrosshair.layer.addSublayer(layer)
+        }
+    }
+
+    /// Builds the primary capture button. Starts disabled — it's only
+    /// enabled by `updateMeasurementDisplay` once the subject is in range.
+    private func setupCaptureButton() {
+        captureButton = UIButton(type: .system)
+        captureButton.translatesAutoresizingMaskIntoConstraints = false
+        captureButton.setTitle("Capture", for: .normal)
+        captureButton.titleLabel?.font = .systemFont(ofSize: ARCameraConstants.UI.captureButtonFontSize, weight: .semibold)
+        captureButton.backgroundColor = .systemGray
+        captureButton.setTitleColor(.white, for: .normal)
+        captureButton.layer.cornerRadius = ARCameraConstants.UI.captureButtonCornerRadius
+        captureButton.isEnabled = false
+        captureButton.addTarget(self, action: #selector(capturePhoto), for: .touchUpInside)
+        view.addSubview(captureButton)
+    }
+
+    /// Builds the cancel button anchored to the top-leading safe area.
+    private func setupCancelButton() {
+        cancelButton = UIButton(type: .system)
+        cancelButton.translatesAutoresizingMaskIntoConstraints = false
+        cancelButton.setTitle("Cancel", for: .normal)
+        cancelButton.titleLabel?.font = .systemFont(ofSize: ARCameraConstants.UI.cancelButtonFontSize)
+        cancelButton.setTitleColor(.white, for: .normal)
+        cancelButton.addTarget(self, action: #selector(cancel), for: .touchUpInside)
+        view.addSubview(cancelButton)
+    }
+
+    /// Builds and configures the flashlight toggle button, positioned in the top-trailing corner.
+    private func setupFlashlightButton() {
+        flashlightButton = UIButton(type: .system)
+        flashlightButton.translatesAutoresizingMaskIntoConstraints = false
+        flashlightButton.setImage(UIImage(systemName: "bolt.slash.fill"), for: .normal)
+        flashlightButton.tintColor = .white
+        flashlightButton.backgroundColor = UIColor.black.withAlphaComponent(ARCameraConstants.UI.flashlightButtonBackgroundAlpha)
+        flashlightButton.layer.cornerRadius = ARCameraConstants.UI.flashlightButtonCornerRadius
+        flashlightButton.accessibilityLabel = "Flashlight"
+        flashlightButton.accessibilityHint = "Double-tap to toggle the flashlight"
+        flashlightButton.accessibilityValue = "Off"
+        flashlightButton.addTarget(self, action: #selector(toggleFlashlight), for: .touchUpInside)
+        view.addSubview(flashlightButton)
+    }
+
+    /// Pins the crosshair, measurement pill, capture button, and cancel
+    /// button to the view with Auto Layout.
+    private func activateConstraints() {
+        NSLayoutConstraint.activate([
+            centerCrosshair.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            centerCrosshair.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            centerCrosshair.widthAnchor.constraint(equalToConstant: ARCameraConstants.UI.crosshairSize),
+            centerCrosshair.heightAnchor.constraint(equalToConstant: ARCameraConstants.UI.crosshairSize),
+
+            measurementDisplay.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: ARCameraConstants.UI.measurementDisplayBottomPadding),
+            measurementDisplay.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            measurementDisplay.widthAnchor.constraint(equalToConstant: ARCameraConstants.UI.measurementDisplayWidth),
+            measurementDisplay.heightAnchor.constraint(equalToConstant: ARCameraConstants.UI.measurementDisplayHeight),
+
+            displayLabel.topAnchor.constraint(equalTo: measurementDisplay.topAnchor, constant: ARCameraConstants.UI.displayLabelTopPadding),
+            displayLabel.centerXAnchor.constraint(equalTo: measurementDisplay.centerXAnchor),
+
+            confidenceLabel.topAnchor.constraint(equalTo: displayLabel.bottomAnchor, constant: ARCameraConstants.UI.confidenceLabelTopPadding),
+            confidenceLabel.centerXAnchor.constraint(equalTo: measurementDisplay.centerXAnchor),
+
+            captureButton.bottomAnchor.constraint(equalTo: measurementDisplay.topAnchor, constant: ARCameraConstants.UI.captureButtonBottomPadding),
+            captureButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            captureButton.widthAnchor.constraint(equalToConstant: ARCameraConstants.UI.captureButtonWidth),
+            captureButton.heightAnchor.constraint(equalToConstant: ARCameraConstants.UI.captureButtonHeight),
+
+            cancelButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: ARCameraConstants.UI.cancelButtonTopPadding),
+            cancelButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: ARCameraConstants.UI.cancelButtonLeadingPadding),
+
+            flashlightButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: ARCameraConstants.UI.flashlightButtonTopPadding),
+            flashlightButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: ARCameraConstants.UI.flashlightButtonTrailingPadding),
+            flashlightButton.widthAnchor.constraint(equalToConstant: ARCameraConstants.UI.flashlightButtonWidth),
+            flashlightButton.heightAnchor.constraint(equalToConstant: ARCameraConstants.UI.flashlightButtonHeight),
+        ])
+    }
+
+    // MARK: - ARSessionDelegate
+
+    /// Called for every AR frame. Prefers the dense LiDAR depth map for a
+    /// minimum-distance estimate; falls back to a single raycast through the
+    /// screen center when depth data isn't available. Refreshes the on-screen
+    /// measurement asynchronously on the main queue.
+    ///
+    /// - Parameters:
+    ///   - session: The AR session emitting the frame (unused).
+    ///   - frame: The latest frame, containing camera imagery and optional
+    ///     scene-depth data.
+    func session(_ session: ARSession, didUpdate frame: ARFrame) {
+        guard arView != nil else { return }
+
+        if let (distance, confidence) = closestDepthAndConfidence(from: frame) {
+            currentDistance = distance
+            currentConfidence = confidence
+            DispatchQueue.main.async { [weak self] in
+                self?.updateMeasurementDisplay()
+                self?.updateLidarDots(from: frame)
+            }
+        } else if let distance = raycastDistance(from: frame) {
+            currentDistance = distance
+            currentConfidence = nil
+            DispatchQueue.main.async { [weak self] in
+                self?.updateMeasurementDisplay()
+                self?.updateLidarDots(from: frame)
+            }
+        }
+    }
+
+    // MARK: - Depth Measurement
+
+    /// Scans a central region (80x80 pixels in view space) of the LiDAR depth map 
+    /// for the closest valid sample.
+    ///
+    /// Values below 5 cm are ignored to filter out sensor noise or lens occlusion.
+    ///
+    /// - Parameter frame: The AR frame whose `sceneDepth` should be inspected.
+    /// - Returns: A tuple containing the nearest distance in meters and its associated 
+    ///   confidence level, or `nil` if no valid depth data is available.
+    private func closestDepthAndConfidence(from frame: ARFrame) -> (Float, ARConfidenceLevel)? {
+        guard let sceneDepth = frame.sceneDepth else { return nil }
+
+        let depthMap = sceneDepth.depthMap
+        let confidenceMap = sceneDepth.confidenceMap
+
+        CVPixelBufferLockBaseAddress(depthMap, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(depthMap, .readOnly) }
+
+        var confidenceBaseAddress: UnsafeMutableRawPointer? = nil
+        var confidenceBytesPerRow = 0
+        if let confMap = confidenceMap {
+            CVPixelBufferLockBaseAddress(confMap, .readOnly)
+            confidenceBaseAddress = CVPixelBufferGetBaseAddress(confMap)
+            confidenceBytesPerRow = CVPixelBufferGetBytesPerRow(confMap)
+        }
+        defer {
+            if let confMap = confidenceMap {
+                CVPixelBufferUnlockBaseAddress(confMap, .readOnly)
+            }
+        }
+
+        guard let baseAddress = CVPixelBufferGetBaseAddress(depthMap) else { return nil }
+
+        let width = CVPixelBufferGetWidth(depthMap)
+        let height = CVPixelBufferGetHeight(depthMap)
+        let bytesPerRow = CVPixelBufferGetBytesPerRow(depthMap)
+
+        // The red box is 80x80 in the center of the view.
+        // We crop the depth map search area to match this central region.
+        let viewSize = view.bounds.size
+        let cropWidthRatio = ARCameraConstants.UI.crosshairSize / viewSize.width
+        let cropHeightRatio = ARCameraConstants.UI.crosshairSize / viewSize.height
+        
+        let xStart = Int(CGFloat(width) * (1.0 - cropWidthRatio) / 2.0)
+        let xEnd = Int(CGFloat(width) * (1.0 + cropWidthRatio) / 2.0)
+        let yStart = Int(CGFloat(height) * (1.0 - cropHeightRatio) / 2.0)
+        let yEnd = Int(CGFloat(height) * (1.0 + cropHeightRatio) / 2.0)
+
+        var minDistance: Float = .greatestFiniteMagnitude
+        var bestConfidenceRaw: UInt8 = 0
+
+        for y in max(0, yStart)..<min(height, yEnd) {
+            let rowPtr = baseAddress.advanced(by: y * bytesPerRow).assumingMemoryBound(to: Float32.self)
+            
+            var confRowPtr: UnsafeMutablePointer<UInt8>? = nil
+            if let confBase = confidenceBaseAddress {
+                confRowPtr = confBase.advanced(by: y * confidenceBytesPerRow).assumingMemoryBound(to: UInt8.self)
+            }
+
+            for x in max(0, xStart)..<min(width, xEnd) {
+                let depth = rowPtr[x]
+                if depth > ARCameraConstants.Measurement.minValidDepth && depth < minDistance {
+                    minDistance = depth
+                    if let confPtr = confRowPtr {
+                        bestConfidenceRaw = confPtr[x]
+                    }
+                }
+            }
+        }
+
+        if minDistance < .greatestFiniteMagnitude {
+            let confidence = ARConfidenceLevel(rawValue: Int(bestConfidenceRaw)) ?? .low
+            return (minDistance, confidence)
+        }
+        return nil
+    }
+
+    /// Updates the LiDAR point cloud visualization by subsampling the depth map.
+    /// Only points within a reasonable range (0.05m to 2.0m) are rendered as dots.
+    ///
+    /// - Parameter frame: The current AR frame containing scene depth data.
+    private func updateLidarDots(from frame: ARFrame) {
+        guard let sceneDepth = frame.sceneDepth else {
+            lidarPointsLayer.path = nil
+            return
+        }
+
+        let depthMap = sceneDepth.depthMap
+        CVPixelBufferLockBaseAddress(depthMap, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(depthMap, .readOnly) }
+
+        guard let baseAddress = CVPixelBufferGetBaseAddress(depthMap) else { return }
+
+        let width = CVPixelBufferGetWidth(depthMap)
+        let height = CVPixelBufferGetHeight(depthMap)
+        let bytesPerRow = CVPixelBufferGetBytesPerRow(depthMap)
+
+        let viewSize = view.bounds.size
+        let dotPath = UIBezierPath()
+        let dotSize = ARCameraConstants.UI.lidarDotSize
+
+        // Subsample the depth map to avoid too many dots
+        let step = ARCameraConstants.UI.lidarDotStep
+        for y in stride(from: 0, to: height, by: step) {
+            let rowPtr = baseAddress.advanced(by: y * bytesPerRow).assumingMemoryBound(to: Float32.self)
+            for x in stride(from: 0, to: width, by: step) {
+                let depth = rowPtr[x]
+                if depth > ARCameraConstants.Measurement.minValidDepth && depth < ARCameraConstants.Measurement.maxValidDepth {
+                    let vx = CGFloat(x) / CGFloat(width) * viewSize.width
+                    let vy = CGFloat(y) / CGFloat(height) * viewSize.height
+                    dotPath.append(UIBezierPath(ovalIn: CGRect(x: vx - dotSize/2, y: vy - dotSize/2, width: dotSize, height: dotSize)))
+                }
+            }
+        }
+
+        lidarPointsLayer.path = dotPath.cgPath
+        lidarPointsLayer.fillColor = UIColor.white.withAlphaComponent(ARCameraConstants.UI.lidarDotAlpha).cgColor
+    }
+
+    /// Fallback distance estimate when no LiDAR depth map is available.
+    /// Raycasts through the center of the AR view and measures the world
+    /// distance from the camera to the first estimated-plane hit.
+    ///
+    /// - Parameter frame: The AR frame whose camera transform should be used.
+    /// - Returns: Distance in meters from the camera origin to the raycast
+    ///   hit, or `nil` if the raycast missed.
+    private func raycastDistance(from frame: ARFrame) -> Float? {
+        let screenCenter = CGPoint(x: arView.bounds.midX, y: arView.bounds.midY)
+        guard let ray = arView.ray(through: screenCenter) else { return nil }
+        let query = ARRaycastQuery(origin: ray.origin, direction: ray.direction,
+                                   allowing: .estimatedPlane, alignment: .any)
+        guard let result = arView.session.raycast(query).first else { return nil }
+
+        let hit = SIMD3<Float>(result.worldTransform.columns.3.x,
+                               result.worldTransform.columns.3.y,
+                               result.worldTransform.columns.3.z)
+        let cam = SIMD3<Float>(frame.camera.transform.columns.3.x,
+                               frame.camera.transform.columns.3.y,
+                               frame.camera.transform.columns.3.z)
+        return simd_distance(cam, hit)
+    }
+
+    // MARK: - UI Updates
+
+    /// Refreshes the measurement label and recolors the pill/button according
+    /// to whether `currentDistance` is within tolerance of `targetDistance`.
+    /// Must be called on the main thread.
+    private func updateMeasurementDisplay() {
+        let distanceInCm = currentDistance * ARCameraConstants.Measurement.depthToCmMultiplier
+        displayLabel.text = String(format: "%.2f cm", distanceInCm)
+
+        if let confidence = currentConfidence {
+            switch confidence {
+            case .low:
+                confidenceLabel.text = "Confidence: Low"
+            case .medium:
+                confidenceLabel.text = "Confidence: Medium"
+            case .high:
+                confidenceLabel.text = "Confidence: High"
+            @unknown default:
+                confidenceLabel.text = "Confidence: --"
+            }
+        } else {
+            confidenceLabel.text = "Confidence: --"
+        }
+
+        let isInRange = abs(currentDistance - ARCameraConstants.Measurement.targetDistance) <= ARCameraConstants.Measurement.distanceTolerance
+
+        captureButton.isEnabled = isInRange
+        captureButton.backgroundColor = isInRange ? .systemGreen : .systemGray
+        measurementDisplay.backgroundColor = isInRange
+            ? ARCameraConstants.Colors.overlayGreen
+            : ARCameraConstants.Colors.overlayRed.withAlphaComponent(ARCameraConstants.UI.measurementDisplayBackgroundAlpha)
+    }
+
+    // MARK: - Actions
+
+    /// Toggles the camera's flashlight (torch) on or off if available.
+    /// Updates the button icon and color to reflect the current state.
+    @objc private func toggleFlashlight() {
+        let deviceType: AVCaptureDevice.DeviceType
+        if let format = arView.session.configuration?.videoFormat {
+            deviceType = format.captureDeviceType
+        } else {
+            deviceType = .builtInWideAngleCamera
+        }
+        
+        guard let device = AVCaptureDevice.default(deviceType, for: .video, position: .back),
+              device.hasTorch else { return }
+        
+        do {
+            try device.lockForConfiguration()
+            
+            isFlashlightOn.toggle()
+            device.torchMode = isFlashlightOn ? .on : .off
+            
+            let imageName = isFlashlightOn ? "bolt.fill" : "bolt.slash.fill"
+            let imageColor = isFlashlightOn ? UIColor.systemYellow : UIColor.white
+            flashlightButton.setImage(UIImage(systemName: imageName), for: .normal)
+            flashlightButton.tintColor = imageColor
+            
+            device.unlockForConfiguration()
+        } catch {
+            print("Failed to lock device for torch configuration: \(error)")
+        }
+    }
+
+    /// Grabs the current AR frame, converts its camera pixel buffer into a
+    /// correctly-oriented `UIImage`, and forwards the image together with the
+    /// frame's depth and confidence buffers through `onCapture`.
+    @objc private func capturePhoto() {
+        guard let frame = arView?.session.currentFrame else { return }
+
+        // Convert the camera pixel buffer to a UIImage with correct orientation
+        let ciImage = CIImage(cvPixelBuffer: frame.capturedImage)
+        let context = CIContext()
+        guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return }
+
+        let interfaceOrientation = view.window?.windowScene?.effectiveGeometry.interfaceOrientation ?? .portrait
+        let image = UIImage(cgImage: cgImage, scale: 1.0, orientation: Self.imageOrientation(for: interfaceOrientation))
+
+        onCapture?(image, frame.sceneDepth?.depthMap, frame.sceneDepth?.confidenceMap)
+    }
+
+    /// Forwards the cancel action to the owning SwiftUI layer.
+    @objc private func cancel() {
+        onCancel?()
+    }
+
+    /// Presents a simple error alert whose OK action invokes `onCancel` so
+    /// the presenting SwiftUI view can dismiss this controller.
+    ///
+    /// - Parameter message: The body text to display.
+    private func showAlert(message: String) {
+        let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default) { [weak self] _ in
+            self?.onCancel?()
+        })
+        present(alert, animated: true)
+    }
+
+    // MARK: - Shape Helpers
+
+    /// Maps a UIKit interface orientation to the `UIImage.Orientation` that
+    /// rotates the AR camera's raw pixel buffer so it renders upright.
+    ///
+    /// - Parameter interfaceOrientation: The current window scene interface
+    ///   orientation.
+    /// - Returns: The matching image orientation, defaulting to `.right`
+    ///   (portrait) for unknown values.
+    private static func imageOrientation(for interfaceOrientation: UIInterfaceOrientation) -> UIImage.Orientation {
+        switch interfaceOrientation {
+        case .portrait:            return .right
+        case .portraitUpsideDown:  return .left
+        case .landscapeLeft:       return .up
+        case .landscapeRight:      return .down
+        default:                   return .right
+        }
+    }
+
+    /// Builds the four `UIBezierPath`s used to draw each corner of the
+    /// framing crosshair.
+    ///
+    /// - Parameters:
+    ///   - size: Side length of the square crosshair container.
+    ///   - cornerLength: Length of each corner stroke, measured along one
+    ///     edge of the square.
+    /// - Returns: Four paths in top-left, top-right, bottom-right, bottom-left
+    ///   order, each expressed in the container's local coordinate space.
+    private static func crosshairCornerPaths(size: CGFloat, cornerLength: CGFloat) -> [UIBezierPath] {
+        let tl = UIBezierPath()
+        tl.move(to: CGPoint(x: 0, y: cornerLength))
+        tl.addLine(to: .zero)
+        tl.addLine(to: CGPoint(x: cornerLength, y: 0))
+
+        let tr = UIBezierPath()
+        tr.move(to: CGPoint(x: size - cornerLength, y: 0))
+        tr.addLine(to: CGPoint(x: size, y: 0))
+        tr.addLine(to: CGPoint(x: size, y: cornerLength))
+
+        let br = UIBezierPath()
+        br.move(to: CGPoint(x: size, y: size - cornerLength))
+        br.addLine(to: CGPoint(x: size, y: size))
+        br.addLine(to: CGPoint(x: size - cornerLength, y: size))
+
+        let bl = UIBezierPath()
+        bl.move(to: CGPoint(x: cornerLength, y: size))
+        bl.addLine(to: CGPoint(x: 0, y: size))
+        bl.addLine(to: CGPoint(x: 0, y: size - cornerLength))
+
+        return [tl, tr, br, bl]
+    }
+}

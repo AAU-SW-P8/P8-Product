@@ -171,7 +171,7 @@ class DataController {
     func addMoleAndScan(to person: Person, image: UIImage) {
         let context: ModelContext = container.mainContext
         
-        let scan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9))
+        let scan: MoleScan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9))
         let mole: Mole = Mole(
             name: "Mole \(person.moles.count + 1)",
             bodyPart: "Unassigned",
@@ -183,7 +183,7 @@ class DataController {
         let instance: MoleInstance = MoleInstance(
             diameter: 0,
             area: 0,
-            mole: mole,
+            mole: mole, 
             moleScan: scan
         )
         
@@ -198,6 +198,34 @@ class DataController {
         }
     }
     
+    /**
+        Adds a new scan to an existing mole by creating a new `MoleScan` and linking it with a new `MoleInstance`.
+        - Parameters:
+            - mole: The existing `Mole` to which the new scan will be linked.
+            - image: The `UIImage` representing the new scan to be added.
+    */
+    func addToExistingMole(mole: Mole, image: UIImage) {
+        let context: ModelContext = container.mainContext
+        
+        // Create the scan and the linking instance
+        let scan: MoleScan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9))
+        let instance: MoleInstance = MoleInstance(
+            diameter: 0,
+            area: 0,
+            mole: mole,
+            moleScan: scan
+        )
+
+        context.insert(scan)
+        context.insert(instance)
+
+        do {
+            try context.save()
+        } catch {
+            print("Failed to save scan to existing mole: \(error)")
+        }
+    }
+
     func delete(_ person: Person) {
         deleteAndSave(errorMessage: "Failed to delete person") { context in
             context.delete(person)

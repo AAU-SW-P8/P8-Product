@@ -19,7 +19,13 @@ final class Helpers {
 	) {
 		app.tabBars.buttons["Reminder"].tap()
 		XCTAssertTrue(app.tabBars.buttons["Reminder"].exists, file: file, line: line)
+
 	}
+	static func openCaptureTab(in app: XCUIApplication) {
+		app.tabBars.buttons["Capture"].tap()
+	}
+
+
 
 	static func openMoleDetail(
 		person personName: String,

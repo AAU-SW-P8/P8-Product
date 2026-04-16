@@ -14,6 +14,19 @@ struct ContentView: View {
         ProcessInfo.processInfo.arguments.contains("-SkipModelLoading")
     }
 
+    /// Reads a base64-encoded PNG from the launch argument that follows
+    /// `-UITest_InjectCapturedImage`, returning it as a `UIImage`. Returns
+    /// `nil` when the flag is absent or the payload cannot be decoded.
+    private static var preloadedCameraImage: UIImage? {
+        let args = ProcessInfo.processInfo.arguments
+        guard let flagIndex = args.firstIndex(of: "-UITest_InjectCapturedImage"),
+              flagIndex + 1 < args.count,
+              let data = Data(base64Encoded: args[flagIndex + 1]) else {
+            return nil
+        }
+        return UIImage(data: data)
+    }
+
     var body: some View {
         Group {
             if skipModelLoading {
@@ -44,7 +57,7 @@ struct ContentView: View {
                     Label("Reminder", systemImage: "clock")
                 }
                 
-            CameraView()
+            CameraView(preloadedImage: Self.preloadedCameraImage)
                 .tabItem {
                     Label("Capture", systemImage: "camera")
                 }

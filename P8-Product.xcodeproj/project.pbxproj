@@ -46,7 +46,6 @@
 				UITests/Helpers.swift,
 				UITests/ImageCarouselUITests.swift,
 				UITests/OverviewUITests.swift,
-				UITests/ProductUITests.swift,
 				UITests/ProductUITestsLaunchTests.swift,
 				UITests/TabStateUITests.swift,
 			);
@@ -93,7 +92,6 @@
 				UITests/Helpers.swift,
 				UITests/ImageCarouselUITests.swift,
 				UITests/OverviewUITests.swift,
-				UITests/ProductUITests.swift,
 				UITests/ProductUITestsLaunchTests.swift,
 				UITests/TabStateUITests.swift,
 			);
