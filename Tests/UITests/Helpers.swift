@@ -52,6 +52,10 @@ final class Helpers {
 		XCTAssertTrue(app.staticTexts["Mole Overview"].waitForExistence(timeout: 3), file: file, line: line)
 	}
 
+	static func openCaptureTab(in app: XCUIApplication) {
+		app.tabBars.buttons["Capture"].tap()
+	}
+
 	static func selectPerson(_ name: String, in app: XCUIApplication) {
 		personPickerButton(in: app).tap()
 		app.buttons[name].tap()

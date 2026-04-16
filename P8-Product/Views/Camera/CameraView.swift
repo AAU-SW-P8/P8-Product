@@ -14,6 +14,10 @@ import ARKit
 /// In the Simulator (no physical camera) the view stays on a placeholder screen.
 struct CameraView: View {
 
+    /// Optional caller-supplied photo. When provided, the view skips camera
+    /// capture entirely and navigates straight to segmentation using this image.
+    var preloadedImage: UIImage? = nil
+
     /// The photo returned by the camera after the user confirms it.
     @State private var capturedImage: UIImage?
 
@@ -54,6 +58,10 @@ struct CameraView: View {
         // Open the camera as soon as the tab appears, unless we already
         // have a captured image or the segmentation view is showing.
         .onAppear {
+            if let preloadedImage, capturedImage == nil {
+                capturedImage = preloadedImage
+                return
+            }
             if capturedImage == nil && !showSegmentation {
                 openCamera()
             }
@@ -75,7 +83,9 @@ struct CameraView: View {
                 capturedImage = nil
                 capturedDepthMap = nil
                 capturedConfidenceMap = nil
-                openCamera()
+                if preloadedImage == nil {
+                    openCamera()
+                }
             }
         }
     }
