@@ -50,8 +50,8 @@ class MoleSegmentationAppState {
     func startSegmentationFlow(people: [Person]) {
         if people.isEmpty {
             activeAlert = .error("Please add a person in the Overview first.")
-        } else if people.count == 1 {
-            selectedPersonForScan = people[0]
+        } else if people.count == 1, let onlyPerson: Person = people.first {
+            selectedPersonForScan = onlyPerson
             resegment()
         } else {
             showPersonPicker = true
@@ -100,12 +100,21 @@ class MoleSegmentationAppState {
      Should be called when the user wants to start fresh or after saving a scan.
      */
     func clearSegmentation() {
+        isProcessing = false
         maskOverlay = nil
         detectedBoxes = []
+        showPersonPicker = false
+        showMoleActionDialog = false
+        showExistingBodyPartPicker = false
+        showExistingMolePicker = false
+        showNewMoleMetadataSheet = false
         selectedPersonForScan = nil
+        selectedBoxForMole = nil
+        activeAlert = nil
+        newMoleName = ""
+        selectedBodyPart = .unassigned
         selectedExistingBodyPart = nil
-        statusMessage = "Cleared"
-        modelLoader.segmentor?.clearCache()
+        statusMessage = "Ready"
     }
     
     // MARK: - Data Saving Logic
