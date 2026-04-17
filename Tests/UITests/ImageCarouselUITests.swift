@@ -35,7 +35,8 @@ final class ImageCarouselUITests: XCTestCase {
     // MARK: - Image Loading
 
     func testCarouselLoadsImageForFirstScan() {
-        Helpers.selectAlexLeftArmMole(in: app)
+        Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
+        Helpers.switchToEvolution(in: app)
 
         let leftCarousel = app.otherElements["leftCarousel"]
         XCTAssertTrue(leftCarousel.waitForExistence(timeout: 5))
@@ -49,11 +50,8 @@ final class ImageCarouselUITests: XCTestCase {
     }
 
     func testSingleScanCarouselLoadsImage() {
-        // Back Mole renders through the single-carousel branch in MoleDetailView,
-        // which doesn't tag the carousel with leftCarousel/rightCarousel ids,
-        // so we look at the metadata instead and assert at least one image
-        // exists in the application's element tree.
-        Helpers.selectAlexBackMole(in: app)
+        Helpers.openMoleDetail(person: "Alex", mole: "Back Mole", in: app)
+        Helpers.switchToEvolution(in: app)
 
         XCTAssertTrue(
             app.staticTexts["Diameter: 3.6 mm"].firstMatch.waitForExistence(timeout: 5)
@@ -70,7 +68,8 @@ final class ImageCarouselUITests: XCTestCase {
     func testSwipingThroughAllScansShowsEachOne() {
         // Left carousel starts at last index, so order while swiping right is:
         // 5.0 mm → 4.2 mm → 4.8 mm.
-        Helpers.selectAlexLeftArmMole(in: app)
+        Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
+        Helpers.switchToEvolution(in: app)
 
         let leftCarousel = app.otherElements["leftCarousel"]
         XCTAssertTrue(leftCarousel.waitForExistence(timeout: 5))
@@ -102,28 +101,25 @@ final class ImageCarouselUITests: XCTestCase {
     func testLeftAndRightCarouselsSwipeIndependently() {
         // The two carousels share data but maintain separate selectedIndex
         // bindings, so swiping the left must not affect the right.
-        Helpers.selectAlexLeftArmMole(in: app)
+        Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
+        Helpers.switchToEvolution(in: app)
 
         let leftCarousel = app.otherElements["leftCarousel"]
         let rightCarousel = app.otherElements["rightCarousel"]
         XCTAssertTrue(leftCarousel.waitForExistence(timeout: 5))
         XCTAssertTrue(rightCarousel.waitForExistence(timeout: 5))
         XCTAssertTrue(
-            rightCarousel.staticTexts["Diameter: 5.0 mm"].waitForExistence(timeout: 3)
-            || rightCarousel.staticTexts["Diameter: 5,0 mm"].waitForExistence(timeout: 3),
+            leftCarousel.staticTexts["Diameter: 5.0 mm"].waitForExistence(timeout: 3)
+            || leftCarousel.staticTexts["Diameter: 5,0 mm"].waitForExistence(timeout: 3),
+            "Left carousel should start on the first scan"
+        )
+        XCTAssertTrue(
+            rightCarousel.staticTexts["Diameter: 4.8 mm"].waitForExistence(timeout: 3)
+            || rightCarousel.staticTexts["Diameter: 4,8 mm"].waitForExistence(timeout: 3),
             "Right carousel should start on the first scan"
         )
 
         leftCarousel.swipeRight()
-
-        let leftAdvancedOnFirstSwipe =
-            leftCarousel.staticTexts["Diameter: 4.2 mm"].waitForExistence(timeout: 2)
-            || leftCarousel.staticTexts["Diameter: 4,2 mm"].waitForExistence(timeout: 2)
-
-        if !leftAdvancedOnFirstSwipe {
-            // Retry once because simulator gesture handling can intermittently drop a swipe.
-            leftCarousel.swipeLeft()
-        }
 
         XCTAssertTrue(
             leftCarousel.staticTexts["Diameter: 4.2 mm"].waitForExistence(timeout: 3)

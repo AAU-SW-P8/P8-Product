@@ -44,7 +44,7 @@ final class TabStateUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3),
                       "Overview should begin with Alex selected")
 
-        Helpers.moveOverviewSelection(to: "Jordan", in: app)
+        Helpers.movePersonSelection(to: "Jordan", in: app)
         Helpers.openMoleDetail(person: "Jordan", mole: "Face Mole", in: app)
 
         Helpers.openOverviewTab(in: app)
@@ -58,7 +58,7 @@ final class TabStateUITests: XCTestCase {
     func testDeletingTaylorFallsBackToAlexAcrossTabs() {
         Helpers.openOverviewTab(in: app)
 
-        Helpers.moveOverviewSelection(to: "Taylor", in: app)
+        Helpers.movePersonSelection(to: "Taylor", in: app)
 
         XCTAssertTrue(
             app.staticTexts["Taylor"].waitForExistence(timeout: 3),

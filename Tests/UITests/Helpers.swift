@@ -35,7 +35,7 @@ final class Helpers {
 		line: UInt = #line
 	) {
 		openOverviewTab(in: app, file: file, line: line)
-		moveOverviewSelection(to: personName, in: app)
+		movePersonSelection(to: personName, in: app)
 
 		let moleLabel = app.staticTexts[moleName].firstMatch
 		XCTAssertTrue(moleLabel.waitForExistence(timeout: 3), "Could not find mole row: \(moleName)", file: file, line: line)
@@ -69,10 +69,10 @@ final class Helpers {
 	}
 
 	static func selectPerson(_ name: String, in app: XCUIApplication) {
-		moveOverviewSelection(to: name, in: app)
+		movePersonSelection(to: name, in: app)
 	}
 
-	static func moveOverviewSelection(to name: String, in app: XCUIApplication) {
+	static func movePersonSelection(to name: String, in app: XCUIApplication) {
 		if app.staticTexts[name].exists { return }
 
 		let maxMoves = 6
@@ -94,21 +94,6 @@ final class Helpers {
 		}
 
 		XCTAssertTrue(app.staticTexts[name].waitForExistence(timeout: 1), "Expected selected person to be \(name)")
-	}
-
-	static func selectAlexLeftArmMole(in app: XCUIApplication) {
-		openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
-		switchToEvolution(in: app)
-
-		XCTAssertTrue(
-			app.otherElements["dualCarouselContainer"].waitForExistence(timeout: 5),
-			"Dual carousel container should appear after selecting Left Arm Mole"
-		)
-	}
-
-	static func selectAlexBackMole(in app: XCUIApplication) {
-		openMoleDetail(person: "Alex", mole: "Back Mole", in: app)
-		switchToEvolution(in: app)
 	}
 
 	static func deletePerson(_ name: String, in app: XCUIApplication) {

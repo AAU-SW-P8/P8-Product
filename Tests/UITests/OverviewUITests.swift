@@ -134,7 +134,7 @@ final class OverviewUITests: XCTestCase {
 
     func testDeletePersonCancelKeepsPerson() {
         Helpers.openOverviewTab(in: app)
-        Helpers.moveOverviewSelection(to: "Taylor", in: app)
+        Helpers.movePersonSelection(to: "Taylor", in: app)
 
         let taylor = app.staticTexts["Taylor"]
         XCTAssertTrue(taylor.waitForExistence(timeout: 3))
@@ -153,7 +153,7 @@ final class OverviewUITests: XCTestCase {
 
     func testDeletePersonConfirmRemovesPersonAndFallsBackSelection() {
         Helpers.openOverviewTab(in: app)
-        Helpers.moveOverviewSelection(to: "Taylor", in: app)
+        Helpers.movePersonSelection(to: "Taylor", in: app)
 
         let taylor = app.staticTexts["Taylor"]
         XCTAssertTrue(taylor.waitForExistence(timeout: 3))
@@ -210,6 +210,26 @@ final class OverviewUITests: XCTestCase {
             "Confirmed delete should remove the mole from overview"
         )
         XCTAssertTrue(app.staticTexts["Left Arm Mole"].exists)
+    }
+
+    func testChangingPersonInReminderDismissesOpenDetailOrEvolutionPage() {
+        Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
+        Helpers.switchToEvolution(in: app)
+
+        let detailPicker = app.segmentedControls["moleDetailPagePicker"]
+        XCTAssertTrue(detailPicker.waitForExistence(timeout: 3), "Detail/Evolution picker should be visible before changing person")
+
+        Helpers.openReminderTab(in: app)
+        Helpers.movePersonSelection(to: "Taylor", in: app)
+        XCTAssertTrue(app.staticTexts["Taylor"].waitForExistence(timeout: 3), "Reminder selection should switch to Taylor")
+
+        Helpers.openOverviewTab(in: app)
+
+        XCTAssertFalse(
+            detailPicker.waitForExistence(timeout: 2),
+            "Detail/Evolution page should be dismissed when person is changed from Reminder"
+        )
+        XCTAssertTrue(app.staticTexts["Taylor"].waitForExistence(timeout: 3), "Overview should reflect the newly selected person")
     }
    
         
@@ -270,7 +290,7 @@ final class OverviewUITests: XCTestCase {
         app.terminate()
         launchApp(arguments: ["-UITest_PersistentStore", "-SkipModelLoading"])
         Helpers.openOverviewTab(in: app)
-        Helpers.moveOverviewSelection(to: "Morgan", in: app)
+        Helpers.movePersonSelection(to: "Morgan", in: app)
         XCTAssertTrue(
             app.staticTexts["Morgan"].waitForExistence(timeout: 3),
             "Created person should persist after relaunch when using persistent UI-test store"
@@ -282,7 +302,7 @@ final class OverviewUITests: XCTestCase {
         launchApp(arguments: ["-UITest_PersistentStore", "-UITest_ResetStore", "-SkipModelLoading"])
         Helpers.openOverviewTab(in: app)
 
-        Helpers.moveOverviewSelection(to: "Taylor", in: app)
+        Helpers.movePersonSelection(to: "Taylor", in: app)
         let taylor = app.staticTexts["Taylor"]
         XCTAssertTrue(taylor.waitForExistence(timeout: 3))
         taylor.press(forDuration: 1.0)
@@ -301,7 +321,7 @@ final class OverviewUITests: XCTestCase {
         launchApp(arguments: ["-UITest_PersistentStore", "-SkipModelLoading"])
         Helpers.openOverviewTab(in: app)
 
-        Helpers.moveOverviewSelection(to: "Jordan", in: app)
+        Helpers.movePersonSelection(to: "Jordan", in: app)
         XCTAssertTrue(app.staticTexts["Jordan"].waitForExistence(timeout: 3))
 
         let rightButton = app.buttons["chevron.right"]

@@ -139,7 +139,6 @@ struct ReminderView: View {
             }
             .padding(.horizontal)
             .padding(.top)
-            .padding(.bottom, 4)
             .background(Color(.systemGray6))
             
             HStack {

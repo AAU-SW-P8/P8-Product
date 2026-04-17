@@ -109,11 +109,11 @@ final class MoleDetailFlowUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3),
                        "Overview should contain Alex from mock data")
 
-        Helpers.moveOverviewSelection(to: "Jordan", in: app)
+        Helpers.movePersonSelection(to: "Jordan", in: app)
         XCTAssertTrue(app.staticTexts["Jordan"].waitForExistence(timeout: 3),
                       "Overview navigation should reach Jordan from mock data")
         
-        Helpers.moveOverviewSelection(to: "Taylor", in: app)
+        Helpers.movePersonSelection(to: "Taylor", in: app)
         XCTAssertTrue(app.staticTexts["Taylor"].waitForExistence(timeout: 3),
                       "Overview navigation should reach Taylor from mock data")
     }

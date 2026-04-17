@@ -65,7 +65,11 @@ final class MoleDetailAppState {
 	// MARK: - Actions
 
 	func handleAppear() {
-		selectionState.selectedPerson = initialMole.person
+		dismissIfSelectedPersonChanged()
+		guard !shouldDismissDetailView else {
+			return
+		}
+
 		selectionState.selectedMole = initialMole
 		setDefaultEvolutionIndices()
 	}
