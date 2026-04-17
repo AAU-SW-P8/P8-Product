@@ -1,11 +1,10 @@
 import SwiftUI
 import SwiftData
-import UIKit
 
 @MainActor
 @Observable
 class OverviewAppState {
-    // The selected person is shared across the app through SelectionState, so that both Overview and Compare views stay in sync without needing to pass the selection through the view hierarchy.
+    // The selected person is shared across the app through SelectionState, so that all views stay in sync without needing to pass the selection through the view hierarchy.
     @ObservationIgnored private let selectionState = SelectionState.shared
 
     // MARK: - Persistent Data Selection
@@ -27,19 +26,17 @@ class OverviewAppState {
     var showingEditPerson: Bool = false
     var showingDeleteAlert: Bool = false
     var showingDeleteMoleAlert: Bool = false
-    var cameraShowing: Bool = false
-    
+
     // MARK: - UI Animation State
     var slideEdge: Edge = .trailing
-    
+
     // MARK: - Temporary Data State
     var newPersonName: String = ""
     var editingName: String = ""
     var personToEdit: Person?
     var personToDelete: Person?
     var moleToDelete: Mole?
-    var capturedImage: UIImage?
-    
+
     private let dataController: DataController
     
     init(dataController: DataController) {
@@ -183,17 +180,6 @@ class OverviewAppState {
         guard let mole: Mole = moleToDelete else { return}
 
         dataController.delete(mole)
-        
-    }
-    
-    // MARK: - Camera & Scan Actions
-    
-    func processCapturedImage() {
-        guard let image: UIImage = capturedImage, let person: Person = selectedPerson else { return }
-        
-        dataController.addMoleAndScan(to: person, image: image)
-        
-        // Clean up
-        self.capturedImage = nil
+
     }
 }

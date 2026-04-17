@@ -23,6 +23,7 @@ struct ImageCarousel: View {
     let scans: [MoleScan]
     var mole: Mole? = nil
     @Binding var selectedIndex: Int
+    @State private var scrollPositionID: UUID?
     var onDeleteSelectedInstance: (() -> Void)? = nil
     var height: CGFloat = 200
     
@@ -64,6 +65,12 @@ struct ImageCarousel: View {
         return (side == .left || side == .right) ? (scans.count - 1 - safeIndex) : safeIndex
     }
 
+    /// Stable identity of the currently selected scan for ScrollView paging.
+    private var selectedScanID: UUID? {
+        guard !scans.isEmpty else { return nil }
+        return scans[safeIndex].id
+    }
+
     var body: some View {
         VStack(spacing: 4) {
             GeometryReader { geometry in
@@ -79,7 +86,7 @@ struct ImageCarousel: View {
                                     .shadow(radius: 3)
                                     .padding(.horizontal, 8)
                                     .frame(width: geometry.size.width, height: height)
-                                    .id(item.displayIndex)
+                                    .id(scan.id)
                             } else {
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 12)
@@ -90,27 +97,22 @@ struct ImageCarousel: View {
                                 }
                                 .padding(.horizontal, 8)
                                 .frame(width: geometry.size.width, height: height)
-                                .id(item.displayIndex)
+                                .id(scan.id)
                             }
                         }
                     }
                     .scrollTargetLayout()
                 }
                 .scrollTargetBehavior(.paging)
-                .scrollPosition(
-                    id: Binding(
-                        get: { displayedSelectedIndex as Int? },
-                        set: { newValue in
-                            guard
-                                let newValue,
-                                let matchedItem = displayedScans.first(where: { $0.displayIndex == newValue })
-                            else { return }
-
-                            selectedIndex = matchedItem.originalIndex
-                        }
-                    ),
-                    anchor: .center
-                )
+                .scrollPosition(id: Binding(
+                    get: { scrollPositionID },
+                    set: { newValue in
+                        guard let newValue else { return }
+                        guard let newIndex = scans.firstIndex(where: { $0.id == newValue }) else { return }
+                        scrollPositionID = newValue
+                        selectedIndex = newIndex
+                    }
+                ), anchor: .center)
             }
             .frame(height: height)
 
@@ -157,6 +159,14 @@ struct ImageCarousel: View {
             if selectedIndex >= scans.count {
                 selectedIndex = max(0, scans.count - 1)
             }
+            scrollPositionID = selectedScanID
+        }
+        .onAppear {
+            scrollPositionID = selectedScanID
+        }
+        .onChange(of: selectedScanID) { _, newValue in
+            guard scrollPositionID != newValue else { return }
+            scrollPositionID = newValue
         }
     }
 

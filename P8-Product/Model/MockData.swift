@@ -52,6 +52,15 @@ struct MockData {
             nextDueDate: calendar.date(byAdding: .month, value: 3, to: today),
             person: person2
         )
+        
+        let jordanBackMole = Mole(
+            name: "Back Mole",
+            bodyPart: "Back",
+            isReminderActive: true,
+            reminderFrequency: .quarterly,
+            nextDueDate: calendar.date(byAdding: .month, value: 3, to: today),
+            person: person2
+        )
 
         // Create Scans with placeholder image data
         let alexScan1 = MoleScan(
@@ -90,6 +99,39 @@ struct MockData {
         let jordanScan1 = MoleScan(
             captureDate: daysAgo(30, from: today),
             imageData: UIImage(systemName: "face.smiling")?.pngData()
+        )
+        
+        let jordanScan2 = MoleScan(
+            captureDate: daysAgo(100, from: today),
+            imageData: UIImage(systemName: "1.circle.fill")?.pngData()
+        )
+        let jordanScan3 = MoleScan(
+            captureDate: daysAgo(90, from: today),
+            imageData: UIImage(systemName: "2.circle.fill")?.pngData()
+        )
+        let jordanScan4 = MoleScan(
+            captureDate: daysAgo(80, from: today),
+            imageData: UIImage(systemName: "3.circle.fill")?.pngData()
+        )
+
+        let jordanScan5 = MoleScan(
+            captureDate: daysAgo(70, from: today),
+            imageData: UIImage(systemName: "4.circle.fill")?.pngData()
+        )
+        
+        let jordanScan6 = MoleScan(
+            captureDate: daysAgo(60, from: today),
+            imageData: UIImage(systemName: "5.circle.fill")?.pngData()
+        )
+        
+        let jordanScan7 = MoleScan(
+            captureDate: daysAgo(50, from: today),
+            imageData: UIImage(systemName: "6.circle.fill")?.pngData()
+        )
+
+        let jordanScan8 = MoleScan(
+            captureDate: daysAgo(40, from: today),
+            imageData: UIImage(systemName: "7.circle.fill")?.pngData()
         )
 
         // Link everything together via MoleInstances
@@ -154,7 +196,56 @@ struct MockData {
             mole: jordanFaceMole,
             moleScan: jordanScan1
         )
-
+        
+        let jordanBackInstance2 = MoleInstance(
+            diameter: 2.9,
+            area: 6.6,
+            mole: jordanBackMole,
+            moleScan: jordanScan2
+        )
+        
+        let jordanBackInstance3 = MoleInstance(
+            diameter: 3.1,
+            area: 6.9,
+            mole: jordanBackMole,
+            moleScan: jordanScan3
+        )
+        
+        let jordanBackInstance4 = MoleInstance(
+            diameter: 3.7,
+            area: 8,
+            mole: jordanBackMole,
+            moleScan: jordanScan4
+        )
+        
+        let jordanBackInstance5 = MoleInstance(
+            diameter: 5,
+            area: 11,
+            mole: jordanBackMole,
+            moleScan: jordanScan5
+        )
+        
+        let jordanBackInstance6 = MoleInstance(
+            diameter: 2.3,
+            area: 5.1,
+            mole: jordanBackMole,
+            moleScan: jordanScan6
+        )
+        
+        let jordanBackInstance7 = MoleInstance(
+            diameter: 2.3,
+            area: 5.1,
+            mole: jordanBackMole,
+            moleScan: jordanScan7
+        )
+        
+        let jordanBackInstance8 = MoleInstance(
+            diameter: 7.5,
+            area: 14.3,
+            mole: jordanBackMole,
+            moleScan: jordanScan8
+        )
+        
         // Insert Objects
         context.insert(person1)
         context.insert(person2)
@@ -162,6 +253,7 @@ struct MockData {
         context.insert(alexLeftArmMole)
         context.insert(alexBackMole)
         context.insert(jordanFaceMole)
+        context.insert(jordanBackMole)
         context.insert(alexScan1)
         context.insert(alexScan2)
         context.insert(alexScan3)
@@ -170,6 +262,13 @@ struct MockData {
         context.insert(alexScan6)
         context.insert(alexScan7)
         context.insert(jordanScan1)
+        context.insert(jordanScan2)
+        context.insert(jordanScan3)
+        context.insert(jordanScan4)
+        context.insert(jordanScan5)
+        context.insert(jordanScan6)
+        context.insert(jordanScan7)
+        context.insert(jordanScan8)
         context.insert(alexLeftArmInstance1)
         context.insert(alexLeftArmInstance2)
         context.insert(alexLeftArmInstance3)
@@ -179,6 +278,13 @@ struct MockData {
         context.insert(alexLeftArmInstance7)
         context.insert(alexBackInstance)
         context.insert(jordanFaceInstance)
+        context.insert(jordanBackInstance2)
+        context.insert(jordanBackInstance3)
+        context.insert(jordanBackInstance4)
+        context.insert(jordanBackInstance5)
+        context.insert(jordanBackInstance6)
+        context.insert(jordanBackInstance7)
+        context.insert(jordanBackInstance8)
     }
     
     /// Helper to calculate a date in the past.

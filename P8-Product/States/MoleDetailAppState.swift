@@ -65,7 +65,11 @@ final class MoleDetailAppState {
 	// MARK: - Actions
 
 	func handleAppear() {
-		selectionState.selectedPerson = initialMole.person
+		dismissIfSelectedPersonChanged()
+		guard !shouldDismissDetailView else {
+			return
+		}
+
 		selectionState.selectedMole = initialMole
 		setDefaultEvolutionIndices()
 	}
@@ -82,6 +86,18 @@ final class MoleDetailAppState {
 		selectedIndex = min(selectedIndex, maxIndex)
 		selectedEvolutionTopIndex = min(selectedEvolutionTopIndex, maxIndex)
 		selectedEvolutionBottomIndex = min(selectedEvolutionBottomIndex, maxIndex)
+	}
+
+	func dismissIfSelectedPersonChanged() {
+		let activeMolePersonID: UUID? = activeMole.person?.id
+		let globallySelectedPersonID: UUID? = selectionState.selectedPerson?.id
+
+		guard activeMolePersonID != globallySelectedPersonID else {
+			return
+		}
+
+		selectionState.selectedMole = nil
+		shouldDismissDetailView = true
 	}
 
 	func requestDeleteSelectedDetailInstance() {
