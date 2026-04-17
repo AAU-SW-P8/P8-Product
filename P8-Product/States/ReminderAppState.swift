@@ -101,16 +101,51 @@ class ReminderAppState {
                 case "Enabled":
                     mole.followDefaultReminderEnabled = false
                     mole.isReminderActive = true
+                    self.updateDueDateForEnabledMoleOverride(mole)
                 case "Disabled":
                     mole.followDefaultReminderEnabled = false
                     mole.isReminderActive = false
+                    mole.nextDueDate = nil
                 default:
                     mole.followDefaultReminderEnabled = true
                     mole.isReminderActive = self.reminderEnabled
+                    if self.reminderEnabled {
+                        self.updateDueDateForEnabledMoleOverride(mole)
+                    } else {
+                        mole.nextDueDate = nil
+                    }
                 }
                 self.persistChanges()
             }
         )
+    }
+
+    private func updateDueDateForEnabledMoleOverride(_ mole: Mole) {
+        let frequencyLabel: String
+        if mole.followDefault ?? true {
+            if let person = selectedPerson {
+                frequencyLabel = displayFrequency(for: person)
+            } else {
+                frequencyLabel = "Weekly"
+            }
+        } else {
+            switch mole.reminderFrequency {
+            case .some(.weekly):
+                frequencyLabel = "Weekly"
+            case .some(.monthly):
+                frequencyLabel = "Monthly"
+            case .some(.quarterly):
+                frequencyLabel = "Quarterly"
+            case .none:
+                if let person = selectedPerson {
+                    frequencyLabel = displayFrequency(for: person)
+                } else {
+                    frequencyLabel = "Weekly"
+                }
+            }
+        }
+
+        applyNextDueDate(to: mole, frequencyLabel: frequencyLabel)
     }
 
     /**
@@ -129,19 +164,25 @@ class ReminderAppState {
             mole.reminderFrequency = Frequency(rawValue: frequencyLabel.lowercased())
         }
 
-        let effectiveFrequencyLabel: String
+        let resolvedFrequencyLabel: String
         if frequencyLabel == "Default", let person = selectedPerson {
-            effectiveFrequencyLabel = displayFrequency(for: person)
+            resolvedFrequencyLabel = displayFrequency(for: person)
         } else {
-            effectiveFrequencyLabel = frequencyLabel
+            resolvedFrequencyLabel = frequencyLabel
         }
+
+        applyNextDueDate(to: mole, frequencyLabel: resolvedFrequencyLabel)
+        persistChanges()
+    }
+
+    private func applyNextDueDate(to mole: Mole, frequencyLabel: String) {
 
         let calendar = Calendar.current
         let lastCheckIn = mole.instances.compactMap { $0.moleScan?.captureDate }.max()
         guard let lastCheckIn else { return }
 
         let nextDueDate: Date?
-        switch effectiveFrequencyLabel {
+        switch frequencyLabel {
         case "Weekly":
             nextDueDate = calendar.date(byAdding: .weekOfYear, value: 1, to: lastCheckIn)
         case "Monthly":
@@ -153,7 +194,6 @@ class ReminderAppState {
         }
 
         mole.nextDueDate = max(Date(), nextDueDate ?? Date())
-        persistChanges()
     }
 
     /**
@@ -176,7 +216,37 @@ class ReminderAppState {
      */
     func setDefaultReminderEnabled(_ newValue: Bool) {
         selectedPerson?.defaultReminderEnabled = newValue
+        updateDueDatesForDefaultReminderEnabledChange(newValue)
         persistChanges()
+    }
+
+    private func updateDueDatesForDefaultReminderEnabledChange(_ isEnabled: Bool) {
+        guard let person = selectedPerson else { return }
+
+        for mole in person.moles where mole.followDefaultReminderEnabled ?? true {
+            guard isEnabled else {
+                mole.nextDueDate = nil
+                continue
+            }
+
+            let frequencyLabel: String
+            if mole.followDefault ?? true {
+                frequencyLabel = displayFrequency(for: person)
+            } else {
+                switch mole.reminderFrequency {
+                case .some(.weekly):
+                    frequencyLabel = "Weekly"
+                case .some(.monthly):
+                    frequencyLabel = "Monthly"
+                case .some(.quarterly):
+                    frequencyLabel = "Quarterly"
+                case .none:
+                    frequencyLabel = displayFrequency(for: person)
+                }
+            }
+
+            applyNextDueDate(to: mole, frequencyLabel: frequencyLabel)
+        }
     }
 
     /**
