@@ -51,8 +51,8 @@ struct MoleSegmentationView: View {
     // MARK: - UI-Only State (Gestures)
     @State private var currentZoom: Double = 0.0
     @State private var totalZoom: Double = 1.0
-    @State private var offset: CGSize = .zero
-    @State private var lastOffset: CGSize = .zero
+    @State private var currentPan: CGSize = .zero
+    @State private var accumulatedPan: CGSize = .zero
 
     var body: some View {
         ZStack {
@@ -114,36 +114,37 @@ struct MoleSegmentationView: View {
     @ViewBuilder
     private func imageContent(image: UIImage) -> some View {
         GeometryReader { geometry in
+            let displayedImage: UIImage = appState.maskOverlay ?? image
+            let imageAspect: Double = displayedImage.size.width / displayedImage.size.height
+            let viewAspect: Double = geometry.size.width / geometry.size.height
+            let viewportWidth: Double = imageAspect > viewAspect ? geometry.size.width : geometry.size.height * imageAspect
+            let viewportHeight: Double = imageAspect > viewAspect ? geometry.size.width / imageAspect : geometry.size.height
+            let viewportSize: CGSize = CGSize(width: viewportWidth, height: viewportHeight)
+
+            let zoom: Double = clampedZoom(totalZoom + currentZoom)
+            let pan: CGSize = clampedPan(currentPan, accumulatedPan, for: viewportSize, zoom: zoom)
+
             ZStack {
-                if let mask: UIImage = appState.maskOverlay {
-                    // Render the fully composited annotated image returned by MoleSegmentor
-                    Image(uiImage: mask)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: geometry.size.width, height: geometry.size.height)
-                        .overlay {
-                            GeometryReader { imageGeo in
-                                let imageAspect: Double = mask.size.width / mask.size.height
-                                let viewAspect: Double = imageGeo.size.width / imageGeo.size.height
-
-                                let drawWidth: Double = imageAspect > viewAspect ? imageGeo.size.width : imageGeo.size.height * imageAspect
-                                let drawHeight: Double = imageAspect > viewAspect ? imageGeo.size.width / imageAspect : imageGeo.size.height
-
-                                let drawX: Double = (imageGeo.size.width - drawWidth) / 2
-                                let drawY: Double = (imageGeo.size.height - drawHeight) / 2
-
-                                let scaleX: Double = drawWidth / mask.size.width
-                                let scaleY: Double = drawHeight / mask.size.height
+                ZStack {
+                    if let mask: UIImage = appState.maskOverlay {
+                        // Render the fully composited annotated image returned by MoleSegmentor
+                        Image(uiImage: mask)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: viewportWidth, height: viewportHeight)
+                            .overlay {
+                                let scaleX: Double = viewportWidth / mask.size.width
+                                let scaleY: Double = viewportHeight / mask.size.height
 
                                 ForEach(0..<appState.detectedBoxes.count, id: \.self) { index in
                                     let box: CGRect = appState.detectedBoxes[index]
                                     let rect: CGRect = CGRect(
-                                        x: drawX + box.minX * scaleX,
-                                        y: drawY + box.minY * scaleY,
+                                        x: box.minX * scaleX,
+                                        y: box.minY * scaleY,
                                         width: box.width * scaleX,
                                         height: box.height * scaleY
                                     )
-                                    
+
                                     Rectangle()
                                         .fill(Color.clear)
                                         .contentShape(Rectangle())
@@ -154,7 +155,7 @@ struct MoleSegmentationView: View {
                                             if appState.selectedPersonForScan == nil && people.count == 1 {
                                                 appState.selectedPersonForScan = people[0]
                                             }
-                                            
+
                                             if appState.selectedPersonForScan != nil {
                                                 appState.showMoleActionDialog = true
                                             } else {
@@ -163,17 +164,20 @@ struct MoleSegmentationView: View {
                                         }
                                 }
                             }
-                        }
-                } else {
-                    // Fallback: show the original image before segmentation completes
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: geometry.size.width, height: geometry.size.height)
+                    } else {
+                        // Fallback: show the original image before segmentation completes
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: viewportWidth, height: viewportHeight)
+                    }
                 }
+                .frame(width: viewportWidth, height: viewportHeight, alignment: .center)
+                .scaleEffect(zoom, anchor: .center)
+                .offset(pan)
+                .clipped()
             }
-            .offset(x: offset.width + lastOffset.width, y: offset.height + lastOffset.height)
-            .scaleEffect(totalZoom + currentZoom)
+            .frame(width: geometry.size.width, height: geometry.size.height, alignment: .center)
             .gesture(
                 MagnificationGesture()
                     .onChanged { value in
@@ -186,29 +190,36 @@ struct MoleSegmentationView: View {
                         if totalZoom < 1.0 {
                             withAnimation {
                                 totalZoom = 1.0
-                                offset = .zero
-                                lastOffset = .zero
+                                currentPan = .zero
+                                accumulatedPan = .zero
                             }
                         } else if totalZoom > 5.0 {
                             withAnimation {
                                 totalZoom = 5.0
                             }
                         }
+
+                        accumulatedPan = clampedPan(.zero, accumulatedPan, for: viewportSize, zoom: clampedZoom(totalZoom))
                     }
             )
             .simultaneousGesture(
                 DragGesture()
                     .onChanged { value in
-                        if totalZoom + currentZoom > 1.0 {
-                            offset = value.translation
+                        guard zoom > 1.0 else {
+                            currentPan = .zero
+                            return
                         }
+                        currentPan = value.translation
                     }
-                    .onEnded { value in
-                        if totalZoom + currentZoom > 1.0 {
-                            lastOffset.width += offset.width
-                            lastOffset.height += offset.height
-                            offset = .zero
+                    .onEnded { _ in
+                        guard zoom > 1.0 else {
+                            currentPan = .zero
+                            accumulatedPan = .zero
+                            return
                         }
+
+                        accumulatedPan = clampedPan(currentPan, accumulatedPan, for: viewportSize, zoom: zoom)
+                        currentPan = .zero
                     }
             )
         }
@@ -220,6 +231,24 @@ struct MoleSegmentationView: View {
                     .padding(.bottom, 2)
             }
         }
+    }
+
+    private func clampedZoom(_ value: Double) -> Double {
+        min(max(value, 1.0), 5.0)
+    }
+
+    private func clampedPan(_ current: CGSize, _ accumulated: CGSize, for size: CGSize, zoom: Double) -> CGSize {
+        guard zoom > 1.0 else { return .zero }
+
+        let maxX: CGFloat = (size.width * (zoom - 1.0)) / 2.0
+        let maxY: CGFloat = (size.height * (zoom - 1.0)) / 2.0
+        let proposedX: CGFloat = accumulated.width + current.width
+        let proposedY: CGFloat = accumulated.height + current.height
+
+        return CGSize(
+            width: min(max(proposedX, -maxX), maxX),
+            height: min(max(proposedY, -maxY), maxY)
+        )
     }
 
     // MARK: - Supporting views
