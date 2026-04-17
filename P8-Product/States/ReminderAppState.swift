@@ -171,8 +171,21 @@ class ReminderAppState {
             resolvedFrequencyLabel = frequencyLabel
         }
 
+        guard isReminderEffectivelyEnabled(for: mole) else {
+            mole.nextDueDate = nil
+            persistChanges()
+            return
+        }
+
         applyNextDueDate(to: mole, frequencyLabel: resolvedFrequencyLabel)
         persistChanges()
+    }
+
+    private func isReminderEffectivelyEnabled(for mole: Mole) -> Bool {
+        if mole.followDefaultReminderEnabled ?? true {
+            return reminderEnabled
+        }
+        return mole.isReminderActive
     }
 
     private func applyNextDueDate(to mole: Mole, frequencyLabel: String) {
