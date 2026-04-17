@@ -141,7 +141,7 @@ private struct OverviewContentView: View {
                             tag: mole.id,
                             selection: selectedMoleIDBinding(for: person)
                         ) {
-                            moleRow(for: mole)
+                            moleRow(for: mole, person: person)
                         }
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button {
@@ -174,7 +174,7 @@ private struct OverviewContentView: View {
         )
     }
 
-    private func moleRow(for mole: Mole) -> some View {
+    private func moleRow(for mole: Mole, person: Person) -> some View {
         HStack(spacing: 16) {
             ZStack {
                 Rectangle()
@@ -199,9 +199,10 @@ private struct OverviewContentView: View {
                 HStack {
                     Text(mole.name)
                         .font(.system(size: 20, weight: .semibold))
-                    if mole.isReminderActive {
+                    if effectiveReminderEnabled(for: mole, person: person) {
                         Image(systemName: "bell.fill")
                             .foregroundColor(.orange)
+                            .accessibilityIdentifier("overviewReminderIcon_\(mole.name)")
                     }
                 }
                 Text(mole.bodyPart)
@@ -213,6 +214,13 @@ private struct OverviewContentView: View {
         }
         .contentShape(Rectangle())
         .padding(.vertical, 8)
+    }
+
+    private func effectiveReminderEnabled(for mole: Mole, person: Person) -> Bool {
+        if mole.followDefaultReminderEnabled ?? true {
+            return person.defaultReminderEnabled
+        }
+        return mole.isReminderActive
     }
 
     private func latestScan(for mole: Mole) -> MoleScan? {

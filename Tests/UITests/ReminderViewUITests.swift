@@ -83,6 +83,30 @@ final class ReminderViewUITests: XCTestCase {
 		return button
 	}
 
+	private func setDefaultReminderEnabled(_ enabled: Bool) throws {
+		let toggle = app.switches["defaultReminderEnabledToggle"].firstMatch
+		guard toggle.waitForExistence(timeout: 3) else {
+			throw XCTSkip("Default reminder toggle is not exposed as a switch.")
+		}
+
+		let isOn = (toggle.value as? String) == "1"
+		if isOn != enabled {
+			toggle.tap()
+		}
+	}
+
+	private func setMoleReminderMode(for moleName: String, to mode: String) throws {
+		let picker = app.descendants(matching: .any)
+			.matching(identifier: "moleReminderEnabledPicker_\(moleName)")
+			.firstMatch
+		guard picker.waitForExistence(timeout: 3) else {
+			throw XCTSkip("Per-mole enabled picker for \(moleName) is not exposed as an accessible button.")
+		}
+
+		picker.tap()
+		try chooseFrequencyOption(mode)
+	}
+
 	private func chooseFrequencyOption(_ label: String) throws {
 		let option = app.buttons[label].firstMatch
 		guard option.waitForExistence(timeout: 3) else {
@@ -194,6 +218,168 @@ final class ReminderViewUITests: XCTestCase {
         enabledPicker.tap()
         try chooseFrequencyOption("Enabled")
         XCTAssertTrue(frequencyButton.isEnabled)
+	}
+
+	func testDisablingMoleReminderUpdatesOverviewIndicator() throws {
+		// Verifies disabling a mole reminder hides the overview reminder badge for that mole.
+		Helpers.openOverviewTab(in: app)
+
+		XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3))
+		XCTAssertTrue(app.staticTexts["Left Arm Mole"].waitForExistence(timeout: 3))
+
+		let initialReminderIcon = app.images["overviewReminderIcon_Left Arm Mole"]
+		XCTAssertTrue(
+			initialReminderIcon.waitForExistence(timeout: 3),
+			"Expected overview reminder icon to be visible before disabling reminder"
+		)   
+
+		Helpers.openReminderTab(in: app)
+		let enabledPicker = try requireMoleEnabledButton()
+		enabledPicker.tap()
+		try chooseFrequencyOption("Disabled")
+
+		Helpers.openOverviewTab(in: app)
+		let updatedReminderIcon = app.images["overviewReminderIcon_Left Arm Mole"]
+		XCTAssertFalse(
+			updatedReminderIcon.waitForExistence(timeout: 2),
+			"Expected overview reminder icon to disappear after disabling reminder"
+		)
+	}
+
+	func testDisablingDefaultReminderDisablesRemindersIfNoCustomFrequencySet() throws {
+		// Verifies toggling off the default reminder disables reminders for moles without a custom frequency.
+		XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3))
+        Helpers.openOverviewTab(in: app)
+		XCTAssertTrue(app.staticTexts["Back Mole"].waitForExistence(timeout: 3))
+		XCTAssertTrue(app.staticTexts["Left Arm Mole"].waitForExistence(timeout: 3))
+
+		XCTAssertTrue(app.images["overviewReminderIcon_Back Mole"].waitForExistence(timeout: 3))
+		XCTAssertTrue(app.images["overviewReminderIcon_Left Arm Mole"].waitForExistence(timeout: 3))
+
+        Helpers.openReminderTab(in: app)
+		let defaultReminderToggle = app.switches["defaultReminderEnabledToggle"].firstMatch
+		XCTAssertTrue(defaultReminderToggle.waitForExistence(timeout: 3))
+        defaultReminderToggle.tap()
+
+		Helpers.openOverviewTab(in: app)
+		XCTAssertFalse(app.images["overviewReminderIcon_Back Mole"].waitForExistence(timeout: 3), "Expected overview reminder icon for Back Mole to disappear when default reminder is turned off and no custom frequency is set.")
+		XCTAssertFalse(app.images["overviewReminderIcon_Left Arm Mole"].waitForExistence(timeout: 3), "Expected overview reminder icon for Left Arm Mole to disappear when default reminder is turned off and no custom frequency is set.")
+
+	}
+
+	func testReEnablingDefaultReminderRestoresOverviewIndicatorForDefaultMole() throws {
+		// Verifies the overview reminder badge returns after re-enabling default reminders.
+		Helpers.openOverviewTab(in: app)
+		XCTAssertTrue(app.images["overviewReminderIcon_Left Arm Mole"].waitForExistence(timeout: 3))
+
+		Helpers.openReminderTab(in: app)
+		try setDefaultReminderEnabled(false)
+
+		Helpers.openOverviewTab(in: app)
+		XCTAssertFalse(app.images["overviewReminderIcon_Left Arm Mole"].waitForExistence(timeout: 2))
+
+		Helpers.openReminderTab(in: app)
+		try setDefaultReminderEnabled(true)
+
+		Helpers.openOverviewTab(in: app)
+		XCTAssertTrue(
+			app.images["overviewReminderIcon_Left Arm Mole"].waitForExistence(timeout: 3),
+			"Expected overview reminder icon to return after re-enabling default reminder"
+		)
+	}
+
+	func testMoleEnabledOverrideStaysVisibleWhenDefaultReminderIsOff() throws {
+		// Verifies per-mole Enabled override stays active when person default is disabled.
+		Helpers.openReminderTab(in: app)
+		try setMoleReminderMode(for: "Left Arm Mole", to: "Enabled")
+		try setDefaultReminderEnabled(false)
+
+		Helpers.openOverviewTab(in: app)
+		XCTAssertTrue(
+			app.images["overviewReminderIcon_Left Arm Mole"].waitForExistence(timeout: 3),
+			"Expected Left Arm Mole icon to remain visible due to per-mole Enabled override"
+		)
+		XCTAssertFalse(
+			app.images["overviewReminderIcon_Back Mole"].waitForExistence(timeout: 2),
+			"Expected default-following Back Mole icon to be hidden when default reminder is off"
+		)
+	}
+
+	func testMoleDisabledOverrideStaysHiddenWhenDefaultReminderIsOn() throws {
+		// Verifies per-mole Disabled override stays inactive even if default reminders are enabled.
+		Helpers.openReminderTab(in: app)
+		try setMoleReminderMode(for: "Left Arm Mole", to: "Disabled")
+		try setDefaultReminderEnabled(true)
+
+		Helpers.openOverviewTab(in: app)
+		XCTAssertFalse(
+			app.images["overviewReminderIcon_Left Arm Mole"].waitForExistence(timeout: 2),
+			"Expected Left Arm Mole icon to stay hidden due to per-mole Disabled override"
+		)
+		XCTAssertTrue(
+			app.images["overviewReminderIcon_Back Mole"].waitForExistence(timeout: 3),
+			"Expected default-following Back Mole icon to remain visible when default reminder is on"
+		)
+	}
+
+	func testReminderControlsSyncWhenSwitchingPeople() throws {
+		// Verifies default toggle/frequency controls refresh to the newly selected person's settings.
+		XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3))
+
+		try setDefaultReminderEnabled(false)
+		let defaultFrequency = try requireDefaultFrequencyButton()
+		defaultFrequency.tap()
+		try chooseFrequencyOption("Monthly")
+
+		nextPersonButton.tap()
+		XCTAssertTrue(app.staticTexts["Jordan"].waitForExistence(timeout: 3))
+
+		let jordanToggle = app.switches["defaultReminderEnabledToggle"].firstMatch
+		XCTAssertTrue(jordanToggle.waitForExistence(timeout: 3))
+		XCTAssertEqual(jordanToggle.value as? String, "1", "Expected Jordan's default reminder to be ON")
+		XCTAssertEqual(selectedFrequencyValue(from: defaultFrequencyButton().label), "Weekly")
+
+		previousPersonButton.tap()
+		XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3))
+		XCTAssertEqual(jordanToggle.value as? String, "0", "Expected Alex's default reminder to remain OFF")
+		XCTAssertEqual(selectedFrequencyValue(from: defaultFrequencyButton().label), "Monthly")
+	}
+
+	func testDefaultReminderSettingsPersistAfterRelaunch() throws {
+		app.terminate()
+		app.launchArguments = ["-UITest_PersistentStore", "-UITest_ResetStore", "-SkipModelLoading"]
+		app.launch()
+		Helpers.openReminderTab(in: app)
+
+		XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3))
+		try setDefaultReminderEnabled(false)
+
+		app.terminate()
+		app.launchArguments = ["-UITest_PersistentStore", "-SkipModelLoading"]
+		app.launch()
+		Helpers.openReminderTab(in: app)
+
+		let persistedToggle = app.switches["defaultReminderEnabledToggle"].firstMatch
+		XCTAssertTrue(persistedToggle.waitForExistence(timeout: 3))
+		XCTAssertEqual(persistedToggle.value as? String, "0", "Expected default reminder OFF state to persist after relaunch")
+	}
+
+	func testChangingDefaultFrequencyUpdatesDueDateForFollowDefaultMole() throws {
+		// Verifies changing default frequency recalculates due date for moles following defaults.
+		let dueDateLabel = app.staticTexts["moleDueDateLabel_Back Mole"].firstMatch
+		XCTAssertTrue(dueDateLabel.waitForExistence(timeout: 3))
+		XCTAssertEqual(dueDateLabel.label, "No date set")
+
+		let defaultFrequency = try requireDefaultFrequencyButton()
+		defaultFrequency.tap()
+		try chooseFrequencyOption("Monthly")
+
+		XCTAssertTrue(dueDateLabel.waitForExistence(timeout: 3))
+		XCTAssertNotEqual(
+			dueDateLabel.label,
+			"No date set",
+			"Expected Back Mole due date to be recalculated after changing default frequency"
+		)
 	}
 
 	func testMoleFrequencySelectionPersistsAfterPersonSwitch() throws {

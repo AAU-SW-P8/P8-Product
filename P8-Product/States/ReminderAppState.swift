@@ -16,6 +16,7 @@ import SwiftData
 class ReminderAppState {
     // The selected person is shared across the app through SelectionState, so that all views stay in sync without needing to pass the selection through the view hierarchy.
     @ObservationIgnored private let selectionState = SelectionState.shared
+    @ObservationIgnored private let dataController = DataController.shared
 
     // MARK: - Persistent Data Selection
     var reminderEnabled = true
@@ -107,6 +108,7 @@ class ReminderAppState {
                     mole.followDefaultReminderEnabled = true
                     mole.isReminderActive = self.reminderEnabled
                 }
+                self.persistChanges()
             }
         )
     }
@@ -151,6 +153,7 @@ class ReminderAppState {
         }
 
         mole.nextDueDate = max(Date(), nextDueDate ?? Date())
+        persistChanges()
     }
 
     /**
@@ -172,7 +175,8 @@ class ReminderAppState {
      - Parameter newValue: The new value for the default reminder enabled state.
      */
     func setDefaultReminderEnabled(_ newValue: Bool) {
-            selectedPerson?.defaultReminderEnabled = newValue
+        selectedPerson?.defaultReminderEnabled = newValue
+        persistChanges()
     }
 
     /**
@@ -182,6 +186,7 @@ class ReminderAppState {
      */
     func setDefaultFrequency(_ newValue: String) {
         selectedPerson?.defaultReminderFrequency = newValue
+        persistChanges()
     }
 
     /**
@@ -191,5 +196,15 @@ class ReminderAppState {
      */
     func setSelectedPerson(_ newValue: Person?) {
         selectedPerson = newValue
+    }
+
+    /// Persists reminder-related mutations to the shared SwiftData context.
+    private func persistChanges() {
+        let context = dataController.container.mainContext
+        do {
+            try context.save()
+        } catch {
+            print("Failed to persist reminder changes: \(error)")
+        }
     }
 }

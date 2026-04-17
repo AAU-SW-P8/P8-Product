@@ -57,6 +57,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				ChartViewTest.swift,
+				ReminderOverview/ReminderAppStateDirectTests.swift,
 				ReminderOverview/ReminderOverview.swift,
 				SAMPipelineTests/SAM3DecoderTests.swift,
 				SAMPipelineTests/SAM3DetectionTests.swift,
@@ -85,6 +86,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				ChartViewTest.swift,
+				ReminderOverview/ReminderAppStateDirectTests.swift,
 				ReminderOverview/ReminderOverview.swift,
 				SAMPipelineTests/SAM3DecoderTests.swift,
 				SAMPipelineTests/SAM3DetectionTests.swift,
