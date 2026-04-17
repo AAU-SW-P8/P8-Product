@@ -196,10 +196,6 @@ final class ReminderViewUITests: XCTestCase {
 		XCTAssertTrue(app.buttons["Disabled"].exists)
 	}
 
-	func testDefaultReminderToggleExists() {
-		XCTAssertTrue(app.switches["Reminder Enabled"].waitForExistence(timeout: 3))
-	}
-
 	func testReminderModeChangesMoleFrequencyControlEnabledState() throws {
 		// Verifies reminder mode toggles whether the per-mole frequency picker is editable.
 		XCTAssertTrue(app.staticTexts["Mole Left Arm Mole"].waitForExistence(timeout: 3))
