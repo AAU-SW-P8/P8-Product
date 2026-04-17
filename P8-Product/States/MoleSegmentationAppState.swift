@@ -18,6 +18,7 @@ class MoleSegmentationAppState {
     var showSettings: Bool = false
     var showPersonPicker: Bool = false
     var showMoleActionDialog: Bool = false
+    var showExistingBodyPartPicker: Bool = false
     var showExistingMolePicker: Bool = false
     var showNewMoleMetadataSheet: Bool = false
     
@@ -27,6 +28,7 @@ class MoleSegmentationAppState {
     var activeAlert: AlertState?
     var newMoleName: String = ""
     var selectedBodyPart: BodyPart = .unassigned
+    var selectedExistingBodyPart: String?
     
     // Dependencies
     private let dataController: DataController
@@ -101,6 +103,7 @@ class MoleSegmentationAppState {
         maskOverlay = nil
         detectedBoxes = []
         selectedPersonForScan = nil
+        selectedExistingBodyPart = nil
         statusMessage = "Cleared"
         modelLoader.segmentor?.clearCache()
     }
@@ -117,6 +120,49 @@ class MoleSegmentationAppState {
         newMoleName = ""
         selectedBodyPart = .unassigned
         showNewMoleMetadataSheet = true
+    }
+
+    /// Starts the existing-mole flow by asking for body part first.
+    func beginExistingMoleFlow() {
+        guard selectedBoxForMole != nil else {
+            activeAlert = .error("Please long-press a detected mole first.")
+            return
+        }
+
+        let bodyParts: [String] = existingBodyPartsForSelectedPerson()
+        guard !bodyParts.isEmpty else {
+            activeAlert = .error("No existing moles found for this person.")
+            return
+        }
+
+        selectedExistingBodyPart = nil
+        showExistingBodyPartPicker = true
+    }
+
+    func existingBodyPartsForSelectedPerson() -> [String] {
+        guard let person: Person = selectedPersonForScan else { return [] }
+        let uniqueParts: Set<String> = Set(person.moles.map { $0.bodyPart })
+        return uniqueParts.sorted { lhs, rhs in
+            lhs.localizedCaseInsensitiveCompare(rhs) == .orderedAscending
+        }
+    }
+
+    func existingMolesForSelectedBodyPart() -> [Mole] {
+        guard
+            let person: Person = selectedPersonForScan,
+            let bodyPart: String = selectedExistingBodyPart
+        else { return [] }
+
+        return person.moles
+            .filter { $0.bodyPart == bodyPart }
+            .sorted { lhs, rhs in
+                lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+            }
+    }
+
+    func chooseExistingBodyPart(_ bodyPart: String) {
+        selectedExistingBodyPart = bodyPart
+        showExistingMolePicker = true
     }
     
     /**
@@ -163,6 +209,7 @@ class MoleSegmentationAppState {
             // 3. Update UI state
             statusMessage = "Added scan to \(mole.name)!"
             activeAlert = .success("Successfully saved scan.")
+            selectedExistingBodyPart = nil
         }
     }
     

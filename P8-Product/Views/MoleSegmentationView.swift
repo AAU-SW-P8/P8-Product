@@ -87,15 +87,19 @@ struct MoleSegmentationView: View {
         .confirmationDialog("Mole Action", isPresented: $appState.showMoleActionDialog) {
             Button("New Mole") { appState.beginNewMoleFlow() }
             if let person: Person = appState.selectedPersonForScan, !person.moles.isEmpty {
-                Button("Existing Mole") { appState.showExistingMolePicker = true }
+                Button("Existing Mole") { appState.beginExistingMoleFlow() }
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        .confirmationDialog("Select Body Part", isPresented: $appState.showExistingBodyPartPicker) {
+            ForEach(appState.existingBodyPartsForSelectedPerson(), id: \.self) { bodyPart in
+                Button(bodyPart) { appState.chooseExistingBodyPart(bodyPart) }
             }
             Button("Cancel", role: .cancel) {}
         }
         .confirmationDialog("Select Existing Mole", isPresented: $appState.showExistingMolePicker) {
-            if let person: Person = appState.selectedPersonForScan {
-                ForEach(person.moles) { mole in
-                    Button(mole.name) { appState.handleExistingMoleSelection(mole: mole) }
-                }
+            ForEach(appState.existingMolesForSelectedBodyPart()) { mole in
+                Button(mole.name) { appState.handleExistingMoleSelection(mole: mole) }
             }
             Button("Cancel", role: .cancel) {}
         }
