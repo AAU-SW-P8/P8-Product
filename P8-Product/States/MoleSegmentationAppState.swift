@@ -19,11 +19,14 @@ class MoleSegmentationAppState {
     var showPersonPicker: Bool = false
     var showMoleActionDialog: Bool = false
     var showExistingMolePicker: Bool = false
+    var showNewMoleMetadataSheet: Bool = false
     
     // MARK: - Selection State
     var selectedPersonForScan: Person?
     var selectedBoxForMole: CGRect?
     var activeAlert: AlertState?
+    var newMoleName: String = ""
+    var selectedBodyPart: BodyPart = .unassigned
     
     // Dependencies
     private let dataController: DataController
@@ -103,6 +106,18 @@ class MoleSegmentationAppState {
     }
     
     // MARK: - Data Saving Logic
+
+    /// Opens the metadata UI for creating a new mole.
+    func beginNewMoleFlow() {
+        guard selectedBoxForMole != nil else {
+            activeAlert = .error("Please long-press a detected mole first.")
+            return
+        }
+
+        newMoleName = ""
+        selectedBodyPart = .unassigned
+        showNewMoleMetadataSheet = true
+    }
     
     /**
      Handles the logic for when a new mole is selected to be added. 
@@ -114,9 +129,17 @@ class MoleSegmentationAppState {
     func handleNewMoleSelection() {
         guard let person: Person = selectedPersonForScan, let image: UIImage = testImage, let box: CGRect = selectedBoxForMole else { return }
         if let cropped: UIImage = cropImage(image, to: box) {
-            dataController.addMoleAndScan(to: person, image: cropped)
+            dataController.addMoleAndScan(
+                to: person,
+                image: cropped,
+                name: newMoleName,
+                bodyPart: selectedBodyPart.rawValue
+            )
             statusMessage = "Added mole to \(person.name)!"
             activeAlert = .success("Successfully saved scan.")
+            showNewMoleMetadataSheet = false
+            newMoleName = ""
+            selectedBodyPart = .unassigned
         }
     }
     

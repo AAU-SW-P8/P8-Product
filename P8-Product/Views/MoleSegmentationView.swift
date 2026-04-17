@@ -72,6 +72,9 @@ struct MoleSegmentationView: View {
             // Assuming settingsSheet is extracted
             settingsSheet
         }
+        .sheet(isPresented: $appState.showNewMoleMetadataSheet) {
+            newMoleMetadataSheet
+        }
         .confirmationDialog("Who is this scan for?", isPresented: $appState.showPersonPicker) {
             ForEach(people) { person in
                 Button(person.name) {
@@ -82,7 +85,7 @@ struct MoleSegmentationView: View {
             Button("Cancel", role: .cancel) {}
         }
         .confirmationDialog("Mole Action", isPresented: $appState.showMoleActionDialog) {
-            Button("New Mole") { appState.handleNewMoleSelection() }
+            Button("New Mole") { appState.beginNewMoleFlow() }
             if let person: Person = appState.selectedPersonForScan, !person.moles.isEmpty {
                 Button("Existing Mole") { appState.showExistingMolePicker = true }
             }
@@ -298,6 +301,42 @@ struct MoleSegmentationView: View {
                 }
             }
             .presentationDetents([.height(300)])
+        }
+    }
+
+    private var newMoleMetadataSheet: some View {
+        NavigationStack {
+            Form {
+                Section("Body Part") {
+                    Picker("Body Part", selection: $appState.selectedBodyPart) {
+                        ForEach(BodyPart.allCases) { bodyPart in
+                            Text(bodyPart.rawValue).tag(bodyPart)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
+
+                Section("Mole Name") {
+                    TextField("Mole name", text: $appState.newMoleName)
+                    Text("Optional. Leave empty to auto-generate a name.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle("New Mole")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        appState.showNewMoleMetadataSheet = false
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Save") {
+                        appState.handleNewMoleSelection()
+                    }
+                }
+            }
         }
     }
 

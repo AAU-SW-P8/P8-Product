@@ -168,13 +168,20 @@ class DataController {
     // MARK: - Business Logic & Persistence
     
     /// Creates a new scan, a new mole, and links them together for a specific person.
-    func addMoleAndScan(to person: Person, image: UIImage) {
+    func addMoleAndScan(
+        to person: Person,
+        image: UIImage,
+        name: String? = nil,
+        bodyPart: String = BodyPart.unassigned.rawValue
+    ) {
         let context: ModelContext = container.mainContext
+        let trimmedName: String = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let resolvedName: String = trimmedName.isEmpty ? "Mole \(person.moles.count + 1)" : trimmedName
         
         let scan: MoleScan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9))
         let mole: Mole = Mole(
-            name: "Mole \(person.moles.count + 1)",
-            bodyPart: "Unassigned",
+            name: resolvedName,
+            bodyPart: bodyPart,
             isReminderActive: false,
             reminderFrequency: nil,
             nextDueDate: nil,
