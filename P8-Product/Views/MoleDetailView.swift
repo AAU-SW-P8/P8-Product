@@ -53,7 +53,8 @@ struct MoleDetailView: View {
                             selectedIndex: $appState.selectedIndex,
                             onDeleteSelectedInstance: {
                                 appState.requestDeleteSelectedDetailInstance()
-                            }
+                            },
+                            side: .both // Full circle for detail view
                         )
                             .frame(maxWidth: 420)
                     }
@@ -85,11 +86,25 @@ struct MoleDetailView: View {
                     ScrollView {
                         if appState.scans.count > 1 {
                             HStack(spacing: 0) {
-                                ImageCarousel(scans: appState.scans, mole: appState.activeMole, selectedIndex: $appState.selectedEvolutionTopIndex)
-                                    .accessibilityIdentifier("leftCarousel")
+                                ImageCarousel(
+                                    scans: appState.scans,
+                                    mole: appState.activeMole,
+                                    selectedIndex: $appState.selectedEvolutionTopIndex,
+                                    side: .left,
+                                    otherSelectedIndex: appState.selectedEvolutionBottomIndex
+                                )
+                                .accessibilityIdentifier("leftCarousel")
+
                                 Divider()
-                                ImageCarousel(scans: appState.scans, mole: appState.activeMole, selectedIndex: $appState.selectedEvolutionBottomIndex)
-                                    .accessibilityIdentifier("rightCarousel")
+
+                                ImageCarousel(
+                                    scans: appState.scans,
+                                    mole: appState.activeMole,
+                                    selectedIndex: $appState.selectedEvolutionBottomIndex,
+                                    side: .right,
+                                    otherSelectedIndex: appState.selectedEvolutionTopIndex
+                                )
+                                .accessibilityIdentifier("rightCarousel")
                             }
                             .accessibilityElement(children: .contain)
                             .accessibilityIdentifier("dualCarouselContainer")
@@ -120,7 +135,13 @@ struct MoleDetailView: View {
                                 .padding(.top, 8)
                                 .accessibilityIdentifier("metricPicker")
 
-                                ChartView(mole: appState.activeMole, metric: appState.selectedMetric)
+                                ChartView(
+                                    mole: appState.activeMole,
+                                    metric: appState.selectedMetric,
+                                    scans: appState.scans,
+                                    topSelectedIndex: appState.selectedEvolutionTopIndex,
+                                    bottomSelectedIndex: appState.selectedEvolutionBottomIndex
+                                )
                             }
                             .padding(.vertical, 12)
                             .background(
@@ -135,9 +156,25 @@ struct MoleDetailView: View {
                             .padding(.top, 8)
                         } else {
                             HStack(spacing: 0) {
-                                ImageCarousel(scans: appState.scans, mole: appState.activeMole, selectedIndex: $appState.selectedEvolutionBottomIndex)
-                                    .frame(maxWidth: 420)
-                                    .accessibilityIdentifier("singleCarousel")
+                                ImageCarousel(
+                                    scans: appState.scans,
+                                    mole: appState.activeMole,
+                                    selectedIndex: $appState.selectedEvolutionTopIndex,
+                                    side: .left,
+                                    otherSelectedIndex: appState.selectedEvolutionBottomIndex // <-- Added
+                                )
+                                .accessibilityIdentifier("leftCarousel")
+                                
+                                Divider()
+                                
+                                ImageCarousel(
+                                    scans: appState.scans,
+                                    mole: appState.activeMole,
+                                    selectedIndex: $appState.selectedEvolutionBottomIndex,
+                                    side: .right,
+                                    otherSelectedIndex: appState.selectedEvolutionTopIndex // <-- Added
+                                )
+                                .accessibilityIdentifier("rightCarousel")
                             }
                             .padding(.vertical, 12)
                             .background(
@@ -208,6 +245,43 @@ struct MoleDetailView: View {
             guard shouldDismiss else { return }
             dismiss()
             appState.consumeDismissRequest()
+        }
+    }
+}
+
+// MARK: - Custom Carousel Indicator Components
+
+enum CarouselSide {
+    case left
+    case right
+    case both
+}
+
+struct SelectionMarker: View {
+    let side: CarouselSide
+    var size: CGFloat = 12
+    var color: Color = .accentColor
+
+    var body: some View {
+        switch side {
+        case .left:
+            Image(systemName: "square.fill")
+                .resizable()
+                .scaledToFit()
+                .foregroundStyle(color)
+                .frame(width: size, height: size)
+
+        case .right:
+            Image(systemName: "triangle.fill")
+                .resizable()
+                .scaledToFit()
+                .foregroundStyle(color)
+                .frame(width: size, height: size)
+
+        case .both:
+            Circle()
+                .fill(color)
+                .frame(width: size + 2, height: size + 2)
         }
     }
 }

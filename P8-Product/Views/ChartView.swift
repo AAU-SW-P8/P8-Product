@@ -39,62 +39,84 @@ enum ChartMetric: String, CaseIterable, Identifiable {
 
 /**
     View responsible for rendering the line chart of a mole's area or diameter over time.
-    It extracts the relevant data points from the mole's instances and displays them, 
-    along with an annotation of the overall trend.
-    - Fields
-        - mole: The mole whose data we want to visualize.
-        - metric: The specific measurement (area or diameter) to chart.
+    It also highlights the two scans currently selected in the evolution carousels:
+    - left carousel  -> square
+    - right carousel -> triangle
+    - both carousels -> larger circle
 */
 struct ChartView: View {
     /**
         DataPoint represents a single measurement of the mole at a specific date.
         It conforms to Identifiable for use in ForEach and Equatable for testing purposes.
-        - Fields
-            - id: A unique identifier for the data point.
-            - date: The date of the measurement.
-            - value: The value of the metric (area or diameter) at that date.
-        - Methods
-            - ==: An equality operator to compare two DataPoints based on their date and value, ignoring the id.  
     */
     struct DataPoint: Identifiable, Equatable {
         let id = UUID()
+        let index: Int
         let date: Date
         let value: Double
 
         static func == (lhs: DataPoint, rhs: DataPoint) -> Bool {
-            lhs.date == rhs.date && lhs.value == rhs.value
+            lhs.index == rhs.index && lhs.date == rhs.date && lhs.value == rhs.value
         }
+    }
+
+    private enum SelectedMarkerKind {
+        case left
+        case right
+        case both
     }
 
     let mole: Mole
     let metric: ChartMetric
+    let scans: [MoleScan]
+    let topSelectedIndex: Int
+    let bottomSelectedIndex: Int
 
-    static func makeChartData(for mole: Mole, metric: ChartMetric) -> [DataPoint] {
-        mole.instances
-            .compactMap { instance in
-                guard let scan = instance.moleScan else { return nil }
-                let value: Double
-                switch metric {
-                case .area:
-                    value = Double(instance.area)
-                case .diameter:
-                    value = Double(instance.diameter)
-                }
-                return DataPoint(date: scan.captureDate, value: value)
+    private var safeTopIndex: Int {
+        ImageCarousel.safeIndex(for: scans, requested: topSelectedIndex)
+    }
+
+    private var safeBottomIndex: Int {
+        ImageCarousel.safeIndex(for: scans, requested: bottomSelectedIndex)
+    }
+
+    static func makeChartData(for mole: Mole, metric: ChartMetric, scans: [MoleScan]) -> [DataPoint] {
+        scans.enumerated().compactMap { index, scan in
+            guard let instance = scan.instances.first(where: { $0.mole?.id == mole.id }) else {
+                return nil
             }
-            .sorted { $0.date < $1.date }
+
+            let value: Double
+            switch metric {
+            case .area:
+                value = Double(instance.area)
+            case .diameter:
+                value = Double(instance.diameter)
+            }
+
+            return DataPoint(
+                index: index,
+                date: scan.captureDate,
+                value: value
+            )
+        }
     }
 
-    /// Computes the data points for the chart based on the mole's instances and the selected metric.
+    /// Computes the data points for the chart based on the scans and the selected metric.
     private var chartData: [DataPoint] {
-        Self.makeChartData(for: mole, metric: metric)
+        Self.makeChartData(for: mole, metric: metric, scans: scans)
     }
 
-    /// Calculates the overall change in the metric from the first to the last data point, indicating growth or shrinkage.
+    /// Calculates the overall change in the metric from the first to the last data point.
     private var evolution: Double {
-        let first = chartData.first?.value ?? 0
-        let last = chartData.last?.value ?? first
-        return last - first
+        guard
+            let oldestPoint = chartData.min(by: { $0.date < $1.date }),
+            let newestPoint = chartData.max(by: { $0.date < $1.date })
+        else {
+            return 0
+        }
+
+        return newestPoint.value - oldestPoint.value
     }
 
     /// Formats the evolution value with a "+" or "-" sign and includes the unit for display in the UI.
@@ -112,6 +134,42 @@ struct ChartView: View {
     /// Helper to format the metric values for display in the chart annotations.
     private func formattedMetricValue(_ value: Double) -> String {
         "\(String(format: "%.1f", value))"
+    }
+
+    private func markerKind(for pointIndex: Int) -> SelectedMarkerKind? {
+        let isTopSelected = pointIndex == safeTopIndex
+        let isBottomSelected = pointIndex == safeBottomIndex
+
+        if isTopSelected && isBottomSelected {
+            return .both
+        } else if isTopSelected {
+            return .left
+        } else if isBottomSelected {
+            return .right
+        } else {
+            return nil
+        }
+    }
+
+    @ViewBuilder
+    private func markerSymbol(for kind: SelectedMarkerKind) -> some View {
+        switch kind {
+        case .left:
+            Image(systemName: "square.fill")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 12, height: 12)
+
+        case .right:
+            Image(systemName: "triangle.fill")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 12, height: 12)
+
+        case .both:
+            Circle()
+                .frame(width: 14, height: 14)
+        }
     }
 
     var body: some View {
@@ -135,18 +193,31 @@ struct ChartView: View {
                     )
                     .interpolationMethod(.catmullRom)
                     .foregroundStyle(.blue)
-                    .symbol(Circle())
 
                     PointMark(
                         x: .value("Date", point.date),
                         y: .value(metric.title, point.value)
                     )
                     .foregroundStyle(.blue)
-                    .symbolSize(100)
+                    .symbolSize(45)
                     .annotation(position: .bottom) {
                         Text(formattedMetricValue(point.value))
                             .font(.caption)
                             .foregroundStyle(.primary)
+                    }
+                }
+
+                ForEach(chartData) { point in
+                    if let markerKind = markerKind(for: point.index) {
+                        PointMark(
+                            x: .value("Date", point.date),
+                            y: .value(metric.title, point.value)
+                        )
+                        .foregroundStyle(.black)
+                        .symbol {
+                            markerSymbol(for: markerKind)
+                        }
+                        .symbolSize(markerKind == .both ? 170 : 130)
                     }
                 }
             }
