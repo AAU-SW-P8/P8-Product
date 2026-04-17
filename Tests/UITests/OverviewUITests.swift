@@ -231,8 +231,8 @@ final class OverviewUITests: XCTestCase {
         )
         XCTAssertTrue(app.staticTexts["Taylor"].waitForExistence(timeout: 3), "Overview should reflect the newly selected person")
     }
-   
-        
+
+    // MARK: - Overview Filter & Sort   
         
     // MARK: - Persistent Storage
     func testRenamedPersonPersistsAfterRelaunch() {
