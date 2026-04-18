@@ -59,6 +59,16 @@ private struct OverviewContentView: View {
                 }
 
                 if showingFilters {
+                    Color.black.opacity(0.001)
+                        .ignoresSafeArea()
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            closeFilterPopup()
+                        }
+                        .zIndex(1)
+                }
+
+                if showingFilters {
                     filterPopupView
                         .padding(.top, 64)
                         .padding(.trailing, 12)
@@ -73,13 +83,17 @@ private struct OverviewContentView: View {
                 appState.initializeSelectionIfNeeded(with: newValue)
             }
             .onChange(of: appState.selectedPerson?.id) { _, _ in
-                selectedBodyParts = []
-                showingBodyPartDropdown = false
+                // Keep live filter choices when switching pages/person, but drop options that are no longer valid.
+                selectedBodyParts = selectedBodyParts.intersection(Set(availableBodyParts))
+                closeFilterPopup()
             }
             .onChange(of: showingFilters) { _, isVisible in
                 if !isVisible {
                     showingBodyPartDropdown = false
                 }
+            }
+            .onDisappear {
+                closeFilterPopup()
             }
         }
     }
@@ -95,9 +109,7 @@ private struct OverviewContentView: View {
                 .fontWeight(.bold)
             Spacer()
             Button(action: {
-                withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
-                    showingFilters.toggle()
-                }
+                showingFilters ? closeFilterPopup() : openFilterPopup()
             }) {
                 Image(systemName: "line.3.horizontal.decrease.circle")
                     .font(.system(size: 22, weight: .semibold))
@@ -336,7 +348,7 @@ private struct OverviewContentView: View {
 
                 Spacer()
                 Button("Done") {
-                    showingFilters = false
+                    closeFilterPopup()
                 }
                 .buttonStyle(.borderedProminent)
                 .accessibilityIdentifier("overviewFilterDoneButton")
@@ -353,6 +365,19 @@ private struct OverviewContentView: View {
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .shadow(color: .black.opacity(0.15), radius: 12, x: 0, y: 4)
         .accessibilityIdentifier("overviewFilterPopup")
+    }
+
+    private func openFilterPopup() {
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
+            showingFilters = true
+        }
+    }
+
+    private func closeFilterPopup() {
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
+            showingBodyPartDropdown = false
+            showingFilters = false
+        }
     }
 
     private var selectedBodyPartsSummary: String {
