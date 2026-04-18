@@ -480,6 +480,16 @@ private struct OverviewContentView: View {
         return mole.isReminderActive
     }
 
+    // TODO: Use this function instead of effectiveReminderEnabled in the row view, so we can hide the bell icon when the mole is due but not following default reminders.
+    // Fix all related tests after implementing.
+    private func shouldShowDueBell(for mole: Mole, person: Person) -> Bool {
+        guard effectiveReminderEnabled(for: mole, person: person),
+              let dueDate = mole.nextDueDate else {
+            return false
+        }
+        return dueDate <= Date()
+    }
+
     private func latestScan(for mole: Mole) -> MoleScan? {
         mole.instances
             .compactMap(\.moleScan)

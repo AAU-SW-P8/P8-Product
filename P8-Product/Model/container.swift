@@ -230,11 +230,7 @@ class DataController {
 
         context.insert(scan)
         context.insert(instance)
-        mole.nextDueDate = nextDueDate(
-            for: effectiveFrequencyLabel(for: mole),
-            referenceDate: scan.captureDate,
-            isEnabled: effectiveReminderEnabled(for: mole)
-        )
+        recalculateNextDueDate(for: mole)
 
         do {
             try context.save()
@@ -243,21 +239,21 @@ class DataController {
         }
     }
 
-    private func effectiveReminderEnabled(for mole: Mole) -> Bool {
+    func effectiveReminderEnabled(for mole: Mole) -> Bool {
         if mole.followDefaultReminderEnabled ?? true {
             return mole.person?.defaultReminderEnabled ?? mole.isReminderActive
         }
         return mole.isReminderActive
     }
 
-    private func effectiveFrequencyLabel(for mole: Mole) -> String? {
+    func effectiveFrequencyLabel(for mole: Mole) -> String? {
         if mole.followDefault ?? true {
             return mole.person?.defaultReminderFrequency
         }
         return mole.reminderFrequency?.rawValue
     }
 
-    private func nextDueDate(for frequencyLabel: String?, referenceDate: Date, isEnabled: Bool) -> Date? {
+    func nextDueDate(for frequencyLabel: String?, referenceDate: Date, isEnabled: Bool) -> Date? {
         guard isEnabled, let frequencyLabel else { return nil }
 
         let calendar: Calendar = Calendar.current
@@ -275,6 +271,31 @@ class DataController {
 
         guard let computedDate else { return nil }
         return max(Date(), computedDate)
+    }
+
+    func latestCaptureDate(for mole: Mole, excluding excludedInstance: MoleInstance? = nil) -> Date? {
+        mole.instances
+            .filter { instance in
+                guard let excludedInstance else { return true }
+                return instance !== excludedInstance
+            }
+            .compactMap { $0.moleScan?.captureDate }
+            .max()
+    }
+
+    func recalculateNextDueDate(for mole: Mole, excluding excludedInstance: MoleInstance? = nil) {
+        guard effectiveReminderEnabled(for: mole),
+              let frequencyLabel = effectiveFrequencyLabel(for: mole),
+              let captureDate = latestCaptureDate(for: mole, excluding: excludedInstance) else {
+            mole.nextDueDate = nil
+            return
+        }
+
+        mole.nextDueDate = nextDueDate(
+            for: frequencyLabel,
+            referenceDate: captureDate,
+            isEnabled: true
+        )
     }
 
     func delete(_ person: Person) {

@@ -1,4 +1,6 @@
 import SwiftUI
+import Foundation
+import SwiftData
 
 @MainActor
 @Observable
@@ -122,13 +124,16 @@ final class MoleDetailAppState {
 		dataController.delete(instance)
 
 		let selectedMole: Mole = activeMole
-		let hasAnyScansLeft: Bool = selectedMole.instances.contains { $0.moleScan != nil }
+		let hasAnyScansLeft: Bool = selectedMole.instances.contains { $0 !== instance && $0.moleScan != nil }
 		if !hasAnyScansLeft {
 			dataController.delete(selectedMole)
 			selectionState.selectedMole = nil
 			shouldDismissDetailView = true
 			return
 		}
+
+		dataController.recalculateNextDueDate(for: selectedMole, excluding: instance)
+		persistMoleChanges()
 
 		clampSelectedIndicesIfNeeded()
 	}
@@ -148,5 +153,13 @@ final class MoleDetailAppState {
 		let maxIndex = max(0, scans.count - 1)
 		selectedEvolutionTopIndex = maxIndex
 		selectedEvolutionBottomIndex = 0
+	}
+
+	private func persistMoleChanges() {
+		do {
+			try dataController.container.mainContext.save()
+		} catch {
+			print("Failed to update mole due date after deleting instance: \(error)")
+		}
 	}
 }

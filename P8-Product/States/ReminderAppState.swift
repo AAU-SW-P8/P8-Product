@@ -121,31 +121,7 @@ class ReminderAppState {
     }
 
     private func updateDueDateForEnabledMoleOverride(_ mole: Mole) {
-        let frequencyLabel: String
-        if mole.followDefault ?? true {
-            if let person = selectedPerson {
-                frequencyLabel = displayFrequency(for: person)
-            } else {
-                frequencyLabel = "Weekly"
-            }
-        } else {
-            switch mole.reminderFrequency {
-            case .some(.weekly):
-                frequencyLabel = "Weekly"
-            case .some(.monthly):
-                frequencyLabel = "Monthly"
-            case .some(.quarterly):
-                frequencyLabel = "Quarterly"
-            case .none:
-                if let person = selectedPerson {
-                    frequencyLabel = displayFrequency(for: person)
-                } else {
-                    frequencyLabel = "Weekly"
-                }
-            }
-        }
-
-        applyNextDueDate(to: mole, frequencyLabel: frequencyLabel)
+        dataController.recalculateNextDueDate(for: mole)
     }
 
     /**
@@ -164,49 +140,14 @@ class ReminderAppState {
             mole.reminderFrequency = Frequency(rawValue: frequencyLabel.lowercased())
         }
 
-        let resolvedFrequencyLabel: String
-        if frequencyLabel == "Default", let person = selectedPerson {
-            resolvedFrequencyLabel = displayFrequency(for: person)
-        } else {
-            resolvedFrequencyLabel = frequencyLabel
-        }
-
-        guard isReminderEffectivelyEnabled(for: mole) else {
+        guard dataController.effectiveReminderEnabled(for: mole) else {
             mole.nextDueDate = nil
             persistChanges()
             return
         }
 
-        applyNextDueDate(to: mole, frequencyLabel: resolvedFrequencyLabel)
+        dataController.recalculateNextDueDate(for: mole)
         persistChanges()
-    }
-
-    private func isReminderEffectivelyEnabled(for mole: Mole) -> Bool {
-        if mole.followDefaultReminderEnabled ?? true {
-            return reminderEnabled
-        }
-        return mole.isReminderActive
-    }
-
-    private func applyNextDueDate(to mole: Mole, frequencyLabel: String) {
-
-        let calendar = Calendar.current
-        let lastCheckIn = mole.instances.compactMap { $0.moleScan?.captureDate }.max()
-        guard let lastCheckIn else { return }
-
-        let nextDueDate: Date?
-        switch frequencyLabel {
-        case "Weekly":
-            nextDueDate = calendar.date(byAdding: .weekOfYear, value: 1, to: lastCheckIn)
-        case "Monthly":
-            nextDueDate = calendar.date(byAdding: .month, value: 1, to: lastCheckIn)
-        case "Quarterly":
-            nextDueDate = calendar.date(byAdding: .month, value: 3, to: lastCheckIn)
-        default:
-            nextDueDate = nil
-        }
-
-        mole.nextDueDate = max(Date(), nextDueDate ?? Date())
     }
 
     /**
@@ -237,28 +178,11 @@ class ReminderAppState {
         guard let person = selectedPerson else { return }
 
         for mole in person.moles where mole.followDefaultReminderEnabled ?? true {
-            guard isEnabled else {
-                mole.nextDueDate = nil
-                continue
-            }
-
-            let frequencyLabel: String
-            if mole.followDefault ?? true {
-                frequencyLabel = displayFrequency(for: person)
+            if isEnabled {
+                dataController.recalculateNextDueDate(for: mole)
             } else {
-                switch mole.reminderFrequency {
-                case .some(.weekly):
-                    frequencyLabel = "Weekly"
-                case .some(.monthly):
-                    frequencyLabel = "Monthly"
-                case .some(.quarterly):
-                    frequencyLabel = "Quarterly"
-                case .none:
-                    frequencyLabel = displayFrequency(for: person)
-                }
+                mole.nextDueDate = nil
             }
-
-            applyNextDueDate(to: mole, frequencyLabel: frequencyLabel)
         }
     }
 
