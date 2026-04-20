@@ -148,26 +148,37 @@ enum CalculatorHelper {
             a.x != b.x ? a.x < b.x : a.y < b.y
         }
 
+
+        /// Cross product of OA and OB vectors, i.e. z-component of their 3D cross product.
+        /// - Parameters:
+        ///   - o: Origin point O.
+        ///   - a: Point A.
+        ///   - b: Point B.
+        /// - Returns: a positive value if OAB makes a left turn, negative for right turn, and zero if the points are collinear.
         func cross(_ o: CGPoint, _ a: CGPoint, _ b: CGPoint) -> CGFloat {
             (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
         }
 
+        // Build lower hull
         var lower: [CGPoint] = []
         for p in sorted {
+            // Remove the last point from the hull while we turn clockwise or are collinear.
             while lower.count >= 2 && cross(lower[lower.count - 2], lower[lower.count - 1], p) <= 0 {
                 lower.removeLast()
             }
+            // Append the current point to the hull.
             lower.append(p)
         }
 
         var upper: [CGPoint] = []
+        // Build upper hull in reverse order
         for p in sorted.reversed() {
             while upper.count >= 2 && cross(upper[upper.count - 2], upper[upper.count - 1], p) <= 0 {
                 upper.removeLast()
             }
             upper.append(p)
         }
-
+        // Remove the last point of each half because it's repeated at the beginning of the other half.
         lower.removeLast()
         upper.removeLast()
         return lower + upper

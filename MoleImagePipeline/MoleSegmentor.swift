@@ -60,7 +60,8 @@ class MoleSegmentor {
     ///     pass ~`0.5` for actual deduplication.
     /// - Returns: A tuple of (annotated overlay image, bounding boxes in pixel
     ///   coordinates, mask-only image for area calculation), or `nil` if no
-    ///   detections passed the confidence threshold.
+    ///   detections passed the confidence threshold or if overlay or mask-only  
+    ///   rendering fails. 
     func segment(image: UIImage, confidenceThreshold: Float = 0.3, nmsThreshold: Float = 1.0) throws -> (UIImage, [CGRect], UIImage)? {
         let clock = ContinuousClock()
 
