@@ -27,10 +27,16 @@ struct ReminderView: View {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 20) {
                         sectionContainer(title: "Default Reminder Enabled") {
-                            Toggle("Reminder Enabled", isOn: $appState.reminderEnabled)
-                                .onChange(of: appState.reminderEnabled) { _, newValue in
-                                    appState.setDefaultReminderEnabled(newValue)
-                                }
+                            HStack {
+                                Text("Reminder Enabled")
+                                Spacer()
+                                Toggle("", isOn: $appState.reminderEnabled)
+                                    .labelsHidden()
+                                    .accessibilityIdentifier("defaultReminderEnabledToggle")
+                            }
+                            .onChange(of: appState.reminderEnabled) { _, newValue in
+                                appState.setDefaultReminderEnabled(newValue)
+                            }
                         }
 
                         sectionContainer(title: "Default Reminder Frequency") {
@@ -60,8 +66,10 @@ struct ReminderView: View {
                                                 Spacer()
                                                 if let dueDate = mole.nextDueDate {
                                                     Text(dueDate, format: .dateTime.month().day().hour().minute())
+                                                        .accessibilityIdentifier("moleDueDateLabel_\(mole.name)")
                                                 } else {
                                                     Text("No date set")
+                                                        .accessibilityIdentifier("moleDueDateLabel_\(mole.name)")
                                                 }
                                             }
 

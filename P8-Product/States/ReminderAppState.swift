@@ -16,6 +16,7 @@ import SwiftData
 class ReminderAppState {
     // The selected person is shared across the app through SelectionState, so that all views stay in sync without needing to pass the selection through the view hierarchy.
     @ObservationIgnored private let selectionState = SelectionState.shared
+    @ObservationIgnored private let dataController = DataController.shared
 
     // MARK: - Persistent Data Selection
     var reminderEnabled = true
@@ -100,15 +101,27 @@ class ReminderAppState {
                 case "Enabled":
                     mole.followDefaultReminderEnabled = false
                     mole.isReminderActive = true
+                    self.updateDueDateForEnabledMoleOverride(mole)
                 case "Disabled":
                     mole.followDefaultReminderEnabled = false
                     mole.isReminderActive = false
+                    mole.nextDueDate = nil
                 default:
                     mole.followDefaultReminderEnabled = true
                     mole.isReminderActive = self.reminderEnabled
+                    if self.reminderEnabled {
+                        self.updateDueDateForEnabledMoleOverride(mole)
+                    } else {
+                        mole.nextDueDate = nil
+                    }
                 }
+                self.persistChanges()
             }
         )
+    }
+
+    private func updateDueDateForEnabledMoleOverride(_ mole: Mole) {
+        dataController.recalculateNextDueDate(for: mole)
     }
 
     /**
@@ -127,30 +140,14 @@ class ReminderAppState {
             mole.reminderFrequency = Frequency(rawValue: frequencyLabel.lowercased())
         }
 
-        let effectiveFrequencyLabel: String
-        if frequencyLabel == "Default", let person = selectedPerson {
-            effectiveFrequencyLabel = displayFrequency(for: person)
-        } else {
-            effectiveFrequencyLabel = frequencyLabel
+        guard dataController.effectiveReminderEnabled(for: mole) else {
+            mole.nextDueDate = nil
+            persistChanges()
+            return
         }
 
-        let calendar = Calendar.current
-        let lastCheckIn = mole.instances.compactMap { $0.moleScan?.captureDate }.max()
-        guard let lastCheckIn else { return }
-
-        let nextDueDate: Date?
-        switch effectiveFrequencyLabel {
-        case "Weekly":
-            nextDueDate = calendar.date(byAdding: .weekOfYear, value: 1, to: lastCheckIn)
-        case "Monthly":
-            nextDueDate = calendar.date(byAdding: .month, value: 1, to: lastCheckIn)
-        case "Quarterly":
-            nextDueDate = calendar.date(byAdding: .month, value: 3, to: lastCheckIn)
-        default:
-            nextDueDate = nil
-        }
-
-        mole.nextDueDate = max(Date(), nextDueDate ?? Date())
+        dataController.recalculateNextDueDate(for: mole)
+        persistChanges()
     }
 
     /**
@@ -172,7 +169,21 @@ class ReminderAppState {
      - Parameter newValue: The new value for the default reminder enabled state.
      */
     func setDefaultReminderEnabled(_ newValue: Bool) {
-            selectedPerson?.defaultReminderEnabled = newValue
+        selectedPerson?.defaultReminderEnabled = newValue
+        updateDueDatesForDefaultReminderEnabledChange(newValue)
+        persistChanges()
+    }
+
+    private func updateDueDatesForDefaultReminderEnabledChange(_ isEnabled: Bool) {
+        guard let person = selectedPerson else { return }
+
+        for mole in person.moles where mole.followDefaultReminderEnabled ?? true {
+            if isEnabled {
+                dataController.recalculateNextDueDate(for: mole)
+            } else {
+                mole.nextDueDate = nil
+            }
+        }
     }
 
     /**
@@ -182,6 +193,7 @@ class ReminderAppState {
      */
     func setDefaultFrequency(_ newValue: String) {
         selectedPerson?.defaultReminderFrequency = newValue
+        persistChanges()
     }
 
     /**
@@ -191,5 +203,15 @@ class ReminderAppState {
      */
     func setSelectedPerson(_ newValue: Person?) {
         selectedPerson = newValue
+    }
+
+    /// Persists reminder-related mutations to the shared SwiftData context.
+    private func persistChanges() {
+        let context = dataController.container.mainContext
+        do {
+            try context.save()
+        } catch {
+            print("Failed to persist reminder changes: \(error)")
+        }
     }
 }

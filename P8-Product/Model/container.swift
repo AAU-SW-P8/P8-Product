@@ -179,12 +179,17 @@ class DataController {
         let resolvedName: String = trimmedName.isEmpty ? "Mole \(person.moles.count + 1)" : trimmedName
         
         let scan: MoleScan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9))
+        let initialDueDate: Date? = nextDueDate(
+            for: person.defaultReminderFrequency,
+            referenceDate: scan.captureDate,
+            isEnabled: person.defaultReminderEnabled
+        )
         let mole: Mole = Mole(
             name: resolvedName,
             bodyPart: bodyPart,
-            isReminderActive: false,
+            isReminderActive: person.defaultReminderEnabled,
             reminderFrequency: nil,
-            nextDueDate: nil,
+            nextDueDate: initialDueDate,
             person: person
         )
         let instance: MoleInstance = MoleInstance(
@@ -225,12 +230,72 @@ class DataController {
 
         context.insert(scan)
         context.insert(instance)
+        recalculateNextDueDate(for: mole)
 
         do {
             try context.save()
         } catch {
             print("Failed to save scan to existing mole: \(error)")
         }
+    }
+
+    func effectiveReminderEnabled(for mole: Mole) -> Bool {
+        if mole.followDefaultReminderEnabled ?? true {
+            return mole.person?.defaultReminderEnabled ?? mole.isReminderActive
+        }
+        return mole.isReminderActive
+    }
+
+    func effectiveFrequencyLabel(for mole: Mole) -> String? {
+        if mole.followDefault ?? true {
+            return mole.person?.defaultReminderFrequency
+        }
+        return mole.reminderFrequency?.rawValue
+    }
+
+    func nextDueDate(for frequencyLabel: String?, referenceDate: Date, isEnabled: Bool) -> Date? {
+        guard isEnabled, let frequencyLabel else { return nil }
+
+        let calendar: Calendar = Calendar.current
+        let computedDate: Date?
+        switch frequencyLabel.lowercased() {
+        case "weekly":
+            computedDate = calendar.date(byAdding: .weekOfYear, value: 1, to: referenceDate)
+        case "monthly":
+            computedDate = calendar.date(byAdding: .month, value: 1, to: referenceDate)
+        case "quarterly":
+            computedDate = calendar.date(byAdding: .month, value: 3, to: referenceDate)
+        default:
+            computedDate = nil
+        }
+
+        guard let computedDate else { return nil }
+        return max(Date(), computedDate)
+    }
+
+    func latestCaptureDate(for mole: Mole, excluding excludedInstance: MoleInstance? = nil) -> Date? {
+        mole.instances
+            .filter { instance in
+                guard let excludedInstance else { return true }
+                return instance !== excludedInstance
+            }
+            .compactMap { $0.moleScan?.captureDate }
+            .max()
+    }
+
+    func recalculateNextDueDate(for mole: Mole, excluding excludedInstance: MoleInstance? = nil) {
+        guard effectiveReminderEnabled(for: mole),
+              let frequencyLabel = effectiveFrequencyLabel(for: mole),
+              let captureDate = latestCaptureDate(for: mole, excluding: excludedInstance) else {
+            mole.nextDueDate = nil
+            return
+        }
+
+        mole.nextDueDate = nextDueDate(
+            for: frequencyLabel,
+            referenceDate: captureDate,
+            isEnabled: true
+        )
     }
 
     func delete(_ person: Person) {

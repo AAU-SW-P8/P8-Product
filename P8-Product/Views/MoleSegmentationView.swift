@@ -142,9 +142,9 @@ struct MoleSegmentationView: View {
                             .overlay {
                                 let scaleX: Double = viewportWidth / mask.size.width
                                 let scaleY: Double = viewportHeight / mask.size.height
+                                let boxes: [CGRect] = appState.detectedBoxes
 
-                                ForEach(0..<appState.detectedBoxes.count, id: \.self) { index in
-                                    let box: CGRect = appState.detectedBoxes[index]
+                                ForEach(Array(boxes.enumerated()), id: \.offset) { _, box in
                                     let rect: CGRect = CGRect(
                                         x: box.minX * scaleX,
                                         y: box.minY * scaleY,
@@ -160,7 +160,7 @@ struct MoleSegmentationView: View {
                                         .onLongPressGesture {
                                             appState.selectedBoxForMole = box
                                             if appState.selectedPersonForScan == nil && people.count == 1 {
-                                                appState.selectedPersonForScan = people[0]
+                                                appState.selectedPersonForScan = people.first
                                             }
 
                                             if appState.selectedPersonForScan != nil {
