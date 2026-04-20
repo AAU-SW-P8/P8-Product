@@ -60,7 +60,7 @@ struct ChartView: View {
         }
     }
 
-    private enum SelectedMarkerKind {
+    enum SelectedMarkerKind {
         case left
         case right
         case both
@@ -136,7 +136,11 @@ struct ChartView: View {
         "\(String(format: "%.1f", value))"
     }
 
-    private func markerKind(for pointIndex: Int) -> SelectedMarkerKind? {
+    /**
+        Determines if a given data point index corresponds to the selected indices from the left and right carousels.
+        It returns the appropriate marker kind to indicate which carousel(s) have selected that data point.
+     */
+    func markerKind(for pointIndex: Int) -> SelectedMarkerKind? {
         let isTopSelected = pointIndex == safeTopIndex
         let isBottomSelected = pointIndex == safeBottomIndex
 
@@ -150,6 +154,21 @@ struct ChartView: View {
             return nil
         }
     }
+    
+    static func calculateMarkerKind(pointIndex: Int, safeTopIndex: Int, safeBottomIndex: Int) -> SelectedMarkerKind? {
+            let isTopSelected = pointIndex == safeTopIndex
+            let isBottomSelected = pointIndex == safeBottomIndex
+
+            if isTopSelected && isBottomSelected {
+                return .both
+            } else if isTopSelected {
+                return .left
+            } else if isBottomSelected {
+                return .right
+            } else {
+                return nil
+            }
+        }
 
     @ViewBuilder
     private func markerSymbol(for kind: SelectedMarkerKind) -> some View {

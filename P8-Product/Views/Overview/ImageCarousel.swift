@@ -186,16 +186,38 @@ struct ImageCarousel: View {
 
     // MARK: - Selection helpers
 
+    /**
+        Returns a safe index within the bounds of the scans array. 
+        If the requested index is out of bounds, it will return the nearest valid index (0 or scans.count - 1).
+        Parameters:
+        - scans: The array of MoleScan objects to check against.
+        - requested: The index that is being requested for selection.
+     */
     static func safeIndex(for scans: [MoleScan], requested: Int) -> Int {
         guard !scans.isEmpty else { return 0 }
         return min(max(requested, 0), scans.count - 1)
     }
 
+    /**
+        Returns the MoleScan object corresponding to the given index, using safeIndex to ensure it's within bounds.
+        Parameters:
+        - scans: The array of MoleScan objects to select from.
+        - index: The requested index for selection.
+     */
     static func selectedScan(in scans: [MoleScan], at index: Int) -> MoleScan? {
         guard !scans.isEmpty else { return nil }
         return scans[safeIndex(for: scans, requested: index)]
     }
 
+    /**
+        Returns the MoleInstance corresponding to the given index and mole filter, using selectedScan to find the correct scan first.
+        If a mole is provided, it will return the instance matching that mole's ID. 
+        If no mole is provided, it will return the first instance in the selected scan.
+        Parameters:
+        - scans: The array of MoleScan objects to search through.
+        - index: The requested index for selection.
+        - mole: An optional Mole object to filter the instances by.
+     */
     static func selectedInstance(in scans: [MoleScan], at index: Int, for mole: Mole?) -> MoleInstance? {
         guard let scan = selectedScan(in: scans, at: index) else { return nil }
 
@@ -206,7 +228,7 @@ struct ImageCarousel: View {
         return scan.instances.first
     }
 
-    private enum DotItem: Hashable {
+    enum DotItem: Hashable {
         case index(Int)
         case ellipsis(String)
     }
@@ -216,47 +238,47 @@ struct ImageCarousel: View {
         return Self.safeIndex(for: scans, requested: otherSelectedIndex)
     }
 
+    // 2. Delegate the property to your new static testable function
     private var visibleDotItems: [DotItem] {
-        let count = scans.count
-        let items: [DotItem]
+        Self.calculateDotItems(count: scans.count, safeIndex: safeIndex, side: side)
+    }
 
+    // 3. Add this pure function to your Selection helpers
+    static func calculateDotItems(count: Int, safeIndex: Int, side: CarouselSide) -> [DotItem] {
+        guard count > 0 else { return [] }
+        
+        let items: [DotItem]
+        
         if count <= 5 {
-            items = scans.indices.map { .index($0) }
+            items = (0..<count).map { .index($0) }
         } else {
             let last = count - 1
 
+            // Beginning
             if safeIndex <= 2 {
-                items = [
-                    .index(0),
-                    .index(1),
-                    .index(2),
-                    .ellipsis("right"),
-                    .index(last)
-                ]
-            } else if safeIndex >= last - 2 {
-                items = [
-                    .index(0),
-                    .ellipsis("left"),
-                    .index(last - 2),
-                    .index(last - 1),
-                    .index(last)
-                ]
-            } else {
-                items = [
-                    .index(0),
-                    .ellipsis("left"),
-                    .index(safeIndex - 1),
-                    .index(safeIndex),
-                    .index(safeIndex + 1),
-                    .ellipsis("right"),
-                    .index(last)
-                ]
+                items = [.index(0), .index(1), .index(2), .ellipsis("right"), .index(last)]
+            }
+            // End
+            else if safeIndex >= last - 2 {
+                items = [.index(0), .ellipsis("left"), .index(last - 2), .index(last - 1), .index(last)]
+            }
+            // Middle
+            else {
+                items = [.index(0), .ellipsis("left"), .index(safeIndex - 1), .index(safeIndex), .index(safeIndex + 1), .ellipsis("right"), .index(last)]
             }
         }
-
+        
         return (side == .left || side == .right) ? items.reversed() : items
     }
 
+    /**
+     Determines the appropriate marker kind for a given data point index based on the selected indices from both carousels. 
+     It checks if the provided index matches either the top or bottom selected index and returns a corresponding marker kind to indicate which carousel(s) have that index selected.
+     Parameters:
+     - pointIndex: The index of the data point to check against the selected indices.
+     Returns:
+     - A SelectedMarkerKind value indicating whether the pointIndex matches the left, right, or both selected indices, or nil if it matches neither.
+     */
     private var dots: some View {
         HStack(spacing: 8) {
             ForEach(visibleDotItems, id: \.self) { item in
@@ -282,6 +304,13 @@ struct ImageCarousel: View {
         .padding(.top, 4)
     }
 
+    /**
+        Returns a safe index within the bounds of the scans array. 
+        If the requested index is out of bounds, it will return the nearest valid index (0 or scans.count - 1).
+        Parameters:
+        - scans: The array of MoleScan objects to check against.
+        - requested: The index that is being requested for selection.
+     */
     @ViewBuilder
     private func dotView(for index: Int) -> some View {
         let isActive = index == safeIndex
@@ -308,6 +337,13 @@ struct ImageCarousel: View {
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: safeOtherSelectedIndex)
     }
 
+    /**
+        Determines the appropriate shape and color for the pagination dot indicators based on which carousel is selecting the corresponding data point. 
+        The primary selected carousel will have a more prominent shape and color, while the other carousel (if also selecting the same index) will have a subtler appearance.
+        Parameters:
+        - carouselSide: The side of the carousel (left, right, or both) that is currently selecting the data point.
+        - isPrimary: A boolean indicating whether this carousel is the primary one selecting the data point (true) or if it's the secondary one when both carousels select the same index (false).
+     */
     @ViewBuilder
     private func indicatorShape(for carouselSide: CarouselSide, isPrimary: Bool) -> some View {
         let color: Color = isPrimary ? .primary : .gray.opacity(0.4)
