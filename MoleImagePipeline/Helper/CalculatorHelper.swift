@@ -33,7 +33,7 @@ enum CalculatorHelper {
         }
         guard width > 0 && height > 0 else { return nil }
 
-        let bytesPerRow = width * CalculatorValues.rgbaBytesPerPixel
+        let bytesPerRow = width * LesionSizingConstants.rgbaBytesPerPixel
         var pixels = [UInt8](repeating: 0, count: height * bytesPerRow)
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
@@ -149,12 +149,27 @@ enum CalculatorHelper {
         }
 
 
-        /// Cross product of OA and OB vectors, i.e. z-component of their 3D cross product.
-        /// - Parameters:
-        ///   - o: Origin point O.
-        ///   - a: Point A.
-        ///   - b: Point B.
-        /// - Returns: a positive value if OAB makes a left turn, negative for right turn, and zero if the points are collinear.
+        /// Calculates the 2D cross product of three points to determine the geometric turn direction.  
+        ///  
+        /// This function acts as a mathematical "steering wheel." By evaluating the vectors formed  
+        /// from the origin point `o` to `a`, and `o` to `b`, it tells you which way the path turns.  
+        ///  
+        /// **Turn Directions:**  
+        /// * **Positive (> 0):** Counter-Clockwise (Left turn). The points curve outward.  
+        /// * **Negative (< 0):** Clockwise (Right turn). The points dent inward.  
+        /// * **Zero (== 0):** Collinear. The points form a perfectly straight line.  
+        ///  
+        /// **When to Include a Point (Convex Hull Context):**  
+        /// When building a convex hull, the perimeter must continuously bulge outward. Therefore,  
+        /// we only want to keep a point if the path makes a strictly **counter-clockwise** turn (`> 0`).  
+        /// If this function returns `<= 0`, it means the middle point `a` creates an inward "dent" 
+        /// (right turn) or a redundant flat edge (collinear line), and it should be discarded from the hull.  
+        ///  
+        /// - Parameters:  
+        ///   - o: The origin or pivot point (e.g., the second-to-last point in the hull array).  
+        ///   - a: The middle point (e.g., the most recent point added to the hull array).  
+        ///   - b: The target point (e.g., the brand-new point being evaluated).  
+        /// - Returns: The scalar 2D cross product value indicating the turn direction.
         func cross(_ o: CGPoint, _ a: CGPoint, _ b: CGPoint) -> CGFloat {
             (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
         }

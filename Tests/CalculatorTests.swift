@@ -16,13 +16,13 @@ struct CalculatorTests {
                                                                              1, 1])
         let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
 
-        let area = calculator.calculateArea(
+        let area = calculator.calculateMetrics(
             from: (mask, [CGRect(x: 0, y: 0, width: 2, height: 2)]),
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
             imageOrientation: .up
-        )
+        ).areaMM2
 
         #expect(abs(Double(area) - 1.0) < 1e-6)
     }
@@ -34,13 +34,13 @@ struct CalculatorTests {
         let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
 
         // A width of 1 covers only pixel x=0 in half-open image coordinates.
-        let area = calculator.calculateArea(
+        let area = calculator.calculateMetrics(
             from: (mask, [CGRect(x: 0, y: 0, width: 1, height: 1)]),
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
             imageOrientation: .up
-        )
+        ).areaMM2
 
         #expect(abs(Double(area) - 1.0) < 1e-6)
     }
@@ -51,13 +51,13 @@ struct CalculatorTests {
         let depth = try makeDepthPixelBuffer(width: 2, height: 1, values: [1, 1])
         let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
 
-        let area = calculator.calculateArea(
+        let area = calculator.calculateMetrics(
             from: (mask, [CGRect(x: 0, y: 0, width: 2, height: 1)]),
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
             imageOrientation: .up
-        )
+        ).areaMM2
 
         // Both pixels contribute proportionally: prob = alpha / (0.5 * 255)
         // alpha 63 → prob ≈ 0.494, alpha 64 → prob ≈ 0.502
@@ -73,13 +73,13 @@ struct CalculatorTests {
         let depth = try makeDepthPixelBuffer(width: 1, height: 1, values: [1])
         let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
 
-        let area = calculator.calculateArea(
+        let area = calculator.calculateMetrics(
             from: (mask, [CGRect(x: 0, y: 0, width: 1, height: 1)]),
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
             imageOrientation: .up
-        )
+        ).areaMM2
 
         // prob = 64 / 127.5 ≈ 0.502
         let prob = 64.0 / 127.5
@@ -96,13 +96,13 @@ struct CalculatorTests {
                                                                              1, 1])
         let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
 
-        let area = calculator.calculateArea(
+        let area = calculator.calculateMetrics(
             from: (mask, [CGRect(x: 0, y: 0, width: 2, height: 2)]),
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
             imageOrientation: .up
-        )
+        ).areaMM2
 
         // prob = 127 / 127.5 ≈ 0.996, 4 pixels
         let probPerPixel = 127.0 / 127.5
@@ -116,13 +116,13 @@ struct CalculatorTests {
         let depth = try makeDepthPixelBuffer(width: 3, height: 1, values: [0.20, 0.20, 0.50])
         let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
 
-        let area = calculator.calculateArea(
+        let area = calculator.calculateMetrics(
             from: (mask, [CGRect(x: 0, y: 0, width: 3, height: 1)]),
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
             imageOrientation: .up
-        )
+        ).areaMM2
 
         // 3 pixels (alpha 255 clamps to prob 1.0), median depth = 0.20
         let depthSq = 0.20 * 0.20
@@ -137,13 +137,13 @@ struct CalculatorTests {
         let depth = try makeDepthPixelBuffer(width: 2, height: 1, values: [0.01, 3.0])
         let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
 
-        let area = calculator.calculateArea(
+        let area = calculator.calculateMetrics(
             from: (mask, [CGRect(x: 0, y: 0, width: 2, height: 1)]),
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
             imageOrientation: .up
-        )
+        ).areaMM2
 
         #expect(area == 0.0)
     }
@@ -155,13 +155,13 @@ struct CalculatorTests {
         let confidence = try makeConfidencePixelBuffer(width: 2, height: 1, values: [0, 2])
         let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
 
-        let area = calculator.calculateArea(
+        let area = calculator.calculateMetrics(
             from: (mask, [CGRect(x: 0, y: 0, width: 2, height: 1)]),
             depthMap: depth,
             confidenceMap: confidence,
             cameraIntrinsics: intrinsics,
             imageOrientation: .up
-        )
+        ).areaMM2
 
         // Both pixels count for area (prob clamped to 1.0 each),
         // but only the second depth (0.30, high confidence) enters the median.
@@ -177,13 +177,13 @@ struct CalculatorTests {
         let mask = makeMaskImage(width: 1, height: 1, alphaByPixel: [255])
         let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
 
-        let area = calculator.calculateArea(
+        let area = calculator.calculateMetrics(
             from: (mask, [CGRect(x: 0, y: 0, width: 1, height: 1)]),
             depthMap: nil,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
             imageOrientation: .up
-        )
+        ).areaMM2
 
         #expect(area == 0.0)
     }
@@ -193,13 +193,13 @@ struct CalculatorTests {
         let mask = makeMaskImage(width: 1, height: 1, alphaByPixel: [255])
         let depth = try makeDepthPixelBuffer(width: 1, height: 1, values: [1])
 
-        let area = calculator.calculateArea(
+        let area = calculator.calculateMetrics(
             from: (mask, [CGRect(x: 0, y: 0, width: 1, height: 1)]),
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: nil,
             imageOrientation: .up
-        )
+        ).areaMM2
 
         #expect(area == 0.0)
     }
@@ -210,13 +210,13 @@ struct CalculatorTests {
         let depth = try makeDepthPixelBuffer(width: 1, height: 1, values: [1])
         let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
 
-        let area = calculator.calculateArea(
+        let area = calculator.calculateMetrics(
             from: (mask, []),
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
             imageOrientation: .up
-        )
+        ).areaMM2
 
         #expect(area == 0.0)
     }
@@ -227,13 +227,13 @@ struct CalculatorTests {
         let depth = try makeDepthPixelBuffer(width: 1, height: 1, values: [1])
         let intrinsics = makeIntrinsics(fx: 0, fy: 1000)
 
-        let area = calculator.calculateArea(
+        let area = calculator.calculateMetrics(
             from: (mask, [CGRect(x: 0, y: 0, width: 1, height: 1)]),
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
             imageOrientation: .up
-        )
+        ).areaMM2
 
         #expect(area == 0.0)
     }
@@ -246,13 +246,13 @@ struct CalculatorTests {
         let depth = try makeDepthPixelBuffer(width: 2, height: 1, values: [1, 1])
         let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
 
-        let diameter = calculator.calculateDiameter(
+        let diameter = calculator.calculateMetrics(
             from: (mask, [CGRect(x: 0, y: 0, width: 2, height: 1)]),
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
             imageOrientation: .up
-        )
+        ).diameterMM
 
         // pdx = 1 / fx = 1e-3, depth = 1m → diameter = 1mm
         #expect(abs(Double(diameter) - 1.0) < 1e-6)
@@ -264,13 +264,13 @@ struct CalculatorTests {
         let depth = try makeDepthPixelBuffer(width: 1, height: 1, values: [1])
         let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
 
-        let diameter = calculator.calculateDiameter(
+        let diameter = calculator.calculateMetrics(
             from: (mask, [CGRect(x: 0, y: 0, width: 1, height: 1)]),
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
             imageOrientation: .up
-        )
+        ).diameterMM
 
         // Only one masked point → below minimumDiameterPointCount.
         #expect(diameter == 0.0)
@@ -282,13 +282,13 @@ struct CalculatorTests {
         let depth = try makeDepthPixelBuffer(width: 2, height: 1, values: [0.01, 3.0])
         let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
 
-        let diameter = calculator.calculateDiameter(
+        let diameter = calculator.calculateMetrics(
             from: (mask, [CGRect(x: 0, y: 0, width: 2, height: 1)]),
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
             imageOrientation: .up
-        )
+        ).diameterMM
 
         #expect(diameter == 0.0)
     }
@@ -298,13 +298,13 @@ struct CalculatorTests {
         let mask = makeMaskImage(width: 2, height: 1, alphaByPixel: [255, 255])
         let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)
 
-        let diameter = calculator.calculateDiameter(
+        let diameter = calculator.calculateMetrics(
             from: (mask, [CGRect(x: 0, y: 0, width: 2, height: 1)]),
             depthMap: nil,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
             imageOrientation: .up
-        )
+        ).diameterMM
 
         #expect(diameter == 0.0)
     }

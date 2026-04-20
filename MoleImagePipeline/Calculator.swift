@@ -19,6 +19,20 @@ class Calculator {
         var fy: Double
     }
 
+    /// Locked-buffer view of a depth map passed into the sampling loop.
+    private struct DepthBufferView {
+        let base: UnsafeMutableRawPointer
+        let width: Int
+        let height: Int
+        let bytesPerRow: Int
+    }
+
+    /// Locked-buffer view of an optional confidence map passed into the sampling loop.
+    private struct ConfidenceBufferView {
+        let base: UnsafeMutableRawPointer
+        let bytesPerRow: Int
+    }
+
     /// Physical mole measurements returned in millimeter units.
     struct MoleMeasurement {
         /// Estimated area in square millimeters.
@@ -70,6 +84,17 @@ class Calculator {
     ///   - cameraIntrinsics: Camera intrinsics matrix from ARKit.
     ///   - imageOrientation: Orientation of the captured image before normalization.
     /// - Returns: A `MoleSamples` payload, or `nil` when required inputs are missing or invalid.
+    ///
+    /// The camera intrinsics matrix (simd_float3x3) representing the pinhole camera model.
+    ///
+    /// In Swift, this matrix is stored in column-major order and mathematically represents:
+    ///
+    /// [ fx 0 cx ]
+    /// [ 0 fy cy ]
+    /// [ 0 0 1 ]
+    ///
+    /// - fx, fy: The focal length of the camera lens, measured in pixels.
+    /// - cx, cy: The principal point (optical center) of the image, measured in pixels.
     private func gatherMoleSamples(
         from segmentedImage: (UIImage, [CGRect]),
         depthMap: CVPixelBuffer?,
@@ -88,29 +113,46 @@ class Calculator {
         let fy = intrinsics[1][1]
         guard fx > 0 && fy > 0 else { return nil }
 
-        // Render the segmented mask into RGBA format and extract raw pixel data for sampling.
         guard let renderedMask = CalculatorHelper.renderToRGBA(image: segmentedImage.0) else { return nil }
-        let maskPixels = renderedMask.pixels
-        let maskW = renderedMask.width
-        let maskH = renderedMask.height
 
-        // Lock the depth and confidence maps for readOnly access and extract necessary metadata.
+        // Precompute sensor-aligned dimensions to avoid redundant calculations in the sampling loop.
+        let (sensorW, sensorH) = CalculatorHelper.sensorDimensions(
+            normalizedWidth: renderedMask.width,
+            normalizedHeight: renderedMask.height,
+            orientation: imageOrientation
+        )
+        guard sensorW > 0 && sensorH > 0 else { return nil }
+
+        // Clamp the sampling bounds to the mask dimensions to avoid out-of-bounds access.
+        guard let bounds = CalculatorHelper.clampedPixelBounds(
+            for: box,
+            width: renderedMask.width,
+            height: renderedMask.height
+        ) else {
+            return nil
+        }
+
+        // Lock the depth and confidence maps for readOnly access for the lifetime of the sampling pass.
+        // This prevents concurrent updates from corrupting samples and ensures thread safety.
         CVPixelBufferLockBaseAddress(depthMap, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(depthMap, .readOnly) }
         guard let depthBase = CVPixelBufferGetBaseAddress(depthMap) else { return nil }
-        let depthW = CVPixelBufferGetWidth(depthMap)
-        let depthH = CVPixelBufferGetHeight(depthMap)
-        let depthBytesPerRow = CVPixelBufferGetBytesPerRow(depthMap)
+        let depth = DepthBufferView(
+            base: depthBase,
+            width: CVPixelBufferGetWidth(depthMap),
+            height: CVPixelBufferGetHeight(depthMap),
+            bytesPerRow: CVPixelBufferGetBytesPerRow(depthMap)
+        )
 
-        let confBase: UnsafeMutableRawPointer?
-        let confBytesPerRow: Int
+        var confidence: ConfidenceBufferView?
         if let confidenceMap = confidenceMap {
             CVPixelBufferLockBaseAddress(confidenceMap, .readOnly)
-            confBase = CVPixelBufferGetBaseAddress(confidenceMap)
-            confBytesPerRow = CVPixelBufferGetBytesPerRow(confidenceMap)
-        } else {
-            confBase = nil
-            confBytesPerRow = 0
+            if let confBase = CVPixelBufferGetBaseAddress(confidenceMap) {
+                confidence = ConfidenceBufferView(
+                    base: confBase,
+                    bytesPerRow: CVPixelBufferGetBytesPerRow(confidenceMap)
+                )
+            }
         }
         defer {
             if let confidenceMap = confidenceMap {
@@ -118,77 +160,86 @@ class Calculator {
             }
         }
 
-        // Precompute sensor-aligned dimensions to avoid redundant calculations in the sampling loop.
-        let (sensorW, sensorH) = CalculatorHelper.sensorDimensions(
-            normalizedWidth: maskW,
-            normalizedHeight: maskH,
-            orientation: imageOrientation
+        return samplePixels(
+            mask: renderedMask,
+            bounds: bounds,
+            depth: depth,
+            confidence: confidence,
+            sensorWidth: sensorW,
+            sensorHeight: sensorH,
+            orientation: imageOrientation,
+            fx: Double(fx),
+            fy: Double(fy)
         )
-        guard sensorW > 0 && sensorH > 0 else { return nil }
+    }
 
-        // Clamp the sampling bounds to the mask dimensions to avoid out-of-bounds access.
-        guard let bounds = CalculatorHelper.clampedPixelBounds(for: box, width: maskW, height: maskH) else {
-            return nil
-        }
-
+    /// Walks the bounding box, collecting weighted mask points and their aligned depth samples.
+    ///
+    /// Sensor→depth mapping is necessary because the captured image (used for segmentation) and the
+    /// depth map can differ in resolution and orientation; this mapping picks the depth value that
+    /// actually corresponds to each mask pixel.
+    /// - Parameters:
+    ///   - mask: RGBA pixel buffer of the segmented mask image.
+    ///   - bounds: Clamped bounding box of the selected lesion in pixel coordinates.
+    ///   - depth: Locked-buffer view of the depth map.
+    ///   - confidence: Optional locked-buffer view of the confidence map.
+    ///   - sensorWidth: Width of the camera sensor in pixels.
+    ///   - sensorHeight: Height of the camera sensor in pixels.
+    ///   - orientation: Orientation applied to the captured image during normalization.
+    ///   - fx: Focal length in pixels along the x-axis from the camera intrinsics.
+    ///   - fy: Focal length in pixels along the y-axis from the camera intrinsics.
+    /// - Returns: A `MoleSamples` struct containing the collected points, weights, and depth values, or `nil` if sampling fails due to invalid inputs.
+    private func samplePixels(
+        mask: (pixels: [UInt8], width: Int, height: Int),
+        bounds: (minX: Int, minY: Int, maxX: Int, maxY: Int),
+        depth: DepthBufferView,
+        confidence: ConfidenceBufferView?,
+        sensorWidth: Int,
+        sensorHeight: Int,
+        orientation: UIImage.Orientation,
+        fx: Double,
+        fy: Double
+    ) -> MoleSamples {
         // Scale factor to convert mask alpha values to [0, 1] range based on renderer settings.
         let alphaScale = Double(SegmentationRendererValues.maskAlphaMax) * SegmentationRendererValues.alphaByteScale
-        var points: [CGPoint] = [] // Will hold pixel coordinates of valid samples for diameter calculation.
-        var weights: [Double] = [] // Will hold mask-derived weights for valid samples for area calculation.
-        var depths: [Float] = [] // Will hold valid depth samples in meters for both area and diameter calculations.
-        var sampledDepthPixels = Set<Int>() // To avoid duplicate depth samples when multiple mask pixels map to the same depth pixel.
 
+        var points: [CGPoint] = []
+        var weights: [Double] = []
+        var depths: [Float] = []
+        var sampledDepthPixels = Set<Int>()
 
-        // Reserve capacity based on the bounding box size to optimize array growth during sampling.
         let estimatedPixelCount = max(0, (bounds.maxX - bounds.minX + 1) * (bounds.maxY - bounds.minY + 1))
         points.reserveCapacity(estimatedPixelCount)
         weights.reserveCapacity(estimatedPixelCount)
-        depths.reserveCapacity(min(estimatedPixelCount, depthW * depthH))
+        depths.reserveCapacity(min(estimatedPixelCount, depth.width * depth.height))
 
         for ny in bounds.minY...bounds.maxY {
             for nx in bounds.minX...bounds.maxX {
+                let pixelOffset = (ny * mask.width + nx) * LesionSizingConstants.rgbaBytesPerPixel
+                let alpha = mask.pixels[pixelOffset + LesionSizingConstants.alphaChannelOffset]
+                guard alpha >= LesionSizingConstants.minimumMaskAlpha else { continue }
 
-                // Extract the alpha channel from the rendered mask to determine if this pixel is part of the segmented region.
-                let pixelOffset = (ny * maskW + nx) * CalculatorValues.rgbaBytesPerPixel
-                let alpha = maskPixels[pixelOffset + CalculatorValues.alphaChannelOffset]
-                guard alpha >= CalculatorValues.minimumMaskAlpha else { continue }
-
-                // Append the normalized pixel coordinates and corresponding weight for area calculation.
                 points.append(CGPoint(x: nx, y: ny))
                 weights.append(min(1.0, Double(alpha) / alphaScale))
 
-                // Convert the normalized mask coordinates to sensor-aligned coordinates.
                 let (sx, sy) = CalculatorHelper.normalizedToSensor(
                     nx: nx, ny: ny,
-                    normalizedWidth: maskW, normalizedHeight: maskH,
-                    orientation: imageOrientation
+                    normalizedWidth: mask.width, normalizedHeight: mask.height,
+                    orientation: orientation
                 )
 
-                // Map the sensor-aligned coordinates to depth map pixel coordinates.
-                let dx = sx * depthW / sensorW
-                let dy = sy * depthH / sensorH
-                guard dx >= 0 && dx < depthW && dy >= 0 && dy < depthH else { continue }
+                let dx = sx * depth.width / sensorWidth
+                let dy = sy * depth.height / sensorHeight
+                guard dx >= 0 && dx < depth.width && dy >= 0 && dy < depth.height else { continue }
 
-                // Use a set to ensure we only sample each depth pixel once, even if multiple mask pixels map to it.
-                let depthIndex = dy * depthW + dx
+                // Dedupe so multiple mask pixels landing on the same depth pixel don't bias the median.
+                let depthIndex = dy * depth.width + dx
                 guard !sampledDepthPixels.contains(depthIndex) else { continue }
                 sampledDepthPixels.insert(depthIndex)
 
-                // If a confidence map is provided, check the confidence value for this depth pixel before sampling.
-                if let confBase = confBase {
-                    let confPtr = confBase.advanced(by: dy * confBytesPerRow)
-                        .assumingMemoryBound(to: UInt8.self)
-                    let confidence = confPtr[dx]
-                    guard confidence >= CalculatorValues.minimumAcceptedDepthConfidence else { continue }
+                if let value = sampleDepth(atX: dx, y: dy, depth: depth, confidence: confidence) {
+                    depths.append(value)
                 }
-
-                // Sample the depth value in meters and validate it against expected ranges to filter out invalid measurements.
-                let depthPtr = depthBase.advanced(by: dy * depthBytesPerRow)
-                    .assumingMemoryBound(to: Float32.self)
-                let depth = depthPtr[dx]
-                guard CalculatorValues.validDepthRangeMeters.contains(depth) else { continue }
-
-                depths.append(depth)
             }
         }
 
@@ -196,9 +247,36 @@ class Calculator {
             points: points,
             weights: weights,
             depths: depths,
-            fx: Double(fx),
-            fy: Double(fy)
+            fx: fx,
+            fy: fy
         )
+    }
+
+    /// Reads one depth pixel, rejecting it when confidence is too low or the depth is out of range.
+    /// 
+    /// - Parameters:
+    ///   - dx: X coordinate in the depth map.
+    ///   - dy: Y coordinate in the depth map.
+    ///   - depth: Locked-buffer view of the depth map.
+    ///   - confidence: Optional locked-buffer view of the confidence map.
+    /// - Returns: Depth in meters, or `nil` if confidence is too low or depth is out of the valid range for skin captures.
+    private func sampleDepth(
+        atX dx: Int,
+        y dy: Int,
+        depth: DepthBufferView,
+        confidence: ConfidenceBufferView?
+    ) -> Float? {
+        if let confidence = confidence {
+            let confPtr = confidence.base.advanced(by: dy * confidence.bytesPerRow)
+                .assumingMemoryBound(to: UInt8.self)
+            guard confPtr[dx] >= LesionSizingConstants.minimumAcceptedDepthConfidence else { return nil }
+        }
+
+        let depthPtr = depth.base.advanced(by: dy * depth.bytesPerRow)
+            .assumingMemoryBound(to: Float32.self)
+        let value = depthPtr[dx]
+        guard LesionSizingConstants.validDepthRangeMeters.contains(value) else { return nil }
+        return value
     }
 
     /// Computes area in mm² from sampled mask weights and depth values.
@@ -206,12 +284,16 @@ class Calculator {
     /// - Parameter samples: Gathered mole samples for the current selection.
     /// - Returns: Area in mm², or `0` when depth or weights are insufficient.
     private func computeAreaMM2(from samples: MoleSamples) -> CGFloat {
+        // We use weighted pixel counting to estimate the area, where each pixel's contribution is scaled by its mask-derived weight.
+        // This is done to better approximate the true lesion area, especially when the segmentation mask has soft edges or partial coverage.
         let weightedPixelCount = samples.weights.reduce(0, +)
         guard !samples.depths.isEmpty, weightedPixelCount > 0 else { return 0.0 }
 
+        // We use the median depth value to represent the typical distance of the lesion from the camera, 
+        // which helps mitigate the impact of outliers in depth measurements.
         let depthMeters = CalculatorHelper.median(of: samples.depths)
         let areaSquareMeters = weightedPixelCount * (depthMeters * depthMeters) / (samples.fx * samples.fy)
-        return CGFloat(areaSquareMeters * CalculatorValues.squareMetersToSquareMillimeters)
+        return CGFloat(areaSquareMeters * LesionSizingConstants.squareMetersToSquareMillimeters)
     }
 
     /// Computes Feret-style diameter in mm from sampled points and depth values.
@@ -220,7 +302,7 @@ class Calculator {
     /// - Returns: Diameter in mm, or `0` when depth/points are insufficient.
     private func computeDiameterMM(from samples: MoleSamples) -> CGFloat {
         guard !samples.depths.isEmpty,
-              samples.points.count >= CalculatorValues.minimumDiameterPointCount else {
+              samples.points.count >= LesionSizingConstants.minimumDiameterPointCount else {
             return 0.0
         }
 
@@ -234,7 +316,7 @@ class Calculator {
         )
 
         let diameterMeters = sqrt(maxSquaredDistance) * depthMeters
-        return CGFloat(diameterMeters * CalculatorValues.metersToMillimeters)
+        return CGFloat(diameterMeters * LesionSizingConstants.metersToMillimeters)
     }
 
 }
