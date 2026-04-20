@@ -2,13 +2,13 @@
 //  ImageCarouselUITests.swift
 //  P8-ProductUITests
 //
-//  Tests for the ImageCarousel view, covering image loading
-//  and swipe navigation between scans. The tests reach the
-//  carousel through MoleDetailView's Evolution page since its dual-carousel layout
-//  exposes stable accessibility identifiers for each carousel.
+//  Tests for the ImageCarousel view, covering the visible measurement labels
+//  and swipe navigation between scans. The tests reach the carousel through
+//  MoleDetailView's Evolution page because its dual-carousel layout exposes
+//  stable accessibility identifiers for each carousel.
 //
 //  Mock data assumed (see MockData.insertSampleData):
-//    Alex / "Left Arm Mole" — 3 scans shown latest-first in the carousel:
+//    Alex / "Left Arm Mole" — 3 scans shown newest-first in the detail page:
 //      1. alexScan2 ( 5 days ago) — diameter 4.8 mm, area 15.4 mm²
 //      2. alexScan1 (20 days ago) — diameter 4.2 mm, area 13.8 mm²
 //      3. alexScan4 (60 days ago) — diameter 5.0 mm, area 16.0 mm²
@@ -22,6 +22,45 @@ final class ImageCarouselUITests: XCTestCase {
 
     private var app: XCUIApplication!
 
+    private func assertCarousel(
+        _ carousel: XCUIElement,
+        showsDiameter diameter: String,
+        area: String? = nil,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let decimalVariants = [diameter, diameter.replacingOccurrences(of: ".", with: ",")]
+        let diameterMatches = decimalVariants.contains { carousel.staticTexts["Diameter: \($0) mm"].exists }
+
+        XCTAssertTrue(
+            diameterMatches,
+            "Expected carousel to show diameter \(diameter)",
+            file: file,
+            line: line
+        )
+
+        if let area {
+            let areaVariants = [area, area.replacingOccurrences(of: ".", with: ",")]
+            let areaMatches = areaVariants.contains { carousel.staticTexts["Area: \($0) mm²"].exists }
+
+            XCTAssertTrue(
+                areaMatches,
+                "Expected carousel to show area \(area)",
+                file: file,
+                line: line
+            )
+        }
+    }
+
+    private func observedDiameter(
+        in carousel: XCUIElement,
+        candidates: [String]
+    ) -> String? {
+        candidates.first { candidate in
+            carousel.staticTexts["Diameter: \(candidate) mm"].exists
+        }
+    }
+
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
@@ -34,73 +73,56 @@ final class ImageCarouselUITests: XCTestCase {
 
     // MARK: - Image Loading
 
-    func testCarouselLoadsImageForFirstScan() {
+    func testCarouselShowsSelectedScanOnLoad() {
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
         Helpers.switchToEvolution(in: app)
 
         let leftCarousel = app.otherElements["leftCarousel"]
         XCTAssertTrue(leftCarousel.waitForExistence(timeout: 5))
-
-        // Each rendered scan produces an SwiftUI Image element. The LazyHStack
-        // only materialises the visible page, so we just need at least one.
-        XCTAssertGreaterThan(
-            leftCarousel.images.count, 0,
-            "Left carousel should render an image element for the visible scan"
-        )
+        assertCarousel(leftCarousel, showsDiameter: "5.0", area: "16.0")
     }
 
-    func testSingleScanCarouselLoadsImage() {
+    func testSingleScanCarouselShowsSameScanInBothCarousels() {
         Helpers.openMoleDetail(person: "Alex", mole: "Back Mole", in: app)
         Helpers.switchToEvolution(in: app)
 
+        let leftCarousel = app.otherElements["leftCarousel"]
+        let rightCarousel = app.otherElements["rightCarousel"]
+
+        XCTAssertTrue(leftCarousel.waitForExistence(timeout: 5))
+        XCTAssertTrue(rightCarousel.waitForExistence(timeout: 5))
         XCTAssertTrue(
-            app.staticTexts["Diameter: 3.6 mm"].firstMatch.waitForExistence(timeout: 5)
-            || app.staticTexts["Diameter: 3,6 mm"].firstMatch.waitForExistence(timeout: 5),
-            "Single-scan carousel should display Back Mole's diameter with either decimal separator"
+            app.staticTexts["Add one more scan to unlock trend comparison."].waitForExistence(timeout: 5)
         )
-        XCTAssertGreaterThan(
-            app.images.count, 0,
-            "Single-scan carousel should render an image element for the loaded scan"
-        )
+        assertCarousel(leftCarousel, showsDiameter: "3.6", area: "10.1")
+        assertCarousel(rightCarousel, showsDiameter: "3.6", area: "10.1")
     }
 
     // MARK: - Swipe Navigation
-    func testSwipingThroughAllScansShowsEachOne() {
-        // Left carousel starts at last index, so order while swiping right is:
-        // 5.0 mm → 4.2 mm → 4.8 mm.
+    func testSwipingThroughAllScansChangesTheVisibleScan() {
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
         Helpers.switchToEvolution(in: app)
 
         let leftCarousel = app.otherElements["leftCarousel"]
         XCTAssertTrue(leftCarousel.waitForExistence(timeout: 5))
-        XCTAssertTrue(
-            leftCarousel.staticTexts["Diameter: 5.0 mm"].waitForExistence(timeout: 3)
-            || leftCarousel.staticTexts["Diameter: 5,0 mm"].waitForExistence(timeout: 3)
-        )
+        assertCarousel(leftCarousel, showsDiameter: "5.0", area: "16.0")
+
+        let firstDiameter = observedDiameter(in: leftCarousel, candidates: ["5.0", "5,0"])
+        XCTAssertNotNil(firstDiameter)
 
         leftCarousel.swipeRight()
-        XCTAssertTrue(
-            leftCarousel.staticTexts["Diameter: 4.2 mm"].waitForExistence(timeout: 3)
-            || leftCarousel.staticTexts["Diameter: 4,2 mm"].waitForExistence(timeout: 3),
-            "Second swipe target should be the 4.2 mm scan"
-        )
+        let secondDiameter = observedDiameter(in: leftCarousel, candidates: ["4.2", "4,2", "4.8", "4,8"])
+        XCTAssertNotNil(secondDiameter)
+        XCTAssertNotEqual(secondDiameter, firstDiameter)
 
         leftCarousel.swipeRight()
-        XCTAssertTrue(
-            leftCarousel.staticTexts["Diameter: 4.8 mm"].waitForExistence(timeout: 3)
-            || leftCarousel.staticTexts["Diameter: 4,8 mm"].waitForExistence(timeout: 3),
-            "Third swipe target should be the 4.8 mm scan"
-        )
-        XCTAssertTrue(
-            leftCarousel.staticTexts["Area: 15.4 mm²"].exists
-            || leftCarousel.staticTexts["Area: 15,4 mm²"].exists,
-            "Third scan area should be 15.4 mm²"
-        )
+        let thirdDiameter = observedDiameter(in: leftCarousel, candidates: ["4.2", "4,2", "4.8", "4,8"])
+        XCTAssertNotNil(thirdDiameter)
+        XCTAssertNotEqual(thirdDiameter, secondDiameter)
+        XCTAssertNotEqual(thirdDiameter, firstDiameter)
     }
 
-    func testLeftAndRightCarouselsSwipeIndependently() {
-        // The two carousels share data but maintain separate selectedIndex
-        // bindings, so swiping the left must not affect the right.
+    func testLeftAndRightCarouselsTrackSelectionIndependently() {
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
         Helpers.switchToEvolution(in: app)
 
@@ -108,29 +130,21 @@ final class ImageCarouselUITests: XCTestCase {
         let rightCarousel = app.otherElements["rightCarousel"]
         XCTAssertTrue(leftCarousel.waitForExistence(timeout: 5))
         XCTAssertTrue(rightCarousel.waitForExistence(timeout: 5))
-        XCTAssertTrue(
-            leftCarousel.staticTexts["Diameter: 5.0 mm"].waitForExistence(timeout: 3)
-            || leftCarousel.staticTexts["Diameter: 5,0 mm"].waitForExistence(timeout: 3),
-            "Left carousel should start on the first scan"
-        )
-        XCTAssertTrue(
-            rightCarousel.staticTexts["Diameter: 4.8 mm"].waitForExistence(timeout: 3)
-            || rightCarousel.staticTexts["Diameter: 4,8 mm"].waitForExistence(timeout: 3),
-            "Right carousel should start on the first scan"
-        )
+        assertCarousel(leftCarousel, showsDiameter: "5.0", area: "16.0")
+        assertCarousel(rightCarousel, showsDiameter: "4.8", area: "15.4")
+
+        let initialRightDiameter = observedDiameter(in: rightCarousel, candidates: ["4.8", "4,8"])
+        XCTAssertNotNil(initialRightDiameter)
 
         leftCarousel.swipeRight()
 
-        XCTAssertTrue(
-            leftCarousel.staticTexts["Diameter: 4.2 mm"].waitForExistence(timeout: 3)
-            || leftCarousel.staticTexts["Diameter: 4,2 mm"].waitForExistence(timeout: 3),
-            "Left carousel should advance away from the first scan"
-        )
-        XCTAssertTrue(
-            rightCarousel.staticTexts["Diameter: 4.8 mm"].exists
-            || rightCarousel.staticTexts["Diameter: 4,8 mm"].exists,
-            "Right carousel should remain on the latest scan after swiping the left"
-        )
+        let movedLeftDiameter = observedDiameter(in: leftCarousel, candidates: ["4.2", "4,2", "4.8", "4,8"])
+        XCTAssertNotNil(movedLeftDiameter)
+        XCTAssertNotEqual(movedLeftDiameter, "5.0")
+        XCTAssertNotEqual(movedLeftDiameter, "5,0")
+
+        let currentRightDiameter = observedDiameter(in: rightCarousel, candidates: ["4.8", "4,8"])
+        XCTAssertEqual(currentRightDiameter, initialRightDiameter)
     }
 
     // MARK: - Delete Scan Flow
