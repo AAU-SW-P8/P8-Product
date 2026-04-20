@@ -3,9 +3,11 @@
 /// P8-Product
 /// 
 /// Exposes `calculateArea` and `calculateDiameter` as separate methods for easier testing, while the main `calculateMetrics` method serves as the primary interface.
+import UIKit
+import SwiftUI
+import simd
 
-
-extension Calculater {
+extension Calculator {
 
     /// Calculates mole area in mm². (Needed for tests.)
     ///
