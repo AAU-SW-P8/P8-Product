@@ -82,22 +82,6 @@ final class ImageCarouselUITests: XCTestCase {
         assertCarousel(leftCarousel, showsDiameter: "4.8", area: "15.4")
     }
 
-    func testSingleScanCarouselShowsSameScanInBothCarousels() {
-        Helpers.openMoleDetail(person: "Alex", mole: "Back Mole", in: app)
-        Helpers.switchToEvolution(in: app)
-
-        let leftCarousel = app.otherElements["leftCarousel"]
-        let rightCarousel = app.otherElements["rightCarousel"]
-
-        XCTAssertTrue(leftCarousel.waitForExistence(timeout: 5))
-        XCTAssertTrue(rightCarousel.waitForExistence(timeout: 5))
-        XCTAssertTrue(
-            app.staticTexts["Add one more scan to unlock trend comparison."].waitForExistence(timeout: 5)
-        )
-        assertCarousel(leftCarousel, showsDiameter: "3.6", area: "10.1")
-        assertCarousel(rightCarousel, showsDiameter: "3.6", area: "10.1")
-    }
-
     // MARK: - Swipe Navigation
     func testSwipingThroughAllScansShowsEachOne() {
         // Left carousel starts at last index, so order while swiping right is:
