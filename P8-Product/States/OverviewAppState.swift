@@ -1,5 +1,8 @@
 import SwiftUI
 import SwiftData
+import UIKit
+import CoreVideo
+import simd
 
 @MainActor
 @Observable
@@ -36,7 +39,11 @@ class OverviewAppState {
     var personToEdit: Person?
     var personToDelete: Person?
     var moleToDelete: Mole?
-
+    var capturedImage: UIImage?
+    var capturedDepthMap: CVPixelBuffer?
+    var capturedConfidenceMap: CVPixelBuffer?
+    var capturedIntrinsics: simd_float3x3?
+    
     private let dataController: DataController
     
     init(dataController: DataController) {
@@ -180,6 +187,7 @@ class OverviewAppState {
         guard let mole: Mole = moleToDelete else { return}
 
         dataController.delete(mole)
-
+        
     }
+
 }

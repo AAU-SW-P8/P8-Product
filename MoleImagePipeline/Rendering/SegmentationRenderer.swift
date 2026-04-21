@@ -35,7 +35,7 @@ final class SegmentationRenderer {
     ]
 
     /// Peak alpha applied to a fully-confident mask pixel.
-    private static let maskAlphaMax: Float = 0.5
+    private static let maskAlphaMax: Float = SegmentationRendererValues.maskAlphaMax
 
     /// Renders an annotated copy of `baseImage` plus the pixel-space bounding
     /// boxes derived from each detection's mask.
@@ -175,6 +175,49 @@ final class SegmentationRenderer {
             shouldInterpolate: true,
             intent: .defaultIntent
         )
+    }
+
+    /// Renders a mask-only image (no base photo) where alpha encodes mole
+    /// probability. Used by the Calculator to identify which pixels belong
+    /// to detected moles.
+    ///
+    /// - Parameters:
+    ///   - imageSize: The target image size (should match the camera image).
+    ///   - detections: Detections kept after confidence filtering and NMS.
+    ///   - masks: Decoder mask tensor `[1, N, maskSize, maskSize]` of logits.
+    /// - Returns: A UIImage at scale 1.0 where only mole pixels have alpha > 0.
+    func renderMaskOnly(
+        imageSize: CGSize,
+        detections: [RawDetection],
+        masks: MLMultiArray
+    ) -> UIImage? {
+        // Scale 1.0 so pixel dimensions match the camera image exactly
+        // (camera intrinsics are calibrated to those pixel dimensions).
+        UIGraphicsBeginImageContextWithOptions(imageSize, false, 1.0)
+        guard let ctx = UIGraphicsGetCurrentContext() else { return nil }
+        defer { UIGraphicsEndImageContext() }
+
+        // Keep a hard edge in the measurement mask to avoid area drift from
+        // interpolation blur when upscaling the decoder's 288x288 output.
+        ctx.interpolationQuality = .none
+
+        for (detId, det) in detections.enumerated() {
+            let color = Self.palette[detId % Self.palette.count]
+            let (maskCG, _) = buildTintedMaskImage(
+                from: masks,
+                detectionIndex: det.index,
+                color: color
+            )
+            if let maskCG = maskCG {
+                UIImage(cgImage: maskCG).draw(
+                    in: CGRect(origin: .zero, size: imageSize),
+                    blendMode: .normal,
+                    alpha: 1.0
+                )
+            }
+        }
+
+        return UIGraphicsGetImageFromCurrentImageContext()
     }
 
     /// Strokes a colored bounding box. Line width scales with the source

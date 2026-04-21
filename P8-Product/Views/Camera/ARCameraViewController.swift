@@ -6,6 +6,7 @@
 import UIKit
 import ARKit
 import RealityKit
+import simd
 
 /// UIKit view controller that drives the LiDAR-assisted capture flow.
 ///
@@ -22,10 +23,7 @@ final class ARCameraViewController: UIViewController, ARSessionDelegate {
 
     // MARK: - Callbacks
 
-    /// Invoked with the captured color image plus the matching depth and
-    /// confidence buffers (both may be `nil` if depth wasn't produced).
-    var onCapture: ((UIImage, CVPixelBuffer?, CVPixelBuffer?) -> Void)?
-    /// Invoked when the user cancels or the device cannot provide LiDAR data.
+    var onCapture: ((UIImage, CVPixelBuffer?, CVPixelBuffer?, simd_float3x3?) -> Void)?
     var onCancel: (() -> Void)?
 
     // MARK: - Subviews
@@ -506,7 +504,7 @@ final class ARCameraViewController: UIViewController, ARSessionDelegate {
         let interfaceOrientation = view.window?.windowScene?.effectiveGeometry.interfaceOrientation ?? .portrait
         let image = UIImage(cgImage: cgImage, scale: 1.0, orientation: Self.imageOrientation(for: interfaceOrientation))
 
-        onCapture?(image, frame.sceneDepth?.depthMap, frame.sceneDepth?.confidenceMap)
+        onCapture?(image, frame.sceneDepth?.depthMap, frame.sceneDepth?.confidenceMap, frame.camera.intrinsics)
     }
 
     /// Forwards the cancel action to the owning SwiftUI layer.
