@@ -172,8 +172,9 @@ class DataController {
         to person: Person,
         image: UIImage,
         name: String? = nil,
-        bodyPart: String = BodyPart.unassigned.rawValue
-    ) {
+        bodyPart: String = BodyPart.unassigned.rawValue,
+        area: Float = 0, 
+        diameter: Float = 0) {
         let context: ModelContext = container.mainContext
         let trimmedName: String = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let resolvedName: String = trimmedName.isEmpty ? "Mole \(person.moles.count + 1)" : trimmedName
@@ -193,9 +194,9 @@ class DataController {
             person: person
         )
         let instance: MoleInstance = MoleInstance(
-            diameter: 0,
-            area: 0,
-            mole: mole, 
+            diameter: diameter,
+            area: area,
+            mole: mole,
             moleScan: scan
         )
         
@@ -216,14 +217,14 @@ class DataController {
             - mole: The existing `Mole` to which the new scan will be linked.
             - image: The `UIImage` representing the new scan to be added.
     */
-    func addToExistingMole(mole: Mole, image: UIImage) {
+    func addToExistingMole(mole: Mole, image: UIImage, area: Float = 0, diameter: Float = 0) {
         let context: ModelContext = container.mainContext
-        
+
         // Create the scan and the linking instance
         let scan: MoleScan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9))
         let instance: MoleInstance = MoleInstance(
-            diameter: 0,
-            area: 0,
+            diameter: diameter,
+            area: area,
             mole: mole,
             moleScan: scan
         )

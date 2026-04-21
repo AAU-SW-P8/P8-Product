@@ -5,6 +5,7 @@
 
 import SwiftUI
 import SwiftData
+import simd
 
 /**
  A SwiftUI view demonstrating the mole segmentation functionality using the SAM 3.1 model.
@@ -12,20 +13,6 @@ import SwiftData
  Provides controls for adjusting detection parameters and handles the flow of selecting a person and adding new moles or scans based on the segmentation results.
  */
 struct MoleSegmentationView: View {
-    // MARK: - Constants
-
-    /// Side length of the square crop region sent to the model, in image pixels.
-    private let cropSize: CGFloat = 500
-
-    /// Depth map from the AR camera's LiDAR sensor (nil for non-AR captures).
-    private let depthMap: CVPixelBuffer?
-
-    /// Confidence map for the depth data (nil for non-AR captures).
-    private let confidenceMap: CVPixelBuffer?
-
-    /// Access the global SAM3 model loader
-    @ObservedObject private var modelLoader = SAM3ModelLoader.shared
-
     @Query(sort: \Person.createdAt)
     private var people: [Person]
     @State private var appState: MoleSegmentationAppState
@@ -38,12 +25,20 @@ struct MoleSegmentationView: View {
     ///   - inputImage: The image to segment. Pass `nil` to show a placeholder.
     ///   - depthMap: LiDAR depth map captured alongside the image. `nil` for non-AR captures.
     ///   - confidenceMap: Confidence values for each depth pixel. `nil` for non-AR captures.
-    init(inputImage: UIImage?, depthMap: CVPixelBuffer? = nil, confidenceMap: CVPixelBuffer? = nil) {
-        self.depthMap = depthMap
-        self.confidenceMap = confidenceMap
+    ///   - cameraIntrinsics: Camera intrinsics from ARFrame. `nil` for non-AR captures.
+    init(
+        inputImage: UIImage?,
+        depthMap: CVPixelBuffer? = nil,
+        confidenceMap: CVPixelBuffer? = nil,
+        cameraIntrinsics: simd_float3x3? = nil
+    ) {
         let state = MoleSegmentationAppState(dataController: .shared)
+        state.depthMap = depthMap
+        state.confidenceMap = confidenceMap
+        state.cameraIntrinsics = cameraIntrinsics
         if let inputImage {
             state.testImage = inputImage
+            state.capturedImageOrientation = inputImage.imageOrientation
         }
         _appState = State(initialValue: state)
     }
@@ -414,9 +409,5 @@ struct MoleSegmentationView: View {
 // MARK: - Preview
 
 #Preview {
-    NavigationStack {
-        MoleSegmentationView(inputImage: UIImage(named: "test_mole_image"),
-                             depthMap: nil,
-                             confidenceMap: nil)
-    }
+    MoleSegmentationView(inputImage: UIImage(named: "test_mole_image"))
 }

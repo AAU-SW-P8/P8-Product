@@ -5,6 +5,7 @@
 
 import SwiftUI
 import ARKit
+import simd
 
 /// The main capture tab. Opens the camera automatically on appear, waits for
 /// the user to take a photo, then hands the image to `MoleSegmentationView`.
@@ -26,6 +27,9 @@ struct CameraView: View {
 
     /// Confidence map for the depth data (nil for non-AR captures).
     @State private var capturedConfidenceMap: CVPixelBuffer?
+
+    /// Camera intrinsics matrix (nil for non-AR captures).
+    @State private var capturedIntrinsics: simd_float3x3?
 
     /// Controls presentation of the camera full-screen cover.
     @State private var showCamera = false
@@ -83,6 +87,8 @@ struct CameraView: View {
                 capturedImage = nil
                 capturedDepthMap = nil
                 capturedConfidenceMap = nil
+                capturedIntrinsics = nil
+
                 if preloadedImage == nil {
                     openCamera()
                 }
@@ -120,7 +126,8 @@ struct CameraView: View {
         if supportsARCapture {
             ARCameraView(capturedImage: $capturedImage,
                          capturedDepthMap: $capturedDepthMap,
-                         capturedConfidenceMap: $capturedConfidenceMap)
+                         capturedConfidenceMap: $capturedConfidenceMap,
+                         capturedIntrinsics: $capturedIntrinsics)
                 .ignoresSafeArea()
         } else {
             BasicCameraView(capturedImage: $capturedImage)
@@ -136,7 +143,8 @@ struct CameraView: View {
         if let capturedImage {
             MoleSegmentationView(inputImage: capturedImage,
                                  depthMap: capturedDepthMap,
-                                 confidenceMap: capturedConfidenceMap)
+                                 confidenceMap: capturedConfidenceMap,
+                                 cameraIntrinsics: capturedIntrinsics)
         }
     }
 

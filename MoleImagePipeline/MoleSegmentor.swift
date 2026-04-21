@@ -58,10 +58,11 @@ class MoleSegmentor {
     ///   - confidenceThreshold: Minimum decoder probability for a detection to be kept. Defaults to `0.3`.
     ///   - nmsThreshold: IoU threshold above which overlapping detections are suppressed. The default of `1.0` effectively disables NMS;
     ///     pass ~`0.5` for actual deduplication.
-    /// - Returns: An annotated image (mask overlays + boxes + labels) and
-    ///   the per-detection bounding boxes in pixel coordinates, or `nil` if
-    ///   no detections passed the confidence threshold.
-    func segment(image: UIImage, confidenceThreshold: Float = 0.3, nmsThreshold: Float = 1.0) throws -> (UIImage, [CGRect])? {
+    /// - Returns: A tuple of (annotated overlay image, bounding boxes in pixel
+    ///   coordinates, mask-only image for area calculation), or `nil` if no
+    ///   detections passed the confidence threshold or if overlay or mask-only  
+    ///   rendering fails. 
+    func segment(image: UIImage, confidenceThreshold: Float = 0.3, nmsThreshold: Float = 1.0) throws -> (UIImage, [CGRect], UIImage)? {
         let clock = ContinuousClock()
 
         // Normalize orientation so that cgImage pixels match the visual orientation.
@@ -101,7 +102,16 @@ class MoleSegmentor {
         }
 
         // 5. Draw the annotated overlay.
-        return renderer.renderOverlay(on: image, detections: detections, masks: decoderOutput.masks)
+        guard let (overlay, boxes) = renderer.renderOverlay(on: image, detections: detections, masks: decoderOutput.masks) else {
+            return nil
+        }
+
+        // 6. Build a mask-only image for area calculation (alpha encodes mole pixels).
+        guard let maskOnly = renderer.renderMaskOnly(imageSize: image.size, detections: detections, masks: decoderOutput.masks) else {
+            return nil
+        }
+
+        return (overlay, boxes, maskOnly)
     }
 
     /// Drops the cached vision embeddings. Call this whenever the displayed
