@@ -33,6 +33,7 @@ struct ReminderView: View {
                                 Toggle("", isOn: $appState.reminderEnabled)
                                     .labelsHidden()
                                     .accessibilityIdentifier("defaultReminderEnabledToggle")
+                                    .accessibilityLabel("Default Reminder Enabled")
                             }
                             .onChange(of: appState.reminderEnabled) { _, newValue in
                                 appState.setDefaultReminderEnabled(newValue)

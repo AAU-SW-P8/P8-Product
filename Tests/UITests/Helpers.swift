@@ -18,8 +18,8 @@ final class Helpers {
 		line: UInt = #line
 	) {
 		app.tabBars.buttons["Reminder"].tap()
-		XCTAssertTrue(app.tabBars.buttons["Reminder"].exists, file: file, line: line)
-
+		XCTAssertTrue(app.staticTexts["Default Reminder Enabled"].waitForExistence(timeout: 3), "Default reminder text should be visible", file: file, line: line)
+		
 	}
 	static func openCaptureTab(in app: XCUIApplication) {
 		app.tabBars.buttons["Capture"].tap()

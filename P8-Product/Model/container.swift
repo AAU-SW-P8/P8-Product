@@ -312,7 +312,15 @@ class DataController {
 
     func delete(_ instance: MoleInstance) {
         deleteAndSave(errorMessage: "Failed to delete mole instance") { context in
-            context.delete(instance)
+            let associatedScan = instance.moleScan
+            let hasOtherInstances: Bool = associatedScan?.instances.contains { $0 !== instance} ?? false
+            
+            if let associatedScan, !hasOtherInstances {
+                context.delete(associatedScan)
+            }
+            else {
+                context.delete(instance)
+            }
         }
     }
 
