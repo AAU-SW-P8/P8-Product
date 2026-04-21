@@ -35,6 +35,7 @@ class MoleSegmentationAppState {
     private let dataController: DataController
     private let modelLoader: SAM3ModelLoader = SAM3ModelLoader.shared
     private let calculator = Calculator()
+    private let calclinear = CalculatorLinear()
     
     init(dataController: DataController) {
         self.dataController = dataController
@@ -180,6 +181,12 @@ class MoleSegmentationAppState {
             cameraIntrinsics: cameraIntrinsics,
             imageOrientation: capturedImageOrientation
         )
+        // let measurement = calclinear.calculateMetrics(
+        //     from: (maskOnlyImage, [selectedBox]),
+        //     depthMap: depthMap,
+        //     confidenceMap: confidenceMap,
+        //     imageOrientation: capturedImageOrientation
+        // )
 
         let area = measurement.areaMM2.isFinite && measurement.areaMM2 > 0 ? Float(measurement.areaMM2) : 0
         let diameter = measurement.diameterMM.isFinite && measurement.diameterMM > 0 ? Float(measurement.diameterMM) : 0
