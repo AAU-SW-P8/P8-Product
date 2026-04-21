@@ -132,7 +132,6 @@ class MoleSegmentationAppState {
         showNewMoleMetadataSheet = false
         selectedBoxForMole = nil
         selectedPersonForScan = nil
-        selectedBoxForMole = nil
         activeAlert = nil
         newMoleName = ""
         selectedBodyPart = .unassigned
