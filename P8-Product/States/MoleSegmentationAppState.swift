@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import simd
 
 @MainActor
 @Observable
@@ -7,7 +8,12 @@ class MoleSegmentationAppState {
     // MARK: - Machine Learning State
     var testImage: UIImage? = UIImage(named: "test_mole_image")
     var maskOverlay: UIImage?
+    var maskOnlyImage: UIImage?
     var detectedBoxes: [CGRect] = []
+    var depthMap: CVPixelBuffer?
+    var confidenceMap: CVPixelBuffer?
+    var cameraIntrinsics: simd_float3x3?
+    var capturedImageOrientation: UIImage.Orientation = .up
     
     var isProcessing: Bool = false
     var statusMessage: String = "Ready"
@@ -28,6 +34,7 @@ class MoleSegmentationAppState {
     // Dependencies
     private let dataController: DataController
     private let modelLoader: SAM3ModelLoader = SAM3ModelLoader.shared
+    private let calculator = Calculator()
     
     init(dataController: DataController) {
         self.dataController = dataController
@@ -75,6 +82,7 @@ class MoleSegmentationAppState {
                 await MainActor.run {
                     self.maskOverlay = result?.0
                     self.detectedBoxes = result?.1 ?? []
+                    self.maskOnlyImage = result?.2
                     self.statusMessage = result != nil ? "Segmentation complete. Long press a mole to add it." : "No moles detected"
                     self.isProcessing = false
                 }
@@ -96,7 +104,9 @@ class MoleSegmentationAppState {
      */
     func clearSegmentation() {
         maskOverlay = nil
+        maskOnlyImage = nil
         detectedBoxes = []
+        selectedBoxForMole = nil
         selectedPersonForScan = nil
         statusMessage = "Cleared"
         modelLoader.segmentor?.clearCache()
@@ -114,7 +124,13 @@ class MoleSegmentationAppState {
     func handleNewMoleSelection() {
         guard let person: Person = selectedPersonForScan, let image: UIImage = testImage, let box: CGRect = selectedBoxForMole else { return }
         if let cropped: UIImage = cropImage(image, to: box) {
-            dataController.addMoleAndScan(to: person, image: cropped)
+            let measurement = calculateSelectedMoleMeasurement()
+            dataController.addMoleAndScan(
+                to: person,
+                image: cropped,
+                area: measurement.area,
+                diameter: measurement.diameter
+            )
             statusMessage = "Added mole to \(person.name)!"
             activeAlert = .success("Successfully saved scan.")
         }
@@ -133,16 +149,43 @@ class MoleSegmentationAppState {
         
         // 1. Crop the image here in the AppState
         if let cropped: UIImage = cropImage(image, to: box) {
-            
+            let measurement = calculateSelectedMoleMeasurement()
+
             // 2. Pass the finished image to the DataController
-            dataController.addToExistingMole(mole: mole, image: cropped)
-            
+            dataController.addToExistingMole(
+                mole: mole,
+                image: cropped,
+                area: measurement.area,
+                diameter: measurement.diameter
+            )
+
             // 3. Update UI state
             statusMessage = "Added scan to \(mole.name)!"
             activeAlert = .success("Successfully saved scan.")
         }
     }
-    
+
+    /// Computes both physical measurements for the selected detection.
+    /// Returns `(0, 0)` when required mask/depth data is unavailable.
+    private func calculateSelectedMoleMeasurement() -> (area: Float, diameter: Float) {
+        guard let maskOnlyImage: UIImage = maskOnlyImage,
+              let selectedBox: CGRect = selectedBoxForMole else {
+            return (0, 0)
+        }
+
+        let measurement = calculator.calculateMetrics(
+            from: (maskOnlyImage, [selectedBox]),
+            depthMap: depthMap,
+            confidenceMap: confidenceMap,
+            cameraIntrinsics: cameraIntrinsics,
+            imageOrientation: capturedImageOrientation
+        )
+
+        let area = measurement.areaMM2.isFinite && measurement.areaMM2 > 0 ? Float(measurement.areaMM2) : 0
+        let diameter = measurement.diameterMM.isFinite && measurement.diameterMM > 0 ? Float(measurement.diameterMM) : 0
+        return (area, diameter)
+    }
+
     /**
      Crops the given image to the specified box with some padding, ensuring the crop stays within the image bounds. 
      Uses `UIGraphicsImageRenderer` for efficient cropping while maintaining the original image's scale. 

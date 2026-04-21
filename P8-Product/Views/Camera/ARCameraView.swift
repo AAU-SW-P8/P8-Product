@@ -5,6 +5,9 @@
 
 import SwiftUI
 
+import CoreVideo
+import simd
+
 /// SwiftUI wrapper around `ARCameraViewController` that exposes the LiDAR
 /// capture flow to the rest of the app.
 ///
@@ -18,6 +21,8 @@ struct ARCameraView: UIViewControllerRepresentable {
     @Binding var capturedDepthMap: CVPixelBuffer?
     /// Receives the per-pixel confidence values for `capturedDepthMap`
     @Binding var capturedConfidenceMap: CVPixelBuffer?
+    /// Receives the camera intrinsics matrix aligned with the capture.
+    @Binding var capturedIntrinsics: simd_float3x3?
     /// SwiftUI dismissal action used to close the full-screen cover after capture or cancellation.
     @Environment(\.dismiss) var dismiss
 
@@ -29,10 +34,11 @@ struct ARCameraView: UIViewControllerRepresentable {
     ///   AR session and deliver captured frames back through the bindings.
     func makeUIViewController(context: Context) -> ARCameraViewController {
         let controller = ARCameraViewController()
-        controller.onCapture = { image, depthMap, confidenceMap in
+        controller.onCapture = { image, depthMap, confidenceMap, intrinsics in
             capturedImage = image
             capturedDepthMap = depthMap
             capturedConfidenceMap = confidenceMap
+            capturedIntrinsics = intrinsics
             dismiss()
         }
         controller.onCancel = {

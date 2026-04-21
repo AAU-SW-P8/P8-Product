@@ -140,9 +140,9 @@ class DataController {
     // MARK: - Business Logic & Persistence
     
     /// Creates a new scan, a new mole, and links them together for a specific person.
-    func addMoleAndScan(to person: Person, image: UIImage) {
+    func addMoleAndScan(to person: Person, image: UIImage, area: Float = 0, diameter: Float = 0) {
         let context: ModelContext = container.mainContext
-        
+
         let scan: MoleScan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9))
         let mole: Mole = Mole(
             name: "Mole \(person.moles.count + 1)",
@@ -153,9 +153,9 @@ class DataController {
             person: person
         )
         let instance: MoleInstance = MoleInstance(
-            diameter: 0,
-            area: 0,
-            mole: mole, 
+            diameter: diameter,
+            area: area,
+            mole: mole,
             moleScan: scan
         )
         
@@ -176,14 +176,14 @@ class DataController {
             - mole: The existing `Mole` to which the new scan will be linked.
             - image: The `UIImage` representing the new scan to be added.
     */
-    func addToExistingMole(mole: Mole, image: UIImage) {
+    func addToExistingMole(mole: Mole, image: UIImage, area: Float = 0, diameter: Float = 0) {
         let context: ModelContext = container.mainContext
-        
+
         // Create the scan and the linking instance
         let scan: MoleScan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9))
         let instance: MoleInstance = MoleInstance(
-            diameter: 0,
-            area: 0,
+            diameter: diameter,
+            area: area,
             mole: mole,
             moleScan: scan
         )
