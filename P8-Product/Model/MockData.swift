@@ -64,36 +64,21 @@ struct MockData {
 
         // Create Scans with placeholder image data
         let alexScan1 = MoleScan(
-            captureDate: daysAgo(100, from: today),
-            imageData: UIImage(systemName: "1.circle.fill")?.pngData()
+            captureDate: daysAgo(20, from: today),
+            imageData: UIImage(systemName: "dot.circle.viewfinder")?.pngData()
         )
         let alexScan2 = MoleScan(
-            captureDate: daysAgo(90, from: today),
-            imageData: UIImage(systemName: "2.circle.fill")?.pngData()
+            captureDate: daysAgo(50, from: today),
+            imageData: UIImage(systemName: "dot.circle.fill")?.pngData()
         )
         let alexScan3 = MoleScan(
-            captureDate: daysAgo(80, from: today),
-            imageData: UIImage(systemName: "3.circle.fill")?.pngData()
+            captureDate: daysAgo(10, from: today),
+            imageData: UIImage(systemName: "circle.dotted")?.pngData()
         )
 
         let alexScan4 = MoleScan(
-            captureDate: daysAgo(70, from: today),
-            imageData: UIImage(systemName: "4.circle.fill")?.pngData()
-        )
-        
-        let alexScan5 = MoleScan(
-            captureDate: daysAgo(60, from: today),
-            imageData: UIImage(systemName: "5.circle.fill")?.pngData()
-        )
-        
-        let alexScan6 = MoleScan(
-            captureDate: daysAgo(50, from: today),
-            imageData: UIImage(systemName: "6.circle.fill")?.pngData()
-        )
-
-        let alexScan7 = MoleScan(
-            captureDate: daysAgo(40, from: today),
-            imageData: UIImage(systemName: "7.circle.fill")?.pngData()
+            captureDate: daysAgo(6, from: today),
+            imageData: UIImage(systemName: "circle.dashed")?.pngData()
         )
         
         let jordanScan1 = MoleScan(
@@ -147,42 +132,14 @@ struct MockData {
             mole: alexLeftArmMole,
             moleScan: alexScan2
         )
-    
-        let alexLeftArmInstance3 = MoleInstance(
-            diameter: 5.0,
-            area: 16.0,
-            mole: alexLeftArmMole,
-            moleScan: alexScan3
-        )
         
-        let alexLeftArmInstance4 = MoleInstance(
+        let alexLeftArmInstance3 = MoleInstance(
             diameter: 5.0,
             area: 16.0,
             mole: alexLeftArmMole,
             moleScan: alexScan4
         )
-        
-        let alexLeftArmInstance5 = MoleInstance(
-            diameter: 5.0,
-            area: 16.0,
-            mole: alexLeftArmMole,
-            moleScan: alexScan5
-        )
-        
-        let alexLeftArmInstance6 = MoleInstance(
-            diameter: 5.0,
-            area: 16.0,
-            mole: alexLeftArmMole,
-            moleScan: alexScan6
-        )
-        
-        
-        let alexLeftArmInstance7 = MoleInstance(
-            diameter: 5.7,
-            area: 18.9,
-            mole: alexLeftArmMole,
-            moleScan: alexScan7
-        )
+
 
         let alexBackInstance = MoleInstance(
             diameter: 3.6,
@@ -258,9 +215,6 @@ struct MockData {
         context.insert(alexScan2)
         context.insert(alexScan3)
         context.insert(alexScan4)
-        context.insert(alexScan5)
-        context.insert(alexScan6)
-        context.insert(alexScan7)
         context.insert(jordanScan1)
         context.insert(jordanScan2)
         context.insert(jordanScan3)
@@ -272,10 +226,6 @@ struct MockData {
         context.insert(alexLeftArmInstance1)
         context.insert(alexLeftArmInstance2)
         context.insert(alexLeftArmInstance3)
-        context.insert(alexLeftArmInstance4)
-        context.insert(alexLeftArmInstance5)
-        context.insert(alexLeftArmInstance6)
-        context.insert(alexLeftArmInstance7)
         context.insert(alexBackInstance)
         context.insert(jordanFaceInstance)
         context.insert(jordanBackInstance2)

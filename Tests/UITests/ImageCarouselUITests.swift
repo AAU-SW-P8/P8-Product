@@ -79,7 +79,7 @@ final class ImageCarouselUITests: XCTestCase {
 
         let leftCarousel = app.otherElements["leftCarousel"]
         XCTAssertTrue(leftCarousel.waitForExistence(timeout: 5))
-        assertCarousel(leftCarousel, showsDiameter: "5.0", area: "16.0")
+        assertCarousel(leftCarousel, showsDiameter: "4.8", area: "15.4")
     }
 
     func testSingleScanCarouselShowsSameScanInBothCarousels() {
@@ -99,27 +99,37 @@ final class ImageCarouselUITests: XCTestCase {
     }
 
     // MARK: - Swipe Navigation
-    func testSwipingThroughAllScansChangesTheVisibleScan() {
+    func testSwipingThroughAllScansShowsEachOne() {
+        // Left carousel starts at last index, so order while swiping right is:
+        // 5.0 mm → 4.2 mm → 4.8 mm.
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
         Helpers.switchToEvolution(in: app)
 
         let leftCarousel = app.otherElements["leftCarousel"]
         XCTAssertTrue(leftCarousel.waitForExistence(timeout: 5))
-        assertCarousel(leftCarousel, showsDiameter: "5.0", area: "16.0")
+        XCTAssertTrue(
+            leftCarousel.staticTexts["Diameter: 4.8 mm"].waitForExistence(timeout: 3)
+            || leftCarousel.staticTexts["Diameter: 4,8 mm"].waitForExistence(timeout: 3)
+        )
 
-        let firstDiameter = observedDiameter(in: leftCarousel, candidates: ["5.0", "5,0"])
-        XCTAssertNotNil(firstDiameter)
+        leftCarousel.swipeLeft()
+        XCTAssertTrue(
+            leftCarousel.staticTexts["Diameter: 4.2 mm"].waitForExistence(timeout: 3)
+            || leftCarousel.staticTexts["Diameter: 4,2 mm"].waitForExistence(timeout: 3),
+            "Second swipe target should be the 4.2 mm scan"
+        )
 
-        leftCarousel.swipeRight()
-        let secondDiameter = observedDiameter(in: leftCarousel, candidates: ["4.2", "4,2", "4.8", "4,8"])
-        XCTAssertNotNil(secondDiameter)
-        XCTAssertNotEqual(secondDiameter, firstDiameter)
-
-        leftCarousel.swipeRight()
-        let thirdDiameter = observedDiameter(in: leftCarousel, candidates: ["4.2", "4,2", "4.8", "4,8"])
-        XCTAssertNotNil(thirdDiameter)
-        XCTAssertNotEqual(thirdDiameter, secondDiameter)
-        XCTAssertNotEqual(thirdDiameter, firstDiameter)
+        leftCarousel.swipeLeft()
+        XCTAssertTrue(
+            leftCarousel.staticTexts["Diameter: 5.0 mm"].waitForExistence(timeout: 3)
+            || leftCarousel.staticTexts["Diameter: 5,0 mm"].waitForExistence(timeout: 3),
+            "Third swipe target should be the 5.0 mm scan"
+        )
+        XCTAssertTrue(
+            leftCarousel.staticTexts["Area: 16.0 mm²"].exists
+            || leftCarousel.staticTexts["Area: 16,0 mm²"].exists,
+            "Third scan area should be 16.0 mm²"
+        )
     }
 
     func testLeftAndRightCarouselsTrackSelectionIndependently() {
@@ -130,10 +140,10 @@ final class ImageCarouselUITests: XCTestCase {
         let rightCarousel = app.otherElements["rightCarousel"]
         XCTAssertTrue(leftCarousel.waitForExistence(timeout: 5))
         XCTAssertTrue(rightCarousel.waitForExistence(timeout: 5))
-        assertCarousel(leftCarousel, showsDiameter: "5.0", area: "16.0")
-        assertCarousel(rightCarousel, showsDiameter: "4.8", area: "15.4")
+        assertCarousel(leftCarousel, showsDiameter: "4.8", area: "15.4")
+        assertCarousel(rightCarousel, showsDiameter: "5.0", area: "16.0")
 
-        let initialRightDiameter = observedDiameter(in: rightCarousel, candidates: ["4.8", "4,8"])
+        let initialRightDiameter = observedDiameter(in: rightCarousel, candidates: ["5.0", "5,0"])
         XCTAssertNotNil(initialRightDiameter)
 
         leftCarousel.swipeRight()
@@ -143,7 +153,7 @@ final class ImageCarouselUITests: XCTestCase {
         XCTAssertNotEqual(movedLeftDiameter, "5.0")
         XCTAssertNotEqual(movedLeftDiameter, "5,0")
 
-        let currentRightDiameter = observedDiameter(in: rightCarousel, candidates: ["4.8", "4,8"])
+        let currentRightDiameter = observedDiameter(in: rightCarousel, candidates: ["5.0", "5,0"])
         XCTAssertEqual(currentRightDiameter, initialRightDiameter)
     }
 
@@ -163,8 +173,8 @@ final class ImageCarouselUITests: XCTestCase {
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
 
         XCTAssertTrue(
-            app.staticTexts["Diameter: 4.8 mm"].firstMatch.waitForExistence(timeout: 3)
-            || app.staticTexts["Diameter: 4,8 mm"].firstMatch.waitForExistence(timeout: 3),
+            app.staticTexts["Diameter: 5.0 mm"].firstMatch.waitForExistence(timeout: 3)
+            || app.staticTexts["Diameter: 5,0 mm"].firstMatch.waitForExistence(timeout: 3),
             "Canceling delete should keep currently selected scan"
         )
         let deleteButton = app.buttons["deleteMoleInstanceButton"]
@@ -176,8 +186,8 @@ final class ImageCarouselUITests: XCTestCase {
         alert.buttons["Cancel"].tap()
 
         XCTAssertTrue(
-            app.staticTexts["Diameter: 4.8 mm"].firstMatch.waitForExistence(timeout: 3)
-            || app.staticTexts["Diameter: 4,8 mm"].firstMatch.waitForExistence(timeout: 3),
+            app.staticTexts["Diameter: 5.0 mm"].firstMatch.waitForExistence(timeout: 3)
+            || app.staticTexts["Diameter: 5,0 mm"].firstMatch.waitForExistence(timeout: 3),
             "Canceling delete should keep currently selected scan"
         )
     }
@@ -186,8 +196,8 @@ final class ImageCarouselUITests: XCTestCase {
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
 
         XCTAssertTrue(
-            app.staticTexts["Diameter: 4.8 mm"].firstMatch.waitForExistence(timeout: 3)
-            || app.staticTexts["Diameter: 4,8 mm"].firstMatch.waitForExistence(timeout: 3),
+            app.staticTexts["Diameter: 5.0 mm"].firstMatch.waitForExistence(timeout: 3)
+            || app.staticTexts["Diameter: 5,0 mm"].firstMatch.waitForExistence(timeout: 3),
             "Deleting the latest Left Arm scan should move detail view to the next available scan"
         )
 
