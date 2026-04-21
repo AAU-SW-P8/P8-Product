@@ -160,6 +160,8 @@ class Calculator {
             }
         }
 
+        // samplePixels has to be called inside the depth/confidence lock scope 
+        // to ensure the raw pointers remain valid for the duration of sampling.
         return samplePixels(
             mask: renderedMask,
             bounds: bounds,
@@ -208,6 +210,7 @@ class Calculator {
         var depths: [Float] = []
         var sampledDepthPixels = Set<Int>()
 
+        // Reserve capacity based on the bounding box size to optimize memory allocations during sampling.
         let estimatedPixelCount = max(0, (bounds.maxX - bounds.minX + 1) * (bounds.maxY - bounds.minY + 1))
         points.reserveCapacity(estimatedPixelCount)
         weights.reserveCapacity(estimatedPixelCount)
@@ -219,20 +222,26 @@ class Calculator {
                 let alpha = mask.pixels[pixelOffset + LesionSizingConstants.alphaChannelOffset]
                 guard alpha >= LesionSizingConstants.minimumMaskAlpha else { continue }
 
+                // Collect the normalized pixel coordinate and its corresponding mask weight.
                 points.append(CGPoint(x: nx, y: ny))
                 weights.append(min(1.0, Double(alpha) / alphaScale))
 
+                // Map the normalized pixel coordinate to the original sensor space to find the corresponding depth pixel.
                 let (sx, sy) = CalculatorHelper.normalizedToSensor(
                     nx: nx, ny: ny,
                     normalizedWidth: mask.width, normalizedHeight: mask.height,
                     orientation: orientation
                 )
 
+                // Scale the sensor-space coordinate to the depth map resolution. 
+                // This accounts for differences in resolution 
+                // and ensures we sample the correct depth value corresponding to the mask pixel.
                 let dx = sx * depth.width / sensorWidth
                 let dy = sy * depth.height / sensorHeight
                 guard dx >= 0 && dx < depth.width && dy >= 0 && dy < depth.height else { continue }
 
-                // Dedupe so multiple mask pixels landing on the same depth pixel don't bias the median.
+                // Set-based deduplication of depth samples to avoid biasing the area/diameter calculations 
+                // with repeated values from multiple mask pixels mapping to the same depth pixel.
                 let depthIndex = dy * depth.width + dx
                 guard !sampledDepthPixels.contains(depthIndex) else { continue }
                 sampledDepthPixels.insert(depthIndex)
@@ -301,11 +310,16 @@ class Calculator {
     /// - Parameter samples: Gathered mole samples for the current selection.
     /// - Returns: Diameter in mm, or `0` when depth/points are insufficient.
     private func computeDiameterMM(from samples: MoleSamples) -> CGFloat {
+
+        // Diameter estimation relies on the spatial distribution of the sampled points, 
+        // so we require at least 2 points to compute a non-zero diameter.
         guard !samples.depths.isEmpty,
               samples.points.count >= LesionSizingConstants.minimumDiameterPointCount else {
             return 0.0
         }
 
+        // Similar to area, we use the median depth to represent the typical distance of the lesion,
+        // which allows us to convert pixel distances into physical units while being robust to depth outliers
         let depthMeters = CalculatorHelper.median(of: samples.depths)
         let hull = CalculatorHelper.convexHull(of: samples.points)
 
