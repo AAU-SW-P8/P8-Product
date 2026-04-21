@@ -42,7 +42,6 @@
 		7AD89F892F87B66800A2C5F0 /* Exceptions for "Tests" folder in "P8-ProductUITests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				ReminderOverview/ReminderOverview.swift,
 				UITests/CameraViewUITests.swift,
 				UITests/CompareViewUITests.swift,
 				UITests/Helpers.swift,
@@ -60,6 +59,7 @@
 				CalculatorTests.swift,
 				ChartViewTest.swift,
 				ReminderOverview/ReminderAppStateDirectTests.swift,
+				ReminderOverview/ReminderOverview.swift,
 				SAMPipelineTests/SAM3DecoderTests.swift,
 				SAMPipelineTests/SAM3DetectionTests.swift,
 				SAMPipelineTests/SAM3FeatureNamesTests.swift,
