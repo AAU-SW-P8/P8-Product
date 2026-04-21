@@ -23,13 +23,6 @@ public struct OverviewView: View {
 }
 
 private struct OverviewContentView: View {
-    private enum MoleSortOption: String, CaseIterable, Identifiable {
-        case recent = "Recent"
-        case alphabetical = "A-Z"
-
-        var id: String { rawValue }
-    }
-
     private let bodyPartRowHeight: CGFloat = 34
     private let bodyPartMaxVisibleRows: CGFloat = 5
 
@@ -38,7 +31,7 @@ private struct OverviewContentView: View {
     var people: [Person]
 
     @State private var selectedBodyParts: Set<String> = []
-    @State private var sortOption: MoleSortOption = .recent
+    @State private var sortOption: OverviewAppState.MoleSortOption = .recent
     @State private var showingFilters: Bool = false
     @State private var showingBodyPartDropdown: Bool = false
     
@@ -244,7 +237,7 @@ private struct OverviewContentView: View {
                     .accessibilityIdentifier("overviewFilterPopupTitle")
                 Spacer()
                 Picker("Sort", selection: $sortOption) {
-                    ForEach(MoleSortOption.allCases) { option in
+                    ForEach(OverviewAppState.MoleSortOption.allCases) { option in
                         Text(option.rawValue).tag(option)
                     }
                 }
@@ -398,29 +391,15 @@ private struct OverviewContentView: View {
 
     private var availableBodyParts: [String] {
         guard let person = appState.selectedPerson else { return [] }
-
-        return Array(Set(person.moles.map(\.bodyPart)))
-            .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+        return appState.availableBodyParts(for: person)
     }
 
     private func displayedMoles(for person: Person) -> [Mole] {
-        let filtered = person.moles.filter { mole in
-            let matchesBodyPart = selectedBodyParts.isEmpty || selectedBodyParts.contains(mole.bodyPart)
-            return matchesBodyPart
-        }
-
-        switch sortOption {
-        case .alphabetical:
-            return filtered.sorted {
-                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-            }
-        case .recent:
-            return filtered.sorted {
-                let lhsDate = latestScan(for: $0)?.captureDate ?? .distantPast
-                let rhsDate = latestScan(for: $1)?.captureDate ?? .distantPast
-                return lhsDate > rhsDate
-            }
-        }
+        appState.displayedMoles(
+            for: person,
+            selectedBodyParts: selectedBodyParts,
+            sortOption: sortOption
+        )
     }
 
     private func toggleBodyPart(_ bodyPart: String) {
@@ -491,10 +470,7 @@ private struct OverviewContentView: View {
     }
 
     private func latestScan(for mole: Mole) -> MoleScan? {
-        mole.instances
-            .compactMap(\.moleScan)
-            .sorted { $0.captureDate > $1.captureDate }
-            .first
+        appState.latestScan(for: mole)
     }
 }
 
