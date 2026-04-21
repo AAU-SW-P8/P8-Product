@@ -43,12 +43,24 @@ struct MoleSegmentationView: View {
         _appState = State(initialValue: state)
     }
 
-    // MARK: - UI-Only State (Gestures)
+    // UI-Only State (Gestures)
     @State private var currentZoom: Double = 0.0
     @State private var totalZoom: Double = 1.0
     @State private var currentPan: CGSize = .zero
     @State private var accumulatedPan: CGSize = .zero
 
+    private var guidanceStep: MoleSegmentationGuidanceStep {
+        MoleSegmentationGuidanceStep.make(
+            isProcessing: appState.isProcessing,
+            hasDetections: !appState.detectedBoxes.isEmpty
+        )
+    }
+
+    private var hasSegmentationResult: Bool {
+        appState.maskOverlay != nil || !appState.detectedBoxes.isEmpty
+    }
+
+    // MARK: - View Body
     var body: some View {
         ZStack {
             if let image: UIImage = appState.testImage {
@@ -56,13 +68,15 @@ struct MoleSegmentationView: View {
             } else {
                 noImagePlaceholder
             }
-
-            if appState.isProcessing {
-                loadingOverlay
-            }
         }
         .navigationTitle("Mole Segmentation")
         .toolbar { toolbarContent }
+        .safeAreaInset(edge: .top) {
+            MoleSegmentationGuidanceCard(step: guidanceStep)
+        }
+        .safeAreaInset(edge: .bottom) {
+            bottomActionArea
+        }
         .sheet(isPresented: $appState.showSettings) {
             // Assuming settingsSheet is extracted
             settingsSheet
@@ -225,20 +239,23 @@ struct MoleSegmentationView: View {
                     }
             )
         }
-        .safeAreaInset(edge: .bottom) {
-            VStack {
-                Text(appState.statusMessage)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .padding(.bottom, 2)
-            }
-        }
     }
 
+    /// Clamps the zoom level to a reasonable range to prevent excessive zooming in or out.
+     /// - Parameter value: The proposed zoom level based on user gestures.
+     /// - Returns: A zoom level clamped between 1.0 (original size) and 5.0 (5x zoom).
     private func clampedZoom(_ value: Double) -> Double {
         min(max(value, 1.0), 5.0)
     }
 
+
+    /// Clamps the pan offset to prevent panning beyond the edges of the image when zoomed in.
+     /// - Parameters:
+     ///   - current: The current pan translation from the ongoing drag gesture.
+     ///   - accumulated: The total pan offset accumulated from previous drags.
+     ///   - size: The size of the viewport displaying the image.
+     ///   - zoom: The current zoom level to calculate how much extra space is available for panning.
+     /// - Returns: A CGSize representing the clamped pan offset to be applied to the image.
     private func clampedPan(_ current: CGSize, _ accumulated: CGSize, for size: CGSize, zoom: Double) -> CGSize {
         guard zoom > 1.0 else { return .zero }
 
@@ -303,6 +320,11 @@ struct MoleSegmentationView: View {
         }
     }
 
+    /// A view builder that renders the metadata entry sheet for adding a new mole based on a segmentation result. 
+    /// Provides a picker for selecting the body part and a text field for entering the mole name, along with validation feedback. 
+    /// The "Save" button is disabled until the required information is provided and valid. 
+    /// Should be presented as a sheet when the user chooses to add a new mole after long-pressing a detected box.
+    /// - Returns: A view containing fields for entering new mole metadata.
     private var newMoleMetadataSheet: some View {
         NavigationStack {
             Form {
@@ -346,26 +368,6 @@ struct MoleSegmentationView: View {
     }
 
     /**
-     A view builder that renders a full-screen overlay shown while loading or segmenting. 
-     Displays a progress indicator and a status message to inform the user about the current operation. 
-     - Returns: A view containing the loading overlay.
-     */
-    private var loadingOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.3).ignoresSafeArea()
-            VStack(spacing: 16) {
-                ProgressView().scaleEffect(1.5)
-                Text(appState.statusMessage)
-                    .foregroundStyle(.white)
-                    .font(.headline)
-            }
-            .padding()
-            .background(.black.opacity(0.7))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-        }
-    }
-
-    /**
      A view builder that renders a placeholder image when no test image is available. 
      Displays a photo icon and a message indicating that no test image was found. 
      - Returns: A view containing the placeholder content.
@@ -395,20 +397,66 @@ struct MoleSegmentationView: View {
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .navigationBarTrailing) {
-            HStack {
-                Button {
-                    appState.showSettings = true
-                } label: {
-                    Label("Settings", systemImage: "slider.horizontal.3")
-                }
-                .disabled(appState.isProcessing)
-
-                Button("Segment") { appState.startSegmentationFlow(people: people) }
-                    .disabled(appState.isProcessing)
-                Button("Clear") { appState.clearSegmentation() }
-                    .disabled(appState.maskOverlay == nil)
+            Button {
+                appState.showSettings = true
+            } label: {
+                Label("Settings", systemImage: "slider.horizontal.3")
             }
+            .disabled(appState.isProcessing)
         }
+    }
+
+    /// Creates the bottom action area containing the primary action button and a privacy note.
+    /// The primary button's title and action change based on whether the app is currently processing, has segmentation results, or is ready to start segmentation.
+    /// - Returns: A view containing the primary action button and a note about photo privacy.
+    private var bottomActionArea: some View {
+        VStack(spacing: 8) {
+            Button {
+                if hasSegmentationResult {
+                    appState.clearSegmentation()
+                } else {
+                    appState.startSegmentationFlow(people: people)
+                }
+            } label: {
+                HStack(spacing: 10) {
+                    if appState.isProcessing {
+                        ProgressView()
+                            .tint(.white)
+                    }
+
+                    Text(primaryButtonTitle)
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(Color.blue)
+                .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .disabled(appState.isProcessing)
+
+            Text("Your photos never leave your device")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 10)
+        .padding(.bottom, 8)
+        .background(.ultraThinMaterial)
+    }
+
+    /// Determines the title of the primary action button based on the current state of the app. 
+    /// - Returns: A string representing the button title, which changes to indicate whether the app is processing, has results, or is ready to start segmentation.
+    private var primaryButtonTitle: String {
+        if appState.isProcessing {
+            return "Scanning…"
+        }
+        if hasSegmentationResult {
+            return "Clear & Restart"
+        }
+        return "Scan for Moles"
     }
 }
 

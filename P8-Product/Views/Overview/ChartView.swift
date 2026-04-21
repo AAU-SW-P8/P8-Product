@@ -2,8 +2,6 @@
 //  ChartView.swift
 //  P8-Product
 //
-//  Created by Peter Rahr on 26/03/2026.
-//
 
 import SwiftUI
 import Charts

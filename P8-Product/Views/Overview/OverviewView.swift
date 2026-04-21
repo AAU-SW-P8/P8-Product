@@ -22,7 +22,12 @@ public struct OverviewView: View {
     }
 }
 
+/// A private subview that contains the main content of the OverviewView, including the header, person selector, mole list, and filter popup. This struct is defined separately to keep the main OverviewView clean and focused on data fetching and state management.
+/// - Parameters:
+///   - appState: The state object that manages the UI state and interactions for the overview
+///   - people: The list of people fetched from the data store, which is passed down to child views for display and interaction.
 private struct OverviewContentView: View {
+    // Constants for layout and sizing
     private let bodyPartRowHeight: CGFloat = 34
     private let bodyPartMaxVisibleRows: CGFloat = 5
 
@@ -30,24 +35,46 @@ private struct OverviewContentView: View {
     @Bindable var appState: OverviewAppState
     var people: [Person]
 
+    // State for filter popup, lifted up to this level so it can be shared between the header and the popup view.
     @State private var selectedBodyParts: Set<String> = []
     @State private var sortOption: OverviewAppState.MoleSortOption = .recent
     @State private var showingFilters: Bool = false
     @State private var showingBodyPartDropdown: Bool = false
     
+    // MARK: - View Body
     var body: some View {
         navigationContent
             .modifier(OverviewAlertsModifier(appState: appState))
     }
 
+    // MARK: - Subviews
+
+    /// Header and navigation content, including the header with filter and add person buttons, the person selector with navigation between people, and the list of moles for the selected person. Also manages the presentation of the filter popup and its interaction with the rest of the UI.
     private var navigationContent: some View {
         NavigationStack {
             ZStack(alignment: .topTrailing) {
                 VStack(spacing: 0) {
-                    headerView
-                    personSelectorView
+                    OverviewHeaderView(
+                        showingFilters: showingFilters,
+                        onFilterTap: {
+                            showingFilters ? closeFilterPopup() : openFilterPopup()
+                        },
+                        onAddPersonTap: {
+                            appState.showingAddPerson = true
+                        }
+                    )
+                    OverviewPersonSelectorView(
+                        appState: appState,
+                        people: people
+                    )
                     Divider()
-                    moleListView
+                    if let person: Person = appState.selectedPerson {
+                        OverviewMoleListView(
+                            appState: appState,
+                            person: person,
+                            moles: displayedMoles(for: person)
+                        )
+                    }
                     Spacer()
                 }
 
@@ -62,7 +89,25 @@ private struct OverviewContentView: View {
                 }
 
                 if showingFilters {
-                    filterPopupView
+                    OverviewFilterPopupView(
+                        sortOption: $sortOption,
+                        showingBodyPartDropdown: $showingBodyPartDropdown,
+                        selectedBodyParts: $selectedBodyParts,
+                        availableBodyParts: availableBodyParts,
+                        selectedBodyPartsSummary: selectedBodyPartsSummary,
+                        bodyPartDropdownHeight: bodyPartDropdownHeight,
+                        onToggleBodyPartDropdown: {
+                            withAnimation(.easeInOut(duration: 0.16)) {
+                                showingBodyPartDropdown.toggle()
+                            }
+                        },
+                        onToggleBodyPart: toggleBodyPart,
+                        onReset: {
+                            selectedBodyParts = []
+                            sortOption = .recent
+                        },
+                        onDone: closeFilterPopup
+                    )
                         .padding(.top, 64)
                         .padding(.trailing, 12)
                         .transition(.move(edge: .top).combined(with: .opacity))
@@ -91,281 +136,16 @@ private struct OverviewContentView: View {
         }
     }
 
-    
-    
-    // MARK: - Subviews
-    
-    private var headerView: some View {
-        HStack {
-            Text("Mole Overview")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            Spacer()
-            Button(action: {
-                showingFilters ? closeFilterPopup() : openFilterPopup()
-            }) {
-                Image(systemName: "line.3.horizontal.decrease.circle")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundColor(.primary)
-                    .frame(width: 44, height: 44)
-            }
-            .accessibilityIdentifier("overviewFilterButton")
-            .accessibilityLabel("Open Filters")
-            Button(action: {
-                appState.showingAddPerson = true
-            }) {
-                Image(systemName: "person.fill.badge.plus")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundColor(.primary)
-                    .frame(width: 44, height: 44)
-            }
-        }
-        .padding(.horizontal)
-        .padding(.top)
-        .background(Color(.systemGray6))
-    }
-    
-    private var personSelectorView: some View {
-        HStack {
-            Button(action: { appState.selectPreviousPerson(from: people) }) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 30, weight: .bold))
-                    .foregroundColor(.primary)
-                    .frame(width: 44, height: 44)
-            }
-            .disabled(appState.selectedPerson == people.first || people.isEmpty)
-            .opacity((appState.selectedPerson == people.first || people.isEmpty) ? 0.3 : 1.0)
-            
-            ZStack {
-                if let person = appState.selectedPerson {
-                    Text(person.name)
-                        .font(.system(size: 18, weight: .semibold))
-                        .lineLimit(1)
-                        .foregroundColor(.primary)
-                        .contextMenu {
-                            Button {
-                                appState.startEditing(person: person)
-                            } label: {
-                                Label("Edit Name", systemImage: "pencil")
-                            }
-                            Button(role: .destructive) {
-                                appState.requestDelete(person: person)
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                        }
-                        .background(Color(.systemGray6))
-                        .id(person)
-                        .transition(.asymmetric(
-                            insertion: .move(edge: appState.slideEdge).combined(with: .opacity),
-                            removal: .move(edge: appState.slideEdge == .leading ? .trailing : .leading).combined(with: .opacity)
-                        ))
-                } else {
-                    Text("No Person Selected")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.secondary)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .clipped()
-            
-            Button(action: { appState.selectNextPerson(from: people) }) {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 30, weight: .bold))
-                    .foregroundColor(.primary)
-                    .frame(width: 44, height: 44)
-            }
-            .disabled(appState.selectedPerson == people.last || people.isEmpty)
-            .opacity((appState.selectedPerson == people.last || people.isEmpty) ? 0.3 : 1.0)
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 8)
-        .background(Color(.systemGray6))
-    }
-    
-    private var moleListView: some View {
-        ZStack {
-            if let person: Person = appState.selectedPerson {
-                let moles = displayedMoles(for: person)
+    // MARK: - Helper Functions
 
-                List {
-                    ForEach(moles) { mole in
-                        NavigationLink(
-                            destination: MoleDetailView(mole: mole),
-                            tag: mole.id,
-                            selection: selectedMoleIDBinding(for: person)
-                        ) {
-                            moleRow(for: mole, person: person)
-                        }
-                        .accessibilityIdentifier("overviewMoleRow_\(mole.name)")
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button {
-                                appState.requestDelete(mole: mole) // Perfectly in scope here!
-                            } label: {
-                                Label("Delete", systemImage: "trash.fill")
-                            }
-                            .accessibilityIdentifier("overviewDeleteMoleButton_\(mole.name)")
-                            .tint(.red)
-                        }
-                    }
-                }
-                .listStyle(.plain)
-                .id(person)
-                .transition(.asymmetric(
-                    insertion: .move(edge: appState.slideEdge),
-                    removal: .move(edge: appState.slideEdge == .leading ? .trailing : .leading)
-                ))
-            }
-        }
-    }
-
-    private func selectedMoleIDBinding(for person: Person) -> Binding<UUID?> {
-        Binding(
-            get: { appState.selectedMoleNavigationID },
-            set: { newID in
-                let selected = person.moles.first { $0.id == newID }
-                appState.selectMole(selected)
-            }
-        )
-    }
-
-    private var filterPopupView: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("Filter & Sort")
-                    .font(.headline)
-                    .accessibilityIdentifier("overviewFilterPopupTitle")
-                Spacer()
-                Picker("Sort", selection: $sortOption) {
-                    ForEach(OverviewAppState.MoleSortOption.allCases) { option in
-                        Text(option.rawValue).tag(option)
-                    }
-                }
-                .pickerStyle(.menu)
-                .frame(maxWidth: 110)
-                .accessibilityIdentifier("overviewSortPicker")
-                .accessibilityLabel("Sort Picker")
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Body Parts")
-                    .font(.subheadline.weight(.semibold))
-
-                Button {
-                    withAnimation(.easeInOut(duration: 0.16)) {
-                        showingBodyPartDropdown.toggle()
-                    }
-                } label: {
-                    HStack {
-                        Text(selectedBodyPartsSummary)
-                            .lineLimit(1)
-                        Spacer()
-                        Image(systemName: showingBodyPartDropdown ? "chevron.up" : "chevron.down")
-                            .font(.footnote)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("overviewBodyPartDropdownButton")
-                .accessibilityLabel("Body Part Filter")
-
-                if showingBodyPartDropdown {
-                    VStack(alignment: .leading, spacing: 6) {
-                        if availableBodyParts.isEmpty {
-                            Text("No body parts available")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        } else {
-                            HStack {
-                                Button("Select All") {
-                                    selectedBodyParts = Set(availableBodyParts)
-                                }
-                                .buttonStyle(.plain)
-                                .font(.subheadline)
-                                .accessibilityIdentifier("overviewBodyPartSelectAllButton")
-
-                                Spacer()
-
-                                Button("Clear") {
-                                    selectedBodyParts = []
-                                }
-                                .buttonStyle(.plain)
-                                .font(.subheadline)
-                                .accessibilityIdentifier("overviewBodyPartClearButton")
-                            }
-                            .foregroundColor(.secondary)
-
-                            ScrollView {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    ForEach(availableBodyParts, id: \.self) { bodyPart in
-                                        Button {
-                                            toggleBodyPart(bodyPart)
-                                        } label: {
-                                            HStack(spacing: 8) {
-                                                Image(systemName: selectedBodyParts.contains(bodyPart) ? "checkmark.circle.fill" : "circle")
-                                                    .foregroundColor(selectedBodyParts.contains(bodyPart) ? .accentColor : .secondary)
-                                                Text(bodyPart)
-                                                    .foregroundColor(.primary)
-                                                Spacer()
-                                            }
-                                            .padding(.horizontal, 4)
-                                            .padding(.vertical, 6)
-                                        }
-                                        .buttonStyle(.plain)
-                                        .accessibilityIdentifier("overviewBodyPartOption_\(bodyPart.replacingOccurrences(of: " ", with: "_"))")
-                                    }
-                                }
-                            }
-                            .frame(height: bodyPartDropdownHeight)
-                        }
-                    }
-                    .padding(10)
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .accessibilityIdentifier("overviewBodyPartDropdownList")
-                }
-            }
-
-            HStack {
-                Button("Reset") {
-                    selectedBodyParts = []
-                    sortOption = .recent
-                }
-                .buttonStyle(.plain)
-                .foregroundColor(.secondary)
-                .accessibilityIdentifier("overviewFilterResetButton")
-
-                Spacer()
-                Button("Done") {
-                    closeFilterPopup()
-                }
-                .buttonStyle(.borderedProminent)
-                .accessibilityIdentifier("overviewFilterDoneButton")
-            }
-
-            Text("Filter Popup Visible")
-                .font(.caption2)
-                .foregroundColor(.clear)
-                .accessibilityIdentifier("overviewFilterPopupVisibleMarker")
-        }
-        .padding()
-        .frame(width: 320)
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .shadow(color: .black.opacity(0.15), radius: 12, x: 0, y: 4)
-        .accessibilityIdentifier("overviewFilterPopup")
-    }
-
+    /// Opens the filter popup with an animation, setting the `showingFilters` state to true. This function is called when the user taps the filter button in the header, and it triggers the display of the `OverviewFilterPopupView`.
     private func openFilterPopup() {
         withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
             showingFilters = true
         }
     }
 
+    /// Closes the filter popup with an animation, setting the `showingFilters` and `showingBodyPartDropdown` states to false. This function is called when the user taps outside the popup or confirms their filter selections, and it triggers the hiding of the `OverviewFilterPopupView`.
     private func closeFilterPopup() {
         withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
             showingBodyPartDropdown = false
@@ -373,6 +153,7 @@ private struct OverviewContentView: View {
         }
     }
 
+    /// Computes a summary string of the currently selected body parts for filtering, which is displayed on the body part dropdown button when the dropdown is not expanded. If no body parts are selected, it returns "All body parts". Otherwise, it returns a comma-separated list of the selected body parts, sorted alphabetically.
     private var selectedBodyPartsSummary: String {
         if selectedBodyParts.isEmpty {
             return "All body parts"
@@ -383,17 +164,20 @@ private struct OverviewContentView: View {
             .joined(separator: ", ")
     }
 
+    /// Computes the height of the body part dropdown based on the number of available body parts and a maximum visible row count. If there are no available body parts, it returns a minimum height to show an empty state. Otherwise, it calculates the height as the number of body parts (up to the maximum) multiplied by the row height.
     private var bodyPartDropdownHeight: CGFloat {
         let rowCount = min(CGFloat(availableBodyParts.count), bodyPartMaxVisibleRows)
         let minRows: CGFloat = availableBodyParts.isEmpty ? 1 : rowCount
         return max(bodyPartRowHeight, minRows * bodyPartRowHeight)
     }
 
+    /// Computes the list of available body parts for filtering based on the currently selected person. It retrieves the selected person from the app state and returns a sorted list of unique body parts from that person's moles. If no person is selected, it returns an empty array.
     private var availableBodyParts: [String] {
         guard let person = appState.selectedPerson else { return [] }
         return appState.availableBodyParts(for: person)
     }
 
+    /// Computes the list of moles to display for the selected person, based on the current filter and sort options. It retrieves the selected person from the app state and calls the `displayedMoles` function in the app state, passing in the selected body parts and sort option. If no person is selected, it returns an empty array.
     private func displayedMoles(for person: Person) -> [Mole] {
         appState.displayedMoles(
             for: person,
@@ -402,116 +186,12 @@ private struct OverviewContentView: View {
         )
     }
 
+    /// Toggles the selection of a body part in the filter options. If the body part is already selected, it removes it from the set of selected body parts. If it is not selected, it adds it to the set. This function is called when the user taps on a body part in the filter popup, allowing them to customize which body parts are included in the mole list.
     private func toggleBodyPart(_ bodyPart: String) {
         if selectedBodyParts.contains(bodyPart) {
             selectedBodyParts.remove(bodyPart)
         } else {
             selectedBodyParts.insert(bodyPart)
         }
-    }
-
-    private func moleRow(for mole: Mole, person: Person) -> some View {
-        HStack(spacing: 16) {
-            ZStack {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(width: 80, height: 80)
-                    .cornerRadius(8)
-
-                if let data = latestScan(for: mole)?.imageData, let uiImage = UIImage(data: data) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 80, height: 80)
-                        .cornerRadius(8)
-                } else {
-                    Image(systemName: "photo")
-                        .font(.system(size: 40))
-                        .foregroundColor(.gray.opacity(0.5))
-                }
-            }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(mole.name)
-                        .font(.system(size: 20, weight: .semibold))
-                    if effectiveReminderEnabled(for: mole, person: person) {
-                        Image(systemName: "bell.fill")
-                            .foregroundColor(.orange)
-                            .accessibilityIdentifier("overviewReminderIcon_\(mole.name)")
-                    }
-                }
-                Text(mole.bodyPart)
-                    .font(.system(size: 16))
-                    .foregroundColor(.secondary)
-            }
-            
-            Spacer()
-        }
-        .contentShape(Rectangle())
-        .padding(.vertical, 8)
-    }
-
-    private func effectiveReminderEnabled(for mole: Mole, person: Person) -> Bool {
-        if mole.followDefaultReminderEnabled ?? true {
-            return person.defaultReminderEnabled
-        }
-        return mole.isReminderActive
-    }
-
-    // TODO: Use this function instead of effectiveReminderEnabled in the row view, so we can hide the bell icon when the mole is due but not following default reminders.
-    // Fix all related tests after implementing.
-    private func shouldShowDueBell(for mole: Mole, person: Person) -> Bool {
-        guard effectiveReminderEnabled(for: mole, person: person),
-              let dueDate = mole.nextDueDate else {
-            return false
-        }
-        return dueDate <= Date()
-    }
-
-    private func latestScan(for mole: Mole) -> MoleScan? {
-        appState.latestScan(for: mole)
-    }
-}
-
-private struct OverviewAlertsModifier: ViewModifier {
-    @Bindable var appState: OverviewAppState
-
-    func body(content: Content) -> some View {
-        content
-            .alert("Add Person", isPresented: $appState.showingAddPerson) {
-                TextField("Name", text: $appState.newPersonName)
-                Button("Add") { appState.confirmAddPerson() }
-                Button("Cancel", role: .cancel) { appState.cancelAddPerson() }
-            }
-            .alert("Edit Person", isPresented: $appState.showingEditPerson) {
-                TextField("Name", text: $appState.editingName)
-                Button("Save") { appState.confirmEdit() }
-                Button("Cancel", role: .cancel) { appState.cancelEdit() }
-            }
-            .alert("Delete Person", isPresented: $appState.showingDeleteAlert) {
-                Button("Delete", role: .destructive) { appState.confirmDeletePerson() }
-                Button("Cancel", role: .cancel) {
-                    appState.personToDelete = nil
-                }
-            } message: {
-                Text(deletePersonMessage)
-            }
-            .alert("Delete Mole", isPresented: $appState.showingDeleteMoleAlert) {
-                Button("Delete", role: .destructive) { appState.confirmDeleteMole() }
-                Button("Cancel", role: .cancel) {
-                    appState.moleToDelete = nil
-                }
-            } message: {
-                Text(deleteMoleMessage)
-            }
-    }
-
-    private var deletePersonMessage: String {
-        "Are you sure you want to delete \(appState.personToDelete?.name ?? "this person")?"
-    }
-
-    private var deleteMoleMessage: String {
-        "Are you sure you want to delete \(appState.moleToDelete?.name ?? "this mole")?"
     }
 }
