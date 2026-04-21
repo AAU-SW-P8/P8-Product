@@ -159,22 +159,11 @@ struct MoleDetailView: View {
                                 ImageCarousel(
                                     scans: appState.scans,
                                     mole: appState.activeMole,
-                                    selectedIndex: $appState.selectedEvolutionTopIndex,
-                                    side: .left,
-                                    otherSelectedIndex: appState.selectedEvolutionBottomIndex // <-- Added
-                                )
-                                .accessibilityIdentifier("leftCarousel")
-                                
-                                Divider()
-                                
-                                ImageCarousel(
-                                    scans: appState.scans,
-                                    mole: appState.activeMole,
                                     selectedIndex: $appState.selectedEvolutionBottomIndex,
                                     side: .right,
                                     otherSelectedIndex: appState.selectedEvolutionTopIndex // <-- Added
                                 )
-                                .accessibilityIdentifier("rightCarousel")
+                                .accessibilityIdentifier("singleCarousel")
                             }
                             .padding(.vertical, 12)
                             .background(
