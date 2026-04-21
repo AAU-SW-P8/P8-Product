@@ -317,6 +317,11 @@ struct MoleSegmentationView: View {
 
                 Section("Mole Name") {
                     TextField("Mole name", text: $appState.newMoleName)
+                    if let validationMessage: String = appState.newMoleNameValidationMessage {
+                        Text(validationMessage)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
                     Text("Optional. Leave empty to auto-generate a name.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -334,6 +339,7 @@ struct MoleSegmentationView: View {
                     Button("Save") {
                         appState.handleNewMoleSelection()
                     }
+                    .disabled(!appState.canSaveNewMole)
                 }
             }
         }

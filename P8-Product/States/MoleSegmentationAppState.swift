@@ -35,6 +35,19 @@ class MoleSegmentationAppState {
     var newMoleName: String = ""
     var selectedBodyPart: BodyPart = .unassigned
     var selectedExistingBodyPart: String?
+
+    var newMoleNameValidationMessage: String? {
+        guard let person: Person = selectedPersonForScan else { return nil }
+        let trimmedName: String = newMoleName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return nil }
+
+        guard dataController.hasMole(named: trimmedName, for: person) else { return nil }
+        return "A mole named \"\(trimmedName)\" already exists for \(person.name)."
+    }
+
+    var canSaveNewMole: Bool {
+        newMoleNameValidationMessage == nil
+    }
     
     // Dependencies
     private let dataController: DataController
@@ -193,9 +206,14 @@ class MoleSegmentationAppState {
      */
     func handleNewMoleSelection() {
         guard let person: Person = selectedPersonForScan, let image: UIImage = testImage, let box: CGRect = selectedBoxForMole else { return }
+
+        guard canSaveNewMole else {
+            return
+        }
+
         if let cropped: UIImage = cropImage(image, to: box) {
             let measurement = calculateSelectedMoleMeasurement()
-            dataController.addMoleAndScan(
+            let didSave: Bool = dataController.addMoleAndScan(
                 to: person,
                 image: cropped,
                 name: newMoleName,
@@ -203,6 +221,12 @@ class MoleSegmentationAppState {
                 area: measurement.area,
                 diameter: measurement.diameter
             )
+
+            guard didSave else {
+                activeAlert = .error("A mole with that name already exists for \(person.name).")
+                return
+            }
+
             statusMessage = "Added mole to \(person.name)!"
             activeAlert = .success("Successfully saved scan.")
             showNewMoleMetadataSheet = false

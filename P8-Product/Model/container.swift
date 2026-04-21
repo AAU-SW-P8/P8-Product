@@ -168,16 +168,24 @@ class DataController {
     // MARK: - Business Logic & Persistence
     
     /// Creates a new scan, a new mole, and links them together for a specific person.
+    /// Returns `false` when a duplicate mole name is detected for that person.
+    @discardableResult
     func addMoleAndScan(
         to person: Person,
         image: UIImage,
         name: String? = nil,
         bodyPart: String = BodyPart.unassigned.rawValue,
         area: Float = 0, 
-        diameter: Float = 0) {
+        diameter: Float = 0) -> Bool {
         let context: ModelContext = container.mainContext
         let trimmedName: String = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let resolvedName: String = trimmedName.isEmpty ? "Mole \(person.moles.count + 1)" : trimmedName
+        let resolvedName: String = trimmedName.isEmpty
+            ? nextAvailableAutoMoleName(for: person)
+            : trimmedName
+
+        guard !hasMole(named: resolvedName, for: person) else {
+            return false
+        }
         
         let scan: MoleScan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9))
         let initialDueDate: Date? = nextDueDate(
@@ -206,9 +214,39 @@ class DataController {
         
         do {
             try context.save()
+            return true
         } catch {
             print("Failed to save new mole and scan: \(error)")
+            return false
         }
+    }
+
+    func hasMole(named candidateName: String, for person: Person, excluding excludedMole: Mole? = nil) -> Bool {
+        let normalizedCandidate: String = normalizedMoleName(candidateName)
+        guard !normalizedCandidate.isEmpty else { return false }
+
+        return person.moles.contains { mole in
+            guard excludedMole == nil || mole !== excludedMole else { return false }
+            return normalizedMoleName(mole.name) == normalizedCandidate
+        }
+    }
+
+    private func nextAvailableAutoMoleName(for person: Person) -> String {
+        var index: Int = max(1, person.moles.count + 1)
+        var candidate = "Mole \(index)"
+
+        while hasMole(named: candidate, for: person) {
+            index += 1
+            candidate = "Mole \(index)"
+        }
+
+        return candidate
+    }
+
+    private func normalizedMoleName(_ name: String) -> String {
+        name
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
     }
     
     /**
