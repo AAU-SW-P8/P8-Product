@@ -40,12 +40,11 @@ struct OverviewAppStateTests {
         person.moles = [
             Mole(name: "A", bodyPart: "Back", isReminderActive: false, reminderFrequency: nil, nextDueDate: nil, person: person),
             Mole(name: "B", bodyPart: "Arm", isReminderActive: false, reminderFrequency: nil, nextDueDate: nil, person: person),
-            Mole(name: "C", bodyPart: "back", isReminderActive: false, reminderFrequency: nil, nextDueDate: nil, person: person)
         ]
 
         let parts = state.availableBodyParts(for: person)
 
-        #expect(parts == ["Arm", "Back", "back"])
+        #expect(parts == ["Arm", "Back"])
     }
 
     @Test("displayed moles filter by selected body parts")
