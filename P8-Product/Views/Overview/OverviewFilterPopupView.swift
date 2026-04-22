@@ -20,141 +20,80 @@ import SwiftUI
 ///     - onReset: A closure that resets all filters to their default values.
 ///     - onDone: A closure that confirms the current filter selections and closes the popup.
 struct OverviewFilterPopupView: View {
-    // Bindings to parent view state
     @Binding var sortOption: OverviewAppState.MoleSortOption
-    @Binding var showingBodyPartDropdown: Bool
     @Binding var selectedBodyParts: Set<String>
-
+    
     let availableBodyParts: [String]
-    let selectedBodyPartsSummary: String
-    let bodyPartDropdownHeight: CGFloat
-
-    let onToggleBodyPartDropdown: () -> Void
     let onToggleBodyPart: (String) -> Void
     let onReset: () -> Void
-    let onDone: () -> Void
+    
+    @Environment(\.dismiss) var dismiss
 
-    // MARK: - View Body
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("Filter & Sort")
-                    .font(.headline)
-                    .accessibilityIdentifier("overviewFilterPopupTitle")
-                Spacer()
-                Picker("Sort", selection: $sortOption) {
-                    ForEach(OverviewAppState.MoleSortOption.allCases) { option in
-                        Text(option.rawValue).tag(option)
-                    }
-                }
-                .pickerStyle(.menu)
-                .frame(maxWidth: 110)
-                .accessibilityIdentifier("overviewSortPicker")
-                .accessibilityLabel("Sort Picker")
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Body Parts")
-                    .font(.subheadline.weight(.semibold))
-
-                Button(action: onToggleBodyPartDropdown) {
-                    HStack {
-                        Text(selectedBodyPartsSummary)
-                            .lineLimit(1)
-                        Spacer()
-                        Image(systemName: showingBodyPartDropdown ? "chevron.up" : "chevron.down")
-                            .font(.footnote)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("overviewBodyPartDropdownButton")
-                .accessibilityLabel("Body Part Filter")
-
-                if showingBodyPartDropdown {
-                    VStack(alignment: .leading, spacing: 6) {
-                        if availableBodyParts.isEmpty {
-                            Text("No body parts available")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        } else {
-                            HStack {
-                                Button("Select All") {
-                                    selectedBodyParts = Set(availableBodyParts)
-                                }
-                                .buttonStyle(.plain)
-                                .font(.subheadline)
-                                .accessibilityIdentifier("overviewBodyPartSelectAllButton")
-
-                                Spacer()
-
-                                Button("Clear") {
-                                    selectedBodyParts = []
-                                }
-                                .buttonStyle(.plain)
-                                .font(.subheadline)
-                                .accessibilityIdentifier("overviewBodyPartClearButton")
-                            }
-                            .foregroundColor(.secondary)
-
-                            ScrollView {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    ForEach(availableBodyParts, id: \.self) { bodyPart in
-                                        Button {
-                                            onToggleBodyPart(bodyPart)
-                                        } label: {
-                                            HStack(spacing: 8) {
-                                                Image(systemName: selectedBodyParts.contains(bodyPart) ? "checkmark.circle.fill" : "circle")
-                                                    .foregroundColor(selectedBodyParts.contains(bodyPart) ? .accentColor : .secondary)
-                                                Text(bodyPart)
-                                                    .foregroundColor(.primary)
-                                                Spacer()
-                                            }
-                                            .padding(.horizontal, 4)
-                                            .padding(.vertical, 6)
-                                        }
-                                        .buttonStyle(.plain)
-                                        .accessibilityIdentifier("overviewBodyPartOption_\(bodyPart.replacingOccurrences(of: " ", with: "_"))")
-                                    }
-                                }
-                            }
-                            .frame(height: bodyPartDropdownHeight)
+        NavigationStack {
+            List {
+                Section("Sort Order") {
+                    Picker("Sort By", selection: $sortOption) {
+                        ForEach(OverviewAppState.MoleSortOption.allCases) { option in
+                            Text(option.rawValue).tag(option)
                         }
                     }
-                    .padding(10)
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .accessibilityIdentifier("overviewBodyPartDropdownList")
+                    .pickerStyle(.menu) // The "Bubble" style you like
+                }
+                
+                ScrollView(.vertical, showsIndicators: false) {
+                Section {
+                    // "All" Row
+                    Button(action: { selectedBodyParts = [] }) {
+                        HStack {
+                            Text("All Body Parts")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            if selectedBodyParts.isEmpty {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(.accentColor)
+                                    .font(.system(size: 14, weight: .bold))
+                            }
+                        }
+                    }
+                    
+                    // Specific Body Parts
+                    ForEach(availableBodyParts, id: \.self) { bodyPart in
+                        Button(action: { onToggleBodyPart(bodyPart) }) {
+                            HStack {
+                                Text(bodyPart)
+                                    .foregroundColor(.primary)
+                                Spacer()
+                                if selectedBodyParts.contains(bodyPart) {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.accentColor)
+                                        .font(.system(size: 14, weight: .bold))
+                                }
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Filter by Body Part")
+                } footer: {
+                    if availableBodyParts.isEmpty {
+                        Text("No data available to filter.")
+                    }
                 }
             }
-
-            HStack {
-                Button("Reset", action: onReset)
-                    .buttonStyle(.plain)
-                    .foregroundColor(.secondary)
-                    .accessibilityIdentifier("overviewFilterResetButton")
-
-                Spacer()
-
-                Button("Done", action: onDone)
-                    .buttonStyle(.borderedProminent)
-                    .accessibilityIdentifier("overviewFilterDoneButton")
+            .navigationTitle("Filter & Sort")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Reset", action: onReset)
+                        .foregroundColor(.red)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                        .fontWeight(.bold)
+                }
             }
-
-            Text("Filter Popup Visible")
-                .font(.caption2)
-                .foregroundColor(.clear)
-                .accessibilityIdentifier("overviewFilterPopupVisibleMarker")
+            }
         }
-        .padding()
-        .frame(width: 320)
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .shadow(color: .black.opacity(0.15), radius: 12, x: 0, y: 4)
-        .accessibilityIdentifier("overviewFilterPopup")
     }
 }
+
