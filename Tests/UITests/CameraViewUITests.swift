@@ -108,9 +108,12 @@ final class CameraViewUITests: XCTestCase {
         ]
         app.launch()
         Helpers.openCaptureTab(in: app)
-
+        let segmentationRoot = app.descendants(matching: .any)
+        .matching(identifier: "moleSegmentationView")
+        .firstMatch
+        
         XCTAssertTrue(
-            app.navigationBars["Mole Segmentation"].waitForExistence(timeout: 5),
+            segmentationRoot.waitForExistence(timeout: 3),
             "CameraView should push MoleSegmentationView once `capturedImage` is set"
         )
     }
