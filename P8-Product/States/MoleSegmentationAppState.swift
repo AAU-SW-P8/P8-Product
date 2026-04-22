@@ -27,11 +27,13 @@ class MoleSegmentationAppState {
     var showExistingBodyPartPicker: Bool = false
     var showExistingMolePicker: Bool = false
     var showNewMoleMetadataSheet: Bool = false
+    var showSelectMolePanel: Bool = false
     
     // MARK: - Selection State
     var selectedPersonForScan: Person?
     var selectedBoxForMole: CGRect?
     var activeAlert: AlertState?
+    var pendingSuccessToast: String?
     var newMoleName: String = ""
     var selectedBodyPart: BodyPart = .unassigned
     var selectedExistingBodyPart: String?
@@ -130,10 +132,12 @@ class MoleSegmentationAppState {
         showExistingBodyPartPicker = false
         showExistingMolePicker = false
         showNewMoleMetadataSheet = false
+        showSelectMolePanel = false
         selectedBoxForMole = nil
         selectedPersonForScan = nil
         selectedBoxForMole = nil
         activeAlert = nil
+        pendingSuccessToast = nil
         newMoleName = ""
         selectedBodyPart = .unassigned
         selectedExistingBodyPart = nil
@@ -180,16 +184,18 @@ class MoleSegmentationAppState {
     }
 
     func existingMolesForSelectedBodyPart() -> [Mole] {
-        guard
-            let person: Person = selectedPersonForScan,
-            let bodyPart: String = selectedExistingBodyPart
-        else { return [] }
+        guard let person: Person = selectedPersonForScan else { return [] }
 
-        return person.moles
-            .filter { $0.bodyPart == bodyPart }
-            .sorted { lhs, rhs in
-                lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
-            }
+        let filteredMoles: [Mole]
+        if let bodyPart: String = selectedExistingBodyPart {
+            filteredMoles = person.moles.filter { $0.bodyPart == bodyPart }
+        } else {
+            filteredMoles = person.moles
+        }
+
+        return filteredMoles.sorted { lhs, rhs in
+            lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+        }
     }
 
     func chooseExistingBodyPart(_ bodyPart: String) {
@@ -228,7 +234,7 @@ class MoleSegmentationAppState {
             }
 
             statusMessage = "Added mole to \(person.name)!"
-            activeAlert = .success("Successfully saved scan.")
+            pendingSuccessToast = "✓ New mole saved!"
             showNewMoleMetadataSheet = false
             newMoleName = ""
             selectedBodyPart = .unassigned
@@ -260,7 +266,7 @@ class MoleSegmentationAppState {
 
             // 3. Update UI state
             statusMessage = "Added scan to \(mole.name)!"
-            activeAlert = .success("Successfully saved scan.")
+            pendingSuccessToast = "✓ Added to \(mole.name)"
             selectedExistingBodyPart = nil
         }
     }

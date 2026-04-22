@@ -13,6 +13,11 @@ import simd
  Provides controls for adjusting detection parameters and handles the flow of selecting a person and adding new moles or scans based on the segmentation results.
  */
 struct MoleSegmentationView: View {
+    private enum SelectMolePanelStep {
+        case chooseAction
+        case existing
+    }
+
     @Query(sort: \Person.createdAt)
     private var people: [Person]
     @State private var appState: MoleSegmentationAppState
@@ -48,6 +53,10 @@ struct MoleSegmentationView: View {
     @State private var totalZoom: Double = 1.0
     @State private var currentPan: CGSize = .zero
     @State private var accumulatedPan: CGSize = .zero
+    @State private var bottomSheetDragOffset: CGFloat = 0
+    @State private var selectMolePanelStep: SelectMolePanelStep = .chooseAction
+    @State private var toastMessage: String?
+    @State private var toastDismissTask: Task<Void, Never>?
 
     private var guidanceStep: MoleSegmentationGuidanceStep {
         MoleSegmentationGuidanceStep.make(
@@ -69,6 +78,13 @@ struct MoleSegmentationView: View {
                 noImagePlaceholder
             }
         }
+        .overlay(alignment: .top) {
+            if let toastMessage {
+                successToastView(message: toastMessage)
+                    .padding(.top, 12)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
         .navigationTitle("Mole Segmentation")
         .toolbar { toolbarContent }
         .safeAreaInset(edge: .top) {
@@ -77,6 +93,12 @@ struct MoleSegmentationView: View {
         .safeAreaInset(edge: .bottom) {
             bottomActionArea
         }
+        .overlay {
+            if appState.showSelectMolePanel {
+                bottomSheetBackdropAndPanel
+                    .zIndex(10)
+            }
+        }
         .sheet(isPresented: $appState.showSettings) {
             // Assuming settingsSheet is extracted
             settingsSheet
@@ -84,7 +106,7 @@ struct MoleSegmentationView: View {
         .sheet(isPresented: $appState.showNewMoleMetadataSheet) {
             newMoleMetadataSheet
         }
-        .confirmationDialog("Who is this scan for?", isPresented: $appState.showPersonPicker) {
+        .alert("Who is this scan for?", isPresented: $appState.showPersonPicker) {
             ForEach(people) { person in
                 Button(person.name) {
                     appState.selectedPersonForScan = person
@@ -93,27 +115,20 @@ struct MoleSegmentationView: View {
             }
             Button("Cancel", role: .cancel) {}
         }
-        .confirmationDialog("Mole Action", isPresented: $appState.showMoleActionDialog) {
+        .alert("Mole Action", isPresented: $appState.showMoleActionDialog) {
             Button("New Mole") { appState.beginNewMoleFlow() }
             if let person: Person = appState.selectedPersonForScan, !person.moles.isEmpty {
                 Button("Existing Mole") { appState.beginExistingMoleFlow() }
             }
             Button("Cancel", role: .cancel) {}
         }
-        .confirmationDialog("Select Body Part", isPresented: $appState.showExistingBodyPartPicker) {
-            ForEach(appState.existingBodyPartsForSelectedPerson(), id: \.self) { bodyPart in
-                Button(bodyPart) { appState.chooseExistingBodyPart(bodyPart) }
-            }
-            Button("Cancel", role: .cancel) {}
-        }
-        .confirmationDialog("Select Existing Mole", isPresented: $appState.showExistingMolePicker) {
-            ForEach(appState.existingMolesForSelectedBodyPart()) { mole in
-                Button(mole.name) { appState.handleExistingMoleSelection(mole: mole) }
-            }
-            Button("Cancel", role: .cancel) {}
-        }
         .alert(item: $appState.activeAlert) { alert in
             Alert(title: Text(alert.title), message: Text(alert.message), dismissButton: .default(Text("OK")))
+        }
+        .onChange(of: appState.pendingSuccessToast) { _, newValue in
+            guard let newValue else { return }
+            showSuccessToast(newValue)
+            appState.pendingSuccessToast = nil
         }
     }
 
@@ -168,14 +183,23 @@ struct MoleSegmentationView: View {
                                         .position(x: rect.midX, y: rect.midY)
                                         .onLongPressGesture {
                                             appState.selectedBoxForMole = box
-                                            if appState.selectedPersonForScan == nil && people.count == 1 {
+
+                                            if people.isEmpty {
+                                                appState.activeAlert = .error("Please add a person in the Overview first.")
+                                                return
+                                            }
+
+                                            if people.count == 1 {
+                                                appState.selectedPersonForScan = people.first
+                                            } else if appState.selectedPersonForScan == nil {
                                                 appState.selectedPersonForScan = people.first
                                             }
 
-                                            if appState.selectedPersonForScan != nil {
-                                                appState.showMoleActionDialog = true
-                                            } else {
-                                                appState.activeAlert = .error("Please segment again to select a person.")
+                                            appState.selectedExistingBodyPart = nil
+                                            selectMolePanelStep = .chooseAction
+                                            bottomSheetDragOffset = 0
+                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+                                                appState.showSelectMolePanel = true
                                             }
                                         }
                                 }
@@ -317,6 +341,338 @@ struct MoleSegmentationView: View {
                 }
             }
             .presentationDetents([.height(300)])
+        }
+    }
+
+    private var bottomSheetBackdropAndPanel: some View {
+        ZStack(alignment: .bottom) {
+            Rectangle()
+                .fill(.black.opacity(0.35))
+                .overlay {
+                    Rectangle().fill(.ultraThinMaterial.opacity(0.45))
+                }
+                .ignoresSafeArea()
+                .onTapGesture {
+                    dismissSelectMolePanel()
+                }
+
+            selectMolePanel
+                .offset(y: max(bottomSheetDragOffset, 0))
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
+                            if value.translation.height > 0 {
+                                bottomSheetDragOffset = value.translation.height
+                            }
+                        }
+                        .onEnded { value in
+                            if value.translation.height > 120 {
+                                dismissSelectMolePanel()
+                            } else {
+                                withAnimation(.spring(response: 0.28, dampingFraction: 0.85)) {
+                                    bottomSheetDragOffset = 0
+                                }
+                            }
+                        }
+                )
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: appState.showSelectMolePanel)
+    }
+
+    private var selectMolePanel: some View {
+        VStack(spacing: 14) {
+            if selectMolePanelStep == .chooseAction {
+                panelActionChooser
+            } else {
+                panelExistingSection
+                panelCancelButton
+            }
+        }
+        .padding(.top, 14)
+        .padding(.bottom, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color(.systemGray6).opacity(0.96))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(.white.opacity(0.08), lineWidth: 1)
+                }
+        )
+        .frame(height: 520, alignment: .top)
+        .padding(.horizontal, 12)
+        .ignoresSafeArea(edges: .bottom)
+    }
+
+    private var panelActionChooser: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("CHOOSE AN ACTION")
+                .font(.caption2)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+
+            panelExistingMoleButton
+            panelOrDivider
+            panelNewMoleButton
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 4)
+        .padding(.bottom, 4)
+    
+    }
+
+    private var panelExistingSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            panelHeaderCard
+
+            Rectangle()
+                .fill(.white.opacity(0.14))
+                .frame(height: 1)
+                .frame(maxWidth: .infinity)
+
+            Text("ADD TO AN EXISTING MOLE RECORD")
+                .font(.caption2)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+
+            panelMoleRows
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 8)
+        .padding(.bottom, 6)
+    }
+
+    private var panelHeaderCard: some View {
+        HStack(alignment: .center, spacing: 10) {
+            Text(appState.selectedPersonForScan?.name ?? "Unknown Person")
+                .font(.headline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.white)
+
+            Spacer(minLength: 8)
+
+            HStack(alignment: .center, spacing: 6) {
+                Text("Body part")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+
+                Picker("Body Part", selection: $appState.selectedExistingBodyPart) {
+                    Text("All").tag(Optional<String>.none)
+                    ForEach(appState.existingBodyPartsForSelectedPerson(), id: \.self) { bodyPart in
+                        Text(bodyPart).tag(Optional(bodyPart))
+                    }
+                }
+                .labelsHidden()
+                .tint(.white)
+                .font(.subheadline)
+            }
+            .pickerStyle(.menu)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(.black.opacity(0.25))
+        )
+    }
+
+    @ViewBuilder
+    private var panelMoleRows: some View {
+        let existingMoles: [Mole] = appState.existingMolesForSelectedBodyPart()
+        if existingMoles.isEmpty {
+            Text("No existing moles for this selection.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.vertical, 6)
+        } else {
+            ScrollView {
+                LazyVStack(spacing: 8) {
+                    ForEach(existingMoles) { mole in
+                        existingMoleRow(mole: mole)
+                    }
+                }
+            }
+            .frame(maxHeight: 220)
+        }
+    }
+
+    private var panelOrDivider: some View {
+        HStack(spacing: 12) {
+            Rectangle().fill(.white.opacity(0.12)).frame(height: 1)
+            Text("or")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Rectangle().fill(.white.opacity(0.12)).frame(height: 1)
+        }
+        .padding(.horizontal, 16)
+    }
+
+    private var panelExistingMoleButton: some View {
+        Button {
+            selectMolePanelStep = .existing
+        } label: {
+            HStack {
+                Text("Add to an existing mole")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.white)
+                Spacer()
+                Text("→")
+                    .font(.headline)
+                    .foregroundStyle(.blue)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 12)
+            .frame(height: 56)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(.black.opacity(0.3))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var panelNewMoleButton: some View {
+        Button {
+            dismissSelectMolePanel()
+            appState.beginNewMoleFlow()
+        } label: {
+            HStack {
+                Text("Start tracking as a new mole")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.8))
+
+                Spacer()
+
+                Text("+")
+                    .font(.headline)
+                    .foregroundStyle(.blue)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 12)
+            .frame(height: 56)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(style: StrokeStyle(lineWidth: 1, dash: [6]))
+                    .foregroundStyle(.white.opacity(0.35))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var panelCancelButton: some View {
+        Button("Cancel") {
+            dismissSelectMolePanel()
+        }
+        .font(.footnote)
+        .foregroundStyle(.secondary)
+        .padding(.bottom, 16)
+    }
+
+    @ViewBuilder
+    private func existingMoleRow(mole: Mole) -> some View {
+        Button {
+            appState.handleExistingMoleSelection(mole: mole)
+            dismissSelectMolePanel()
+        } label: {
+            HStack(spacing: 12) {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(.black.opacity(0.4))
+                    .frame(width: 34, height: 34)
+                    .overlay {
+                        Circle()
+                            .fill(.white.opacity(0.8))
+                            .frame(width: 8, height: 8)
+                    }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(mole.name)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.white)
+                    Text(moleSubtitle(for: mole))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 12)
+
+                Text("Add →")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.blue)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(.black.opacity(0.3))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func moleSubtitle(for mole: Mole) -> String {
+        let dateText: String = formattedLastScanDate(for: mole)
+        let diameterText: String = formattedCurrentDiameter(for: mole)
+        return "\(mole.bodyPart) · Last scanned \(dateText) · \(diameterText)"
+    }
+
+    private func formattedLastScanDate(for mole: Mole) -> String {
+        let latestDate: Date? = mole.instances.compactMap { $0.moleScan?.captureDate }.max()
+        guard let latestDate else { return "--" }
+        return latestDate.formatted(date: .abbreviated, time: .omitted)
+    }
+
+    private func formattedCurrentDiameter(for mole: Mole) -> String {
+        let latestInstance: MoleInstance? = mole.instances.max {
+            ($0.moleScan?.captureDate ?? .distantPast) < ($1.moleScan?.captureDate ?? .distantPast)
+        }
+
+        guard let diameter: Float = latestInstance?.diameter, diameter > 0 else {
+            return "-- mm"
+        }
+
+        return String(format: "%.1f mm", diameter)
+    }
+
+    private func dismissSelectMolePanel() {
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.85)) {
+            appState.showSelectMolePanel = false
+            bottomSheetDragOffset = 0
+            selectMolePanelStep = .chooseAction
+        }
+    }
+
+    private func successToastView(message: String) -> some View {
+        Text(message)
+            .font(.subheadline)
+            .fontWeight(.semibold)
+            .foregroundStyle(.white)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(
+                Capsule()
+                    .fill(Color(.blue).opacity(0.95))
+                    .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 4)
+            )
+    }
+
+    private func showSuccessToast(_ message: String) {
+        toastDismissTask?.cancel()
+        withAnimation(.easeOut(duration: 0.22)) {
+            toastMessage = message
+        }
+
+        toastDismissTask = Task {
+            try? await Task.sleep(for: .seconds(3))
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                withAnimation(.easeIn(duration: 0.2)) {
+                    toastMessage = nil
+                }
+            }
         }
     }
 
