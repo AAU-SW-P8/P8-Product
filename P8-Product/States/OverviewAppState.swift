@@ -7,6 +7,13 @@ import simd
 @MainActor
 @Observable
 class OverviewAppState {
+    enum MoleSortOption: String, CaseIterable, Identifiable {
+        case recent = "Recent"
+        case alphabetical = "A-Z"
+
+        var id: String { rawValue }
+    }
+
     // The selected person is shared across the app through SelectionState, so that all views stay in sync without needing to pass the selection through the view hierarchy.
     @ObservationIgnored private let selectionState = SelectionState.shared
 
@@ -188,6 +195,43 @@ class OverviewAppState {
 
         dataController.delete(mole)
         
+    }
+
+    // MARK: - Overview Filtering & Sorting
+
+    func availableBodyParts(for person: Person) -> [String] {
+        Array(Set(person.moles.map(\.bodyPart)))
+            .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+    }
+
+    func displayedMoles(
+        for person: Person,
+        selectedBodyParts: Set<String>,
+        sortOption: MoleSortOption
+    ) -> [Mole] {
+        let filtered: [Mole] = person.moles.filter { mole in
+            selectedBodyParts.isEmpty || selectedBodyParts.contains(mole.bodyPart)
+        }
+
+        switch sortOption {
+        case .alphabetical:
+            return filtered.sorted {
+                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            }
+        case .recent:
+            return filtered.sorted {
+                let lhsDate = latestScan(for: $0)?.captureDate ?? .distantPast
+                let rhsDate = latestScan(for: $1)?.captureDate ?? .distantPast
+                return lhsDate > rhsDate
+            }
+        }
+    }
+
+    func latestScan(for mole: Mole) -> MoleScan? {
+        mole.instances
+            .compactMap(\.moleScan)
+            .sorted { $0.captureDate > $1.captureDate }
+            .first
     }
 
 }

@@ -5,6 +5,10 @@
 
 import SwiftUI
 
+/// A view that displays detailed information about a specific mole, including its scans and evolution over time. The view allows users to switch between a detail view showing individual scans and an evolution view comparing multiple scans. It also provides functionality for deleting scans and selecting different moles for the same person. The view is designed to handle various states, such as when there are no scans available, and includes accessibility features for better user experience.
+/// - Parameters:
+///     - appState: The state object that manages the data and logic for the mole detail view, including the selected mole, its scans, and user interactions such as deleting scans or switching between different moles. The app state is initialized with the specific mole to be displayed and is responsible for handling all related actions and data updates within the view.
+///     - dismiss: An environment variable that allows the view to dismiss itself when certain conditions are met, such as when the selected person changes or when the user confirms the deletion of a scan. This provides a way for the view to navigate back to the previous screen in response to user actions or state changes.
 struct MoleDetailView: View {
     @State private var appState: MoleDetailAppState
     @Environment(\.dismiss) private var dismiss
@@ -20,6 +24,7 @@ struct MoleDetailView: View {
         )
     }
 
+    // MARK: - View Body
     var body: some View {
         @Bindable var appState = appState
 
@@ -35,6 +40,8 @@ struct MoleDetailView: View {
             .accessibilityIdentifier("moleDetailPagePicker")
 
             if appState.selectedPage == .detail {
+                // If there are no scans, show a placeholder message. Otherwise, show the image carousel with the mole's scans.
+                // Should not happen that there are no scans in the detail view, since we require at least one scan to create a mole, but we handle it just in case.
                 if appState.scans.isEmpty {
                     Spacer()
                     Image(systemName: "photo.on.rectangle.angled")
@@ -46,6 +53,9 @@ struct MoleDetailView: View {
                         .padding(.top, 8)
                     Spacer()
                 } else {
+                    // MARK: - Details View with single carousel
+                    // Show a single image carousel with all scans for the selected mole, allowing users to swipe through their scans and view details for each one. 
+                    // The carousel includes functionality for deleting the currently selected scan, with confirmation handled by the app state.
                     HStack(spacing: 0) {
                         ImageCarousel(
                             scans: appState.scans,
@@ -72,6 +82,9 @@ struct MoleDetailView: View {
                     Spacer()
                 }
             } else {
+                // MARK: - Evolution View start
+                // If there are no scans, show a placeholder message. Otherwise, show the dual image carousel for comparing scans and the chart view for metric evolution.
+                // Should not happen that there are no scans in the detail view, since we require at least one scan to create a mole, but we handle it just in case.
                 if appState.scans.isEmpty {
                     Spacer()
                     Image(systemName: "photo.on.rectangle.angled")
@@ -84,6 +97,10 @@ struct MoleDetailView: View {
                     Spacer()
                 } else {
                     ScrollView {
+                        // MARK: - Evolution View with dual carousel and chart
+                        // If there are multiple scans:
+                        // show the dual carousel for comparing two scans side by side. 
+                        // show the metric evolution chart for the selected metric, allowing users to track changes in their mole's characteristics over time.
                         if appState.scans.count > 1 {
                             HStack(spacing: 0) {
                                 ImageCarousel(
@@ -155,6 +172,9 @@ struct MoleDetailView: View {
                             .padding(.horizontal)
                             .padding(.top, 8)
                         } else {
+                            // MARK: - Evolution View with single carousel and no chart
+                            // If there is only one scan, show the image carousel without the option to compare or track metric evolution, 
+                            // and display a message prompting the user to add more scans to unlock these features.
                             HStack(spacing: 0) {
                                 ImageCarousel(
                                     scans: appState.scans,
@@ -187,6 +207,7 @@ struct MoleDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        // Handle the delete scan confirmation alert, showing a destructive option to confirm deletion and a cancel option to abort. The alert is triggered by the app state when the user requests to delete a scan, and the actions are handled by the app state to perform the actual deletion or cancel it.
         .alert("Delete Scan", isPresented: $appState.showingDeleteDetailInstanceAlert) {
             Button("Delete", role: .destructive) {
                 appState.confirmDeleteSelectedDetailInstance()
@@ -197,6 +218,9 @@ struct MoleDetailView: View {
         } message: {
             Text("Are you sure you want to delete this scan?")
         }
+        // The toolbar contains a menu for selecting different moles associated with the same person, allowing users to quickly switch between moles without going back to the overview screen. 
+        // The menu displays the names of the moles and indicates the currently selected mole with a checkmark. 
+        // Selecting a mole from the menu updates the active mole in the app state, which in turn updates the displayed scans and details in the view.
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Menu {
