@@ -72,6 +72,10 @@ class CalculatorLinear {
         ), !samples.depths.isEmpty else {
             return LinearMoleMeasurement(areaMM2: 0, diameterMM: 0)
         }
+        
+        let totalArea = (segmentedImage.1.first?.height ?? 0) * (segmentedImage.1.first?.width ?? 0)
+        
+        print("Mask pixels: \(samples.points.count) of Total image pixels: \(totalArea)")
 
         // Median depth damps the impact of outlier depth pixels, matching the
         // robustness guarantees of the projection-based calculator.
@@ -248,7 +252,6 @@ class CalculatorLinear {
     private func computeAreaMM2(from samples: MoleSamples, mmPerPixel: Double) -> CGFloat {
         let weightedPixelCount = samples.weights.reduce(0, +)
         guard weightedPixelCount > 0 else { return 0.0 }
-        print("Computing area from \(samples.points.count) points, total weight = \(weightedPixelCount), mmPerPixel = \(mmPerPixel)")
         
         // Each pixel represents a square of side `mmPerPixel` millimeters.
         let areaSquareMM = weightedPixelCount * mmPerPixel * mmPerPixel
@@ -260,7 +263,6 @@ class CalculatorLinear {
         guard samples.points.count >= LesionSizingConstants.minimumDiameterPointCount else {
             return 0.0
         }
-        print("Computing diameter from \(samples.points.count) points and mmPerPixel = \(mmPerPixel)")
         let hull = CalculatorHelper.convexHull(of: samples.points)
         let maxSquaredPixels = CalculatorLinearHelper.maxPairwiseSquaredPixelDistance(in: hull)
 
