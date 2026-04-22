@@ -130,14 +130,16 @@ final class ImageCarouselUITests: XCTestCase {
         let initialRightDiameter = observedDiameter(in: rightCarousel, candidates: ["5.0", "5,0"])
         XCTAssertNotNil(initialRightDiameter)
 
-        leftCarousel.swipeRight()
+        leftCarousel.swipeLeft()
 
         let movedLeftDiameter = observedDiameter(in: leftCarousel, candidates: ["4.2", "4,2", "4.8", "4,8"])
         XCTAssertNotNil(movedLeftDiameter)
         XCTAssertNotEqual(movedLeftDiameter, "5.0")
         XCTAssertNotEqual(movedLeftDiameter, "5,0")
-        XCTAssertEqual(movedLeftDiameter, "4.2")
-
+        XCTAssertTrue(
+            movedLeftDiameter == "4.2" || movedLeftDiameter == "4,2",
+            "After swipe, left carousel should show 4.2 mm scan"
+        )
         let currentRightDiameter = observedDiameter(in: rightCarousel, candidates: ["5.0", "5,0"])
         XCTAssertEqual(currentRightDiameter, initialRightDiameter)
     }
