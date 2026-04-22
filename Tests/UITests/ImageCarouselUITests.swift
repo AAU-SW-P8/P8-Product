@@ -9,9 +9,9 @@
 //
 //  Mock data assumed (see MockData.insertSampleData):
 //    Alex / "Left Arm Mole" — 3 scans shown newest-first in the detail page:
-//      1. alexScan2 ( 5 days ago) — diameter 4.8 mm, area 15.4 mm²
-//      2. alexScan1 (20 days ago) — diameter 4.2 mm, area 13.8 mm²
-//      3. alexScan4 (60 days ago) — diameter 5.0 mm, area 16.0 mm²
+//      1. alexScan4 ( 6 days ago) — diameter 5.0 mm, area 16.0 mm²
+//      2. alexScan2 (20 days ago) — diameter 4.8 mm, area 15.4 mm²
+//      3. alexScan1 (60 days ago) — diameter 4.2 mm, area 13.8 mm²
 //    Alex / "Back Mole" — 1 scan, diameter 3.6 mm, area 10.1 mm².
 //
 
@@ -84,8 +84,8 @@ final class ImageCarouselUITests: XCTestCase {
 
     // MARK: - Swipe Navigation
     func testSwipingThroughAllScansShowsEachOne() {
-        // Left carousel starts at last index, so order while swiping right is:
-        // 5.0 mm → 4.2 mm → 4.8 mm.
+        // Left carousel starts at last index, so order while swiping left is:
+        // 4.8 mm → 4.2 mm → 5.0 mm.
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
         Helpers.switchToEvolution(in: app)
 
@@ -136,6 +136,7 @@ final class ImageCarouselUITests: XCTestCase {
         XCTAssertNotNil(movedLeftDiameter)
         XCTAssertNotEqual(movedLeftDiameter, "5.0")
         XCTAssertNotEqual(movedLeftDiameter, "5,0")
+        XCTAssertEqual(movedLeftDiameter, "4.2")
 
         let currentRightDiameter = observedDiameter(in: rightCarousel, candidates: ["5.0", "5,0"])
         XCTAssertEqual(currentRightDiameter, initialRightDiameter)

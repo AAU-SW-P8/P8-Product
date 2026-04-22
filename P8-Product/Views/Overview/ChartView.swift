@@ -230,7 +230,7 @@ struct ChartView: View {
                             x: .value("Date", point.date),
                             y: .value(metric.title, point.value)
                         )
-                        .foregroundStyle(.black)
+                        .foregroundStyle(.primary)
                         .symbol {
                             markerSymbol(for: markerKind)
                         }

@@ -54,11 +54,6 @@ struct ImageCarousel: View {
         }
     }
 
-    private var displayedSelectedIndex: Int {
-        guard !scans.isEmpty else { return 0 }
-        return (side == .left || side == .right) ? (scans.count - 1 - safeIndex) : safeIndex
-    }
-
     private var selectedScanID: UUID? {
         guard !scans.isEmpty else { return nil }
         return scans[safeIndex].id
@@ -272,13 +267,10 @@ struct ImageCarousel: View {
     }
 
     /**
-     Determines the appropriate marker kind for a given data point index based on the selected indices from both carousels. 
-     It checks if the provided index matches either the top or bottom selected index and returns a corresponding marker kind to indicate which carousel(s) have that index selected.
-     Parameters:
-     - pointIndex: The index of the data point to check against the selected indices.
-     Returns:
-     - A SelectedMarkerKind value indicating whether the pointIndex matches the left, right, or both selected indices, or nil if it matches neither.
-     */
+        Renders the carousel's pagination indicators for the currently visible set of scans.
+        This view displays a tappable dot for each visible page index and an ellipsis indicator when
+        not all pages are shown at once. Tapping a dot animates the carousel selection to that index.
+    */
     private var dots: some View {
         HStack(spacing: 8) {
             ForEach(visibleDotItems, id: \.self) { item in
@@ -368,4 +360,10 @@ struct ImageCarousel: View {
                 .frame(width: size, height: size)
         }
     }
+}
+
+enum CarouselSide {
+    case left
+    case right
+    case both
 }

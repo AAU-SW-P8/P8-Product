@@ -141,8 +141,8 @@ final class MoleDetailFlowUITests: XCTestCase {
     }
 
     func testLeftArmMoleShowsFirstScanDiameterAndArea() {
-        // With latest-first ordering, the first scan for Left Arm Mole is alexScan2
-        // (5 days ago) with diameter 4.8 mm and area 15.4 mm².
+        // With latest-first ordering, the first scan for Left Arm Mole is alexScan4
+        // (6 days ago) with diameter 5.0 mm and area 16.0 mm².
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
 
         XCTAssertTrue(

@@ -1,10 +1,3 @@
-//
-//  CarouselTests.swift
-//  PipelineTests
-//
-//  Created by Nicolaj Skjødt on 20/04/2026.
-//
-
 import Testing
 @testable import P8_Product
 
