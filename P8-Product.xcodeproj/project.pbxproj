@@ -56,9 +56,9 @@
 		97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				CalculatorTests.swift,
 				CarouselTests/CarouselTests.swift,
 				CarouselTests/MarkerTests.swift,
-				CalculatorTests.swift,
 				ChartViewTest.swift,
 				MoleSegmentation/MoleSegmentationAppStateTests.swift,
 				Overview/OverviewAppStateTests.swift,
@@ -90,9 +90,9 @@
 		DB2D85A72F8F8F6B00D8E438 /* Exceptions for "Tests" folder in "P8-Product" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				CalculatorTests.swift,
 				CarouselTests/CarouselTests.swift,
 				CarouselTests/MarkerTests.swift,
-				CalculatorTests.swift,
 				ChartViewTest.swift,
 				MoleSegmentation/MoleSegmentationAppStateTests.swift,
 				Overview/OverviewAppStateTests.swift,
@@ -616,7 +616,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "swp8.P8-Product-PeterRahr";
+				PRODUCT_BUNDLE_IDENTIFIER = "swp8.P8-Product";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -657,7 +657,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "swp8.P8-Product-PeterRahr";
+				PRODUCT_BUNDLE_IDENTIFIER = "swp8.P8-Product";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
