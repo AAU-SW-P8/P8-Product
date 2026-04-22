@@ -2,14 +2,14 @@
 //  CompareViewUITests.swift
 //  P8-ProductUITests
 //
-//  Tests for the CompareView tab, covering navigation,
-//  selection flows, and content display states.
+//  Tests for the new Mole Detail flow where users switch
+//  between Detail and Evolution pages inside detail.
 //
 
 import XCTest
 
 
-final class CompareViewUITests: XCTestCase {
+final class MoleDetailFlowUITests: XCTestCase {
 
     private var app: XCUIApplication!
 
@@ -20,121 +20,42 @@ final class CompareViewUITests: XCTestCase {
         app.launchArguments.append("-UITest_InMemoryStore")
         app.launch()
 
-        // Navigate to the Compare tab
-        Helpers.openCompareTab(in: app)
+        Helpers.openOverviewTab(in: app)
     }
 
-    // MARK: - Navigation & Title
+    // MARK: - Detail Navigation
 
-    func testCompareTabShowsTitle() {
-        XCTAssertTrue(app.staticTexts["Compare"].waitForExistence(timeout: 3),
-                      "Compare tab should show title 'Compare'")
+    func testOpeningMoleShowsDetailPagePicker() {
+        Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
+
+        let picker = app.segmentedControls["moleDetailPagePicker"]
+        XCTAssertTrue(picker.exists, "Detail flow should show the Detail/Evolution page picker")
+        XCTAssertTrue(picker.buttons["Detail"].exists)
+        XCTAssertTrue(picker.buttons["Evolution"].exists)
     }
 
-    // MARK: - Empty Store
-
-    func testEmptyStateShownWhenNoPeopleExist() {
-        // Re-launch with the empty-store flag so the seeded mock data is skipped.
-        app.terminate()
-        app.launchArguments.append("-UITest_EmptyStore")
-        app.launchArguments.append("-SkipModelLoading")
-        app.launch()
-        Helpers.openCompareTab(in: app)
-
-        XCTAssertTrue(
-            app.staticTexts["emptyStateTitle"].waitForExistence(timeout: 3),
-            "Empty state title should appear when there are no people"
-        )
-        XCTAssertTrue(
-            app.staticTexts["emptyStateMessage"].exists,
-            "Empty state message should appear when there are no people"
-        )
-        XCTAssertFalse(
-            app.otherElements["selectorBar"].exists,
-            "Selector bar should be hidden when people is empty"
-        )
-    }
-
-    // MARK: - Initial State (no selection)
-
-    func testInitialStateShowsSelectPersonPrompt() {
-        Helpers.selectPerson("Select Person", in: app)
-        let prompt = app.staticTexts["selectPersonPrompt"]
-        XCTAssertTrue(prompt.waitForExistence(timeout: 3),
-                       "Should show 'Select a person' when no person is selected")
-    }
-
-    func testPersonPickerIsVisible() {
-        XCTAssertTrue(Helpers.personPickerButton(in: app).waitForExistence(timeout: 3),
-                       "Person picker should be visible on Compare tab")
-    }
-
-    // MARK: - Person Selection
-
-    func testSelectingPersonShowsMolePromptAndPicker() {
-        Helpers.selectPerson("Alex", in: app)
-
-        let prompt = app.staticTexts["selectMolePrompt"]
-        XCTAssertTrue(prompt.waitForExistence(timeout: 3),
-                       "Should show 'Select a mole' after picking a person")
-    }
-
-    func testSelectingPersonWithNoScansShowsMakeScanMessage() {
-        // Taylor only has one mole with no scans in the mock data.
-        Helpers.selectPerson("Taylor", in: app)
-
-        let message = app.staticTexts["makeScanBeforeCompareMessage"]
-        XCTAssertTrue(message.waitForExistence(timeout: 3),
-                       "Should prompt to make a scan if selected person has no scans")
-    }
-
-    func testSelectingPersonShowsMolePicker() {
-        Helpers.selectPerson("Alex", in: app)
-
-        XCTAssertTrue(Helpers.molePickerButton(in: app).waitForExistence(timeout: 3),
-                       "Mole picker should appear after a person is selected")
-    }
-
-    // MARK: - Mole Selection → Dual Carousel (multiple scans)
+    // MARK: - Evolution Content
 
     func testSelectingMoleWithMultipleScansShowsDualCarouselAndMetricPicker() {
-        // Alex's "Left Arm Mole" has 3 scans → dual carousel + metric picker
-        Helpers.selectPerson("Alex", in: app)
-        Helpers.selectMole("Left Arm Mole", in: app)
+        Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
+        Helpers.switchToEvolution(in: app)
 
         let container = app.otherElements["dualCarouselContainer"]
         XCTAssertTrue(container.waitForExistence(timeout: 5),
-                       "Dual carousel should appear for a mole with multiple scans")
+                       "Dual carousel should appear for a mole with multiple scans in Evolution")
         XCTAssertTrue(app.segmentedControls["metricPicker"].exists,
-                       "Metric picker should appear when a mole with scans is selected")
+                       "Metric picker should appear when a mole has multiple scans")
     }
-
-    // MARK: - Switching Person Resets Mole
-
-    func testSwitchingPersonResetsMoleSelection() {
-        Helpers.selectPerson("Alex", in: app)
-        Helpers.selectMole("Left Arm Mole", in: app)
-
-        XCTAssertTrue(app.otherElements["dualCarouselContainer"].waitForExistence(timeout: 5))
-
-        // After selecting Alex the picker label may change to "Alex" instead of
-        // containing "Person", so match on the selected name.
-        Helpers.selectPerson("Jordan", in: app)
-        let prompt = app.staticTexts["selectMolePrompt"]
-        XCTAssertTrue(prompt.waitForExistence(timeout: 3),
-                          "Should show 'Select a mole' after switching to a different person")
-                          
-    }
-
-    // MARK: - Single Scan Mole
 
     func testSelectingMoleWithSingleScanShowsSingleCarousel() {
-        // Alex's "Back Mole" has only 1 scan → single carousel, no chart
-        Helpers.selectPerson("Alex", in: app)
-        Helpers.selectMole("Back Mole", in: app)
+        Helpers.openMoleDetail(person: "Alex", mole: "Back Mole", in: app)
+        Helpers.switchToEvolution(in: app)
 
-        let dualContainer = app.otherElements["dualCarouselContainer"]
-        XCTAssertFalse(dualContainer.waitForExistence(timeout: 2),
+        XCTAssertTrue(app.otherElements["singleCarousel"].waitForExistence(timeout: 5),
+                        "Single-scan mole should show the single carousel")
+
+        let dualContainer = app.otherElements["dualCarouselContainer"].firstMatch
+        XCTAssertFalse(dualContainer.exists,
                         "Single-scan mole should not show dual carousel")
 
         let metricPicker = app.segmentedControls["metricPicker"]
@@ -142,10 +63,35 @@ final class CompareViewUITests: XCTestCase {
                         "Single-scan mole should not show metric picker")
     }
 
+    // MARK: - Mole Dropdown In Title
+
+    func testDetailTitleDropdownShowsOtherMolesForPerson() {
+        Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
+
+        let titleMenu = app.buttons["moleDetailMolePicker"]
+        XCTAssertTrue(titleMenu.waitForExistence(timeout: 3),
+                      "Detail title should be a mole picker dropdown")
+
+        titleMenu.tap()
+        XCTAssertTrue(app.buttons["Back Mole"].waitForExistence(timeout: 3))
+    }
+
+    func testSwitchingMoleFromTitleKeepsUserInsideDetailFlow() {
+        Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
+        Helpers.switchToEvolution(in: app)
+
+        Helpers.chooseMoleFromDetailTitle("Back Mole", in: app)
+
+        XCTAssertTrue(app.segmentedControls["moleDetailPagePicker"].waitForExistence(timeout: 3),
+                      "Switching mole from title should not pop back to overview")
+        XCTAssertTrue(app.otherElements["singleCarousel"].waitForExistence(timeout: 5),
+                      "Evolution page should remain visible for the newly selected mole")
+    }
+
     // MARK: - Mock Container Data Verification
     //
     // The following tests assert that every value seeded by `MockData.insertSampleData`
-    // is surfaced correctly in CompareView. The mock data contains:
+    // is surfaced correctly in MoleDetailView. The mock data contains:
     //   • Person "Alex"   → Mole "Left Arm Mole" (Left Arm) with 3 scans
     //                                  diameters 4.2 / 4.8 / 5.0 mm
     //                                  areas     13.8 / 15.4 / 16.0 mm²
@@ -154,72 +100,66 @@ final class CompareViewUITests: XCTestCase {
     //   • Person "Jordan" → Mole "Face Mole"     (Face) with 1 scan
     //                                  diameter  2.9 mm, area 6.6 mm²
     //
-    // For the multi-scan mole, scans are sorted ascending by capture date,
-    // so the carousel's first frame corresponds to the oldest scan
-    // (60 days ago: diameter 5.0 mm, area 16.0 mm²).
+    // For the multi-scan mole, the carousel is sorted descending by capture date,
+    // so the first frame corresponds to the latest scan
+    // (5 days ago: diameter 4.8 mm, area 15.4 mm²).
 
-    func testPersonPickerContainsAllMockedPeople() {
-        Helpers.personPickerButton(in: app).tap()
+    func testOverviewContainsAllMockedPeople() {
+        Helpers.openOverviewTab(in: app)
+        XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3),
+                       "Overview should contain Alex from mock data")
 
-        XCTAssertTrue(app.buttons["Alex"].waitForExistence(timeout: 3),
-                       "Person picker should contain Alex from mock data")
-        XCTAssertTrue(app.buttons["Jordan"].exists,
-                       "Person picker should contain Jordan from mock data")
+        Helpers.movePersonSelection(to: "Jordan", in: app)
+        XCTAssertTrue(app.staticTexts["Jordan"].waitForExistence(timeout: 3),
+                      "Overview navigation should reach Jordan from mock data")
+        
+        Helpers.movePersonSelection(to: "Taylor", in: app)
+        XCTAssertTrue(app.staticTexts["Taylor"].waitForExistence(timeout: 3),
+                      "Overview navigation should reach Taylor from mock data")
     }
 
-    func testMolePickerContainsAllMockedMolesForAlex() {
-        Helpers.selectPerson("Alex", in: app)
+    func testDetailTitleMenuContainsAllMockedMolesForAlex() {
+        Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
 
-        Helpers.molePickerButton(in: app).tap()
+        let titleMenu = app.buttons["moleDetailMolePicker"]
+        titleMenu.tap()
 
-        // Body parts in mock data for Alex are "Left Arm" and "Back".
-        // SwiftUI Menu sections render their titles as static text.
         XCTAssertTrue(app.buttons["Left Arm Mole"].waitForExistence(timeout: 3),
-                       "Alex's mole picker should contain Left Arm Mole")
+                       "Detail title menu should contain Left Arm Mole")
         XCTAssertTrue(app.buttons["Back Mole"].exists,
-                       "Alex's mole picker should contain Back Mole")
-        XCTAssertTrue(app.staticTexts["Left Arm"].exists,
-                       "Mole picker should show 'Left Arm' body part section")
-        XCTAssertTrue(app.staticTexts["Back"].exists,
-                       "Mole picker should show 'Back' body part section")
+                       "Detail title menu should contain Back Mole")
     }
 
-    func testMolePickerContainsAllMockedMolesForJordan() {
-        Helpers.selectPerson("Jordan", in: app)
+    func testDetailTitleMenuContainsAllMockedMolesForJordan() {
+        Helpers.openMoleDetail(person: "Jordan", mole: "Face Mole", in: app)
 
-        // Jordan only has one mole, so the mole picker label is "Select Mole".
-        Helpers.molePickerButton(in: app).tap()
+        let titleMenu = app.buttons["moleDetailMolePicker"]
+        titleMenu.tap()
 
         XCTAssertTrue(app.buttons["Face Mole"].waitForExistence(timeout: 3),
-                       "Jordan's mole picker should contain Face Mole")
-        XCTAssertTrue(app.staticTexts["Face"].exists,
-                       "Mole picker should show 'Face' body part section for Jordan")
+                       "Jordan's detail title menu should contain Face Mole")
     }
 
     func testLeftArmMoleShowsFirstScanDiameterAndArea() {
-        // Sorted by capture date, the first scan for Left Arm Mole is alexScan4
-        // (60 days ago) with diameter 5.0 mm and area 16.0 mm².
-        Helpers.selectPerson("Alex", in: app)
-        Helpers.selectMole("Left Arm Mole", in: app)
-
-        XCTAssertTrue(app.otherElements["dualCarouselContainer"].waitForExistence(timeout: 5))
+        // With latest-first ordering, the first scan for Left Arm Mole is alexScan2
+        // (5 days ago) with diameter 4.8 mm and area 15.4 mm².
+        Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
 
         XCTAssertTrue(
-            app.staticTexts["Diameter: 5.0 mm"].firstMatch.waitForExistence(timeout: 3)
-            || app.staticTexts["Diameter: 5,0 mm"].firstMatch.waitForExistence(timeout: 3),
-            "Carousel should display diameter 5.0/5,0 mm for the first Left Arm scan"
+            app.staticTexts["Diameter: 4.8 mm"].firstMatch.waitForExistence(timeout: 3)
+            || app.staticTexts["Diameter: 4,8 mm"].firstMatch.waitForExistence(timeout: 3),
+            "Carousel should display diameter 4.8/4,8 mm for the latest Left Arm scan"
         )
         XCTAssertTrue(
-            app.staticTexts["Area: 16.0 mm²"].firstMatch.exists
-            || app.staticTexts["Area: 16,0 mm²"].firstMatch.exists,
-            "Carousel should display area 16.0/16,0 mm² for the first Left Arm scan"
+            app.staticTexts["Area: 15.4 mm²"].firstMatch.exists
+            || app.staticTexts["Area: 15,4 mm²"].firstMatch.exists,
+            "Carousel should display area 15.4/15,4 mm² for the latest Left Arm scan"
         )
     }
 
     func testBackMoleShowsCorrectDiameterAndArea() {
         // Back Mole has a single scan with diameter 3.6 mm and area 10.1 mm².
-        Helpers.selectPerson("Alex", in: app)
-        Helpers.selectMole("Back Mole", in: app)
+        Helpers.openMoleDetail(person: "Alex", mole: "Back Mole", in: app)
 
         XCTAssertTrue(
             app.staticTexts["Diameter: 3.6 mm"].firstMatch.waitForExistence(timeout: 5)
@@ -235,8 +175,7 @@ final class CompareViewUITests: XCTestCase {
 
     func testFaceMoleShowsCorrectDiameterAndAreaForJordan() {
         // Face Mole has a single scan with diameter 2.9 mm and area 6.6 mm².
-        Helpers.selectPerson("Jordan", in: app)
-        Helpers.selectMole("Face Mole", in: app)
+        Helpers.openMoleDetail(person: "Jordan", mole: "Face Mole", in: app)
 
         XCTAssertTrue(
             app.staticTexts["Diameter: 2.9 mm"].firstMatch.waitForExistence(timeout: 5)
@@ -252,8 +191,8 @@ final class CompareViewUITests: XCTestCase {
 
     func testLeftArmMoleAreaTrendEvolutionMatchesMockData() {
         // Areas sorted by date: 16.0 → 13.8 → 15.4 → evolution = 15.4 - 16.0 = -0.6 mm²
-        Helpers.selectPerson("Alex", in: app)
-        Helpers.selectMole("Left Arm Mole", in: app)
+        Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
+        Helpers.switchToEvolution(in: app)
 
         XCTAssertTrue(app.staticTexts["Area Trend"].waitForExistence(timeout: 5),
                        "Chart should default to Area Trend")
@@ -265,8 +204,8 @@ final class CompareViewUITests: XCTestCase {
 
     func testLeftArmMoleDiameterTrendEvolutionMatchesMockData() {
         // Diameters sorted by date: 5.0 → 4.2 → 4.8 → evolution = 4.8 - 5.0 = -0.2 mm
-        Helpers.selectPerson("Alex", in: app)
-        Helpers.selectMole("Left Arm Mole", in: app)
+        Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
+        Helpers.switchToEvolution(in: app)
 
         let picker = app.segmentedControls["metricPicker"]
         XCTAssertTrue(picker.waitForExistence(timeout: 5))

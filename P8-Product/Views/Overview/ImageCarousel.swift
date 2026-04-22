@@ -23,6 +23,8 @@ struct ImageCarousel: View {
     let scans: [MoleScan]
     var mole: Mole? = nil
     @Binding var selectedIndex: Int
+    @State private var scrollPositionID: UUID?
+    var onDeleteSelectedInstance: (() -> Void)? = nil
     var height: CGFloat = 200
     /// The safe index to use for display, ensuring it stays within bounds of the scans array.
     private var safeIndex: Int {
@@ -35,6 +37,12 @@ struct ImageCarousel: View {
     /// The currently selected instance based on the selected scan and optional mole filter, or nil if no scan is selected or no instance matches.
     private var selectedInstance: MoleInstance? {
         Self.selectedInstance(in: scans, at: selectedIndex, for: mole)
+    }
+
+    /// Stable identity of the currently selected scan for ScrollView paging.
+    private var selectedScanID: UUID? {
+        guard !scans.isEmpty else { return nil }
+        return scans[safeIndex].id
     }
 
     var body: some View {
@@ -51,7 +59,7 @@ struct ImageCarousel: View {
                                     .shadow(radius: 3)
                                     .padding(.horizontal, 8)
                                     .frame(width: geometry.size.width, height: height)
-                                    .id(index)
+                                    .id(scan.id)
                             } else {
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 12)
@@ -62,7 +70,7 @@ struct ImageCarousel: View {
                                 }
                                 .padding(.horizontal, 8)
                                 .frame(width: geometry.size.width, height: height)
-                                .id(index)
+                                .id(scan.id)
                             }
                         }
                     }
@@ -70,9 +78,12 @@ struct ImageCarousel: View {
                 }
                 .scrollTargetBehavior(.paging)
                 .scrollPosition(id: Binding(
-                    get: { safeIndex as Int? },
+                    get: { scrollPositionID },
                     set: { newValue in
-                        if let newValue { selectedIndex = newValue }
+                        guard let newValue else { return }
+                        guard let newIndex = scans.firstIndex(where: { $0.id == newValue }) else { return }
+                        scrollPositionID = newValue
+                        selectedIndex = newIndex
                     }
                 ), anchor: .center)
             }
@@ -85,13 +96,34 @@ struct ImageCarousel: View {
                     .font(.caption2)
 
                 if let selectedInstance {
-                    VStack(spacing: 2) {
-                          Text("Diameter: \(Double(selectedInstance.diameter), specifier: "%.1f") mm")
-                        Text("Area: \(Double(selectedInstance.area), specifier: "%.1f") mm²")
+                    HStack {
+                        Color.clear
+                            .frame(width: 28, height: 1)
+
+                        Spacer()
+
+                        VStack(spacing: 2) {
+                            Text("Diameter: \(Double(selectedInstance.diameter), specifier: "%.1f") mm")
+                            Text("Area: \(Double(selectedInstance.area), specifier: "%.1f") mm²")
+                        }
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary)
+
+                        Spacer()
+
+                        if let onDeleteSelectedInstance {
+                            Button(role: .destructive, action: onDeleteSelectedInstance) {
+                                Image(systemName: "trash")
+                            }
+                            .frame(width: 28)
+                            .accessibilityIdentifier("deleteMoleInstanceButton")
+                        } else {
+                            Color.clear
+                                .frame(width: 28, height: 1)
+                        }
                     }
-                    .font(.caption2)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.secondary)
+                    .padding(.top, 4)
                 }
             }
         }
@@ -100,6 +132,14 @@ struct ImageCarousel: View {
             if selectedIndex >= scans.count {
                 selectedIndex = max(0, scans.count - 1)
             }
+            scrollPositionID = selectedScanID
+        }
+        .onAppear {
+            scrollPositionID = selectedScanID
+        }
+        .onChange(of: selectedScanID) { _, newValue in
+            guard scrollPositionID != newValue else { return }
+            scrollPositionID = newValue
         }
     }
 

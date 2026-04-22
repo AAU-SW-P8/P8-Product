@@ -85,14 +85,26 @@ class DataController {
             MoleScan.self
         ])
 
+        let arguments = ProcessInfo.processInfo.arguments
+
+        // Optional UI-test mode that persists across relaunches, isolated from production data.
+        if arguments.contains("-UITest_PersistentStore") {
+            if arguments.contains("-UITest_ResetStore") {
+                try? deleteStoreFiles(at: uiTestPersistentStoreURL)
+            }
+
+            let config = ModelConfiguration(schema: schema, url: uiTestPersistentStoreURL)
+            return try ModelContainer(for: schema, configurations: [config])
+        }
+
         // Detect if the app is running in a Continuous Integration (CI) environment
         // or during a unit/UI test run. UI tests launch the app as a separate
         // process that does not inherit `XCTestConfigurationFilePath`, so we also
         // honor an explicit launch argument to force an in-memory store.
         let isTesting = ProcessInfo.processInfo.environment["CI"] == "true" ||
                 ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil ||
-                ProcessInfo.processInfo.arguments.contains("-UITest_EmptyStore") ||
-                ProcessInfo.processInfo.arguments.contains("-UITest_InMemoryStore")
+                arguments.contains("-UITest_EmptyStore") ||
+                arguments.contains("-UITest_InMemoryStore")
 
         let config: ModelConfiguration
         if isTesting {
@@ -117,22 +129,38 @@ class DataController {
         return directory.appending(path: "default.store")
     }
 
+    /// Dedicated on-disk store for UI tests that need persistence across relaunches.
+    private static var uiTestPersistentStoreURL: URL {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("P8-Product-UITestStore", isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        } catch {
+            fatalError("Failed to create UI test store directory: \(error)")
+        }
+        return tempDir.appendingPathComponent("default.store", isDirectory: false)
+    }
+
     /// Manually removes the SQLite database files from the file system.
     ///
     /// This is used as a "nuclear option" when the `ModelContainer` cannot initialize
     /// due to schema mismatches or file corruption. It targets the main store,
     /// the Shared Memory (-shm) file, and the Write-Ahead Log (-wal) file.
     private static func deleteStoreFiles() throws {
-        let storeURL: URL = storeURL
-        let storePath: String = storeURL.path()
-        
+        try deleteStoreFiles(at: storeURL)
+    }
+
+    /// Removes a SQLite store and sidecar files for the given URL.
+    private static func deleteStoreFiles(at storeURL: URL) throws {
+        let storePath = storeURL.path()
+
         let relatedURLs: [URL] = [
             storeURL,
             URL(fileURLWithPath: storePath + "-shm"),
             URL(fileURLWithPath: storePath + "-wal")
         ]
 
-        for url: URL in relatedURLs where FileManager.default.fileExists(atPath: url.path()) {
+        for url in relatedURLs where FileManager.default.fileExists(atPath: url.path()) {
             try FileManager.default.removeItem(at: url)
         }
     }
@@ -140,16 +168,37 @@ class DataController {
     // MARK: - Business Logic & Persistence
     
     /// Creates a new scan, a new mole, and links them together for a specific person.
-    func addMoleAndScan(to person: Person, image: UIImage, area: Float = 0, diameter: Float = 0) {
+    /// Returns `false` when a duplicate mole name is detected for that person.
+    @discardableResult
+    func addMoleAndScan(
+        to person: Person,
+        image: UIImage,
+        name: String? = nil,
+        bodyPart: String = BodyPart.unassigned.rawValue,
+        area: Float = 0, 
+        diameter: Float = 0) -> Bool {
         let context: ModelContext = container.mainContext
+        let trimmedName: String = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let resolvedName: String = trimmedName.isEmpty
+            ? nextAvailableAutoMoleName(for: person)
+            : trimmedName
 
+        guard !hasMole(named: resolvedName, for: person) else {
+            return false
+        }
+        
         let scan: MoleScan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9))
+        let initialDueDate: Date? = nextDueDate(
+            for: person.defaultReminderFrequency,
+            referenceDate: scan.captureDate,
+            isEnabled: person.defaultReminderEnabled
+        )
         let mole: Mole = Mole(
-            name: "Mole \(person.moles.count + 1)",
-            bodyPart: "Unassigned",
-            isReminderActive: false,
+            name: resolvedName,
+            bodyPart: bodyPart,
+            isReminderActive: person.defaultReminderEnabled,
             reminderFrequency: nil,
-            nextDueDate: nil,
+            nextDueDate: initialDueDate,
             person: person
         )
         let instance: MoleInstance = MoleInstance(
@@ -165,9 +214,39 @@ class DataController {
         
         do {
             try context.save()
+            return true
         } catch {
             print("Failed to save new mole and scan: \(error)")
+            return false
         }
+    }
+
+    func hasMole(named candidateName: String, for person: Person, excluding excludedMole: Mole? = nil) -> Bool {
+        let normalizedCandidate: String = normalizedMoleName(candidateName)
+        guard !normalizedCandidate.isEmpty else { return false }
+
+        return person.moles.contains { mole in
+            guard excludedMole == nil || mole !== excludedMole else { return false }
+            return normalizedMoleName(mole.name) == normalizedCandidate
+        }
+    }
+
+    private func nextAvailableAutoMoleName(for person: Person) -> String {
+        var index: Int = max(1, person.moles.count + 1)
+        var candidate = "Mole \(index)"
+
+        while hasMole(named: candidate, for: person) {
+            index += 1
+            candidate = "Mole \(index)"
+        }
+
+        return candidate
+    }
+
+    private func normalizedMoleName(_ name: String) -> String {
+        name
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
     }
     
     /**
@@ -190,6 +269,7 @@ class DataController {
 
         context.insert(scan)
         context.insert(instance)
+        recalculateNextDueDate(for: mole)
 
         do {
             try context.save()
@@ -198,23 +278,101 @@ class DataController {
         }
     }
 
+    func effectiveReminderEnabled(for mole: Mole) -> Bool {
+        if mole.followDefaultReminderEnabled ?? true {
+            return mole.person?.defaultReminderEnabled ?? mole.isReminderActive
+        }
+        return mole.isReminderActive
+    }
+
+    func effectiveFrequencyLabel(for mole: Mole) -> String? {
+        if mole.followDefault ?? true {
+            return mole.person?.defaultReminderFrequency
+        }
+        return mole.reminderFrequency?.rawValue
+    }
+
+    func nextDueDate(for frequencyLabel: String?, referenceDate: Date, isEnabled: Bool) -> Date? {
+        guard isEnabled, let frequencyLabel else { return nil }
+
+        let calendar: Calendar = Calendar.current
+        let computedDate: Date?
+        switch frequencyLabel.lowercased() {
+        case "weekly":
+            computedDate = calendar.date(byAdding: .weekOfYear, value: 1, to: referenceDate)
+        case "monthly":
+            computedDate = calendar.date(byAdding: .month, value: 1, to: referenceDate)
+        case "quarterly":
+            computedDate = calendar.date(byAdding: .month, value: 3, to: referenceDate)
+        default:
+            computedDate = nil
+        }
+
+        guard let computedDate else { return nil }
+        return max(Date(), computedDate)
+    }
+
+    func latestCaptureDate(for mole: Mole, excluding excludedInstance: MoleInstance? = nil) -> Date? {
+        mole.instances
+            .filter { instance in
+                guard let excludedInstance else { return true }
+                return instance !== excludedInstance
+            }
+            .compactMap { $0.moleScan?.captureDate }
+            .max()
+    }
+
+    func recalculateNextDueDate(for mole: Mole, excluding excludedInstance: MoleInstance? = nil) {
+        guard effectiveReminderEnabled(for: mole),
+              let frequencyLabel = effectiveFrequencyLabel(for: mole),
+              let captureDate = latestCaptureDate(for: mole, excluding: excludedInstance) else {
+            mole.nextDueDate = nil
+            return
+        }
+
+        mole.nextDueDate = nextDueDate(
+            for: frequencyLabel,
+            referenceDate: captureDate,
+            isEnabled: true
+        )
+    }
+
     func delete(_ person: Person) {
-        let context: ModelContext = container.mainContext
-        context.delete(person)
-        do {
-            try context.save()
-        } catch {
-            print("Failed to delete person: \(error)")
+        deleteAndSave(errorMessage: "Failed to delete person") { context in
+            context.delete(person)
         }
     }
     
     func delete(_ mole: Mole) {
+        deleteAndSave(errorMessage: "Failed to delete mole") { context in
+            context.delete(mole)
+        }
+    }
+
+    func delete(_ instance: MoleInstance) {
+        deleteAndSave(errorMessage: "Failed to delete mole instance") { context in
+            let associatedScan = instance.moleScan
+            let hasOtherInstances: Bool = associatedScan?.instances.contains { $0 !== instance} ?? false
+            
+            if let associatedScan, !hasOtherInstances {
+                context.delete(associatedScan)
+            }
+            else {
+                context.delete(instance)
+            }
+        }
+    }
+
+    private func deleteAndSave(
+        errorMessage: String,
+        performDelete: (ModelContext) -> Void
+    ) {
         let context: ModelContext = container.mainContext
-        context.delete(mole)
+        performDelete(context)
         do {
             try context.save()
         } catch {
-            print("Failed to delete mole: \(error)")
+            print("\(errorMessage): \(error)")
         }
     }
     
@@ -228,6 +386,16 @@ class DataController {
             print("Failed to add person: \(error)")
         }
         return person
+    }
+
+    func rename(_ person: Person, to newName: String) {
+        let context: ModelContext = container.mainContext
+        person.name = newName
+        do {
+            try context.save()
+        } catch {
+            print("Failed to rename person: \(error)")
+        }
     }
 
 }

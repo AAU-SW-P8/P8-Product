@@ -46,6 +46,7 @@
 				UITests/CompareViewUITests.swift,
 				UITests/Helpers.swift,
 				UITests/ImageCarouselUITests.swift,
+				UITests/OverviewUITests.swift,
 				UITests/ProductUITestsLaunchTests.swift,
 				UITests/ReminderViewUITests.swift,
 				UITests/TabStateUITests.swift,
@@ -55,28 +56,77 @@
 		97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				CalculatorTests.swift,
+				ChartViewTest.swift,
+				MoleSegmentation/MoleSegmentationAppStateTests.swift,
+				Overview/OverviewAppStateTests.swift,
+				ReminderOverview/ReminderAppStateDirectTests.swift,
 				ReminderOverview/ReminderOverview.swift,
+				SAMPipelineTests/SAM3DecoderTests.swift,
+				SAMPipelineTests/SAM3DetectionTests.swift,
+				SAMPipelineTests/SAM3FeatureNamesTests.swift,
+				SAMPipelineTests/SAM3ImagePreprocessorTests.swift,
+				SAMPipelineTests/SAM3ModelsTests.swift,
+				SAMPipelineTests/TestHelpers.swift,
+			);
+			target = 97C2DB192F6AB3F100454255 /* PipelineTests */;
+		};
+		97C2DB302F6AB49400454255 /* Exceptions for "MoleImagePipeline" folder in "P8-Product" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"models/sam3.1-coreml-fp16/.gitattributes",
+			);
+			target = F1845EED2F59945F00E27D2B /* P8-Product */;
+		};
+		97C2DB312F6AB49400454255 /* Exceptions for "MoleImagePipeline" folder in "PipelineTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"models/sam3.1-coreml-fp16/.gitattributes",
+			);
+			target = 97C2DB192F6AB3F100454255 /* PipelineTests */;
+		};
+		DB2D85A72F8F8F6B00D8E438 /* Exceptions for "Tests" folder in "P8-Product" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				CalculatorTests.swift,
+				ChartViewTest.swift,
+				MoleSegmentation/MoleSegmentationAppStateTests.swift,
+				Overview/OverviewAppStateTests.swift,
+				ReminderOverview/ReminderAppStateDirectTests.swift,
+				ReminderOverview/ReminderOverview.swift,
+				SAMPipelineTests/SAM3DecoderTests.swift,
+				SAMPipelineTests/SAM3DetectionTests.swift,
+				SAMPipelineTests/SAM3FeatureNamesTests.swift,
+				SAMPipelineTests/SAM3ImagePreprocessorTests.swift,
+				SAMPipelineTests/SAM3ModelsTests.swift,
+				SAMPipelineTests/TestHelpers.swift,
 				UITests/CameraViewUITests.swift,
 				UITests/CompareViewUITests.swift,
 				UITests/Helpers.swift,
 				UITests/ImageCarouselUITests.swift,
+				UITests/OverviewUITests.swift,
 				UITests/ProductUITestsLaunchTests.swift,
 				UITests/ReminderViewUITests.swift,
 				UITests/TabStateUITests.swift,
 			);
-			target = 97C2DB192F6AB3F100454255 /* PipelineTests */;
+			target = F1845EED2F59945F00E27D2B /* P8-Product */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		97C2DAEC2F6AAFA600454255 /* MoleImagePipeline */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				97C2DB302F6AB49400454255 /* Exceptions for "MoleImagePipeline" folder in "P8-Product" target */,
+				97C2DB312F6AB49400454255 /* Exceptions for "MoleImagePipeline" folder in "PipelineTests" target */,
+			);
 			path = MoleImagePipeline;
 			sourceTree = "<group>";
 		};
 		97C2DB232F6AB48B00454255 /* Tests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				DB2D85A72F8F8F6B00D8E438 /* Exceptions for "Tests" folder in "P8-Product" target */,
 				97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */,
 				7AD89F892F87B66800A2C5F0 /* Exceptions for "Tests" folder in "P8-ProductUITests" target */,
 			);
@@ -174,9 +224,6 @@
 			dependencies = (
 				97C2DB1F2F6AB3F100454255 /* PBXTargetDependency */,
 			);
-			fileSystemSynchronizedGroups = (
-				97C2DB232F6AB48B00454255 /* Tests */,
-			);
 			name = PipelineTests;
 			packageProductDependencies = (
 			);
@@ -198,6 +245,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				97C2DAEC2F6AAFA600454255 /* MoleImagePipeline */,
+				97C2DB232F6AB48B00454255 /* Tests */,
 				F1845EF02F59945F00E27D2B /* P8-Product */,
 			);
 			name = "P8-Product";
@@ -321,7 +369,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 484SQATWRN;
+				DEVELOPMENT_TEAM = UNU52H7255;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "test.P8-ProductUITests";
@@ -345,7 +393,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 484SQATWRN;
+				DEVELOPMENT_TEAM = UNU52H7255;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "test.P8-ProductUITests";
@@ -370,7 +418,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 484SQATWRN;
+				DEVELOPMENT_TEAM = UNU52H7255;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
 				MACOSX_DEPLOYMENT_TARGET = 26.2;
@@ -397,7 +445,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 484SQATWRN;
+				DEVELOPMENT_TEAM = UNU52H7255;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
 				MACOSX_DEPLOYMENT_TARGET = 26.2;
@@ -547,7 +595,7 @@
 				CODE_SIGN_ENTITLEMENTS = "P8-Product/P8-Product.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 484SQATWRN;
+				DEVELOPMENT_TEAM = UNU52H7255;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = SPOT;
@@ -564,7 +612,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "swp8.P8-Product";
+				PRODUCT_BUNDLE_IDENTIFIER = "swp8.P8-Product-PeterRahr";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -588,7 +636,7 @@
 				CODE_SIGN_ENTITLEMENTS = "P8-Product/P8-Product.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 484SQATWRN;
+				DEVELOPMENT_TEAM = UNU52H7255;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = SPOT;
@@ -605,7 +653,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "swp8.P8-Product";
+				PRODUCT_BUNDLE_IDENTIFIER = "swp8.P8-Product-PeterRahr";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
