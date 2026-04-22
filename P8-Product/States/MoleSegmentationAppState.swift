@@ -135,7 +135,6 @@ class MoleSegmentationAppState {
         showSelectMolePanel = false
         selectedBoxForMole = nil
         selectedPersonForScan = nil
-        selectedBoxForMole = nil
         activeAlert = nil
         pendingSuccessToast = nil
         newMoleName = ""
