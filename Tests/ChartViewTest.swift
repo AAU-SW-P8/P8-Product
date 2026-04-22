@@ -10,6 +10,7 @@ import Foundation
 import SwiftData
 @testable import P8_Product
 
+@Suite("Pipeline")
 @MainActor
 struct PipelineTests {
 
@@ -69,24 +70,30 @@ struct PipelineTests {
         return instance
     }
 
-    @Test func chartDataIsSortedByCaptureDateAscending() throws {
+    @Test func chartDataFollowsProvidedScanOrder() throws {
         let context = try makeInMemoryContext()
         let mole = makeMole(in: context)
 
-        // Insert in scrambled chronological order to prove sorting works.
+        // Match the newest-first scan order that MoleDetailAppState provides.
         let day0  = Date(timeIntervalSince1970: 1_700_000_000)
         let day10 = day0.addingTimeInterval(10 * 86_400)
         let day20 = day0.addingTimeInterval(20 * 86_400)
 
-        attachInstance(to: mole, in: context, diameter: 5.0, area: 16.0, captureDate: day20)
-        attachInstance(to: mole, in: context, diameter: 4.2, area: 13.8, captureDate: day0)
-        attachInstance(to: mole, in: context, diameter: 4.8, area: 15.4, captureDate: day10)
+        let scan0 = MoleScan(captureDate: day0)
+        let scan10 = MoleScan(captureDate: day10)
+        let scan20 = MoleScan(captureDate: day20)
+        [scan0, scan10, scan20].forEach(context.insert)
+
+        context.insert(MoleInstance(diameter: 4.2, area: 13.8, mole: mole, moleScan: scan0))
+        context.insert(MoleInstance(diameter: 4.8, area: 15.4, mole: mole, moleScan: scan10))
+        context.insert(MoleInstance(diameter: 5.0, area: 16.0, mole: mole, moleScan: scan20))
         try context.save()
 
-        let points = ChartView.makeChartData(for: mole, metric: .area)
+        let scans = [scan20, scan10, scan0]
+        let points = ChartView.makeChartData(for: mole, metric: .area, scans: scans)
 
         #expect(points.count == 3)
-        #expect(points.map(\.date) == [day0, day10, day20])
+        #expect(points.map { $0.date } == [day20, day10, day0])
     }
 
     @Test func chartDataReturnsAreaValuesForAreaMetric() throws {
@@ -97,17 +104,23 @@ struct PipelineTests {
         let day10 = day0.addingTimeInterval(10 * 86_400)
         let day20 = day0.addingTimeInterval(20 * 86_400)
 
-        attachInstance(to: mole, in: context, diameter: 4.2, area: 13.8, captureDate: day0)
-        attachInstance(to: mole, in: context, diameter: 4.8, area: 15.4, captureDate: day10)
-        attachInstance(to: mole, in: context, diameter: 5.0, area: 16.0, captureDate: day20)
+        let scan0 = MoleScan(captureDate: day0)
+        let scan10 = MoleScan(captureDate: day10)
+        let scan20 = MoleScan(captureDate: day20)
+        [scan0, scan10, scan20].forEach(context.insert)
+
+        context.insert(MoleInstance(diameter: 4.2, area: 13.8, mole: mole, moleScan: scan0))
+        context.insert(MoleInstance(diameter: 4.8, area: 15.4, mole: mole, moleScan: scan10))
+        context.insert(MoleInstance(diameter: 5.0, area: 16.0, mole: mole, moleScan: scan20))
         try context.save()
 
-        let points = ChartView.makeChartData(for: mole, metric: .area)
+        let scans = [scan20, scan10, scan0]
+        let points = ChartView.makeChartData(for: mole, metric: .area, scans: scans)
 
         // Round-trip through Float so the comparison matches the
         // implementation's `Double(instance.area)` widening.
-        let expected: [Double] = [Float(13.8), Float(15.4), Float(16.0)].map(Double.init)
-        #expect(points.map(\.value) == expected)
+        let expected: [Double] = [Float(16.0), Float(15.4), Float(13.8)].map(Double.init)
+        #expect(points.map { $0.value } == expected)
     }
 
     @Test func chartDataReturnsDiameterValuesForDiameterMetric() throws {
@@ -118,15 +131,21 @@ struct PipelineTests {
         let day10 = day0.addingTimeInterval(10 * 86_400)
         let day20 = day0.addingTimeInterval(20 * 86_400)
 
-        attachInstance(to: mole, in: context, diameter: 4.2, area: 13.8, captureDate: day0)
-        attachInstance(to: mole, in: context, diameter: 4.8, area: 15.4, captureDate: day10)
-        attachInstance(to: mole, in: context, diameter: 5.0, area: 16.0, captureDate: day20)
+        let scan0 = MoleScan(captureDate: day0)
+        let scan10 = MoleScan(captureDate: day10)
+        let scan20 = MoleScan(captureDate: day20)
+        [scan0, scan10, scan20].forEach(context.insert)
+
+        context.insert(MoleInstance(diameter: 4.2, area: 13.8, mole: mole, moleScan: scan0))
+        context.insert(MoleInstance(diameter: 4.8, area: 15.4, mole: mole, moleScan: scan10))
+        context.insert(MoleInstance(diameter: 5.0, area: 16.0, mole: mole, moleScan: scan20))
         try context.save()
 
-        let points = ChartView.makeChartData(for: mole, metric: .diameter)
+        let scans = [scan20, scan10, scan0]
+        let points = ChartView.makeChartData(for: mole, metric: .diameter, scans: scans)
 
-        let expected: [Double] = [Float(4.2), Float(4.8), Float(5.0)].map(Double.init)
-        #expect(points.map(\.value) == expected)
+        let expected: [Double] = [Float(5.0), Float(4.8), Float(4.2)].map(Double.init)
+        #expect(points.map { $0.value } == expected)
     }
 
     @Test func chartDataPreservesDuplicateValues() throws {
@@ -139,15 +158,19 @@ struct PipelineTests {
         let day0 = Date(timeIntervalSince1970: 1_700_000_000)
         let day1 = day0.addingTimeInterval(86_400)
 
-        attachInstance(to: mole, in: context, diameter: 5.0, area: 16.0, captureDate: day0)
-        attachInstance(to: mole, in: context, diameter: 5.0, area: 16.0, captureDate: day1)
+        let scan0 = MoleScan(captureDate: day0)
+        let scan1 = MoleScan(captureDate: day1)
+        [scan0, scan1].forEach(context.insert)
+
+        context.insert(MoleInstance(diameter: 5.0, area: 16.0, mole: mole, moleScan: scan0))
+        context.insert(MoleInstance(diameter: 5.0, area: 16.0, mole: mole, moleScan: scan1))
         try context.save()
 
-        let points = ChartView.makeChartData(for: mole, metric: .area)
+        let points = ChartView.makeChartData(for: mole, metric: .area, scans: [scan1, scan0])
 
         #expect(points.count == 2)
         #expect(points[0].value == points[1].value)
-        #expect(points.map(\.date) == [day0, day1])
+        #expect(points.map { $0.date } == [day1, day0])
     }
 
     @Test func chartDataExcludesInstancesWithoutScans() throws {
@@ -162,7 +185,7 @@ struct PipelineTests {
         context.insert(orphan)
         try context.save()
 
-        let points = ChartView.makeChartData(for: mole, metric: .area)
+        let points = ChartView.makeChartData(for: mole, metric: .area, scans: mole.instances.compactMap { $0.moleScan })
 
         #expect(points.count == 1)
         #expect(points.first?.value == Double(Float(12.0)))
@@ -173,8 +196,8 @@ struct PipelineTests {
         let mole = makeMole(in: context)
         try context.save()
 
-        #expect(ChartView.makeChartData(for: mole, metric: .area).isEmpty)
-        #expect(ChartView.makeChartData(for: mole, metric: .diameter).isEmpty)
+        #expect(ChartView.makeChartData(for: mole, metric: .area, scans: []).isEmpty)
+        #expect(ChartView.makeChartData(for: mole, metric: .diameter, scans: []).isEmpty)
     }
 
     // MARK: - ImageCarousel selection

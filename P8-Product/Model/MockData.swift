@@ -68,7 +68,7 @@ struct MockData {
             imageData: UIImage(systemName: "dot.circle.viewfinder")?.pngData()
         )
         let alexScan2 = MoleScan(
-            captureDate: daysAgo(5, from: today),
+            captureDate: daysAgo(50, from: today),
             imageData: UIImage(systemName: "dot.circle.fill")?.pngData()
         )
         let alexScan3 = MoleScan(
@@ -77,12 +77,12 @@ struct MockData {
         )
 
         let alexScan4 = MoleScan(
-            captureDate: daysAgo(60, from: today),
+            captureDate: daysAgo(6, from: today),
             imageData: UIImage(systemName: "circle.dashed")?.pngData()
         )
-
+        
         let jordanScan1 = MoleScan(
-            captureDate: daysAgo(2, from: today),
+            captureDate: daysAgo(30, from: today),
             imageData: UIImage(systemName: "face.smiling")?.pngData()
         )
         
@@ -132,13 +132,14 @@ struct MockData {
             mole: alexLeftArmMole,
             moleScan: alexScan2
         )
-    
+        
         let alexLeftArmInstance3 = MoleInstance(
             diameter: 5.0,
             area: 16.0,
             mole: alexLeftArmMole,
             moleScan: alexScan4
         )
+
 
         let alexBackInstance = MoleInstance(
             diameter: 3.6,
@@ -161,43 +162,43 @@ struct MockData {
         )
         
         let jordanBackInstance3 = MoleInstance(
-            diameter: 2.9,
-            area: 6.6,
+            diameter: 3.1,
+            area: 6.9,
             mole: jordanBackMole,
             moleScan: jordanScan3
         )
         
         let jordanBackInstance4 = MoleInstance(
-            diameter: 2.9,
-            area: 6.6,
+            diameter: 3.7,
+            area: 8,
             mole: jordanBackMole,
             moleScan: jordanScan4
         )
         
         let jordanBackInstance5 = MoleInstance(
-            diameter: 2.9,
-            area: 6.6,
+            diameter: 5,
+            area: 11,
             mole: jordanBackMole,
             moleScan: jordanScan5
         )
         
         let jordanBackInstance6 = MoleInstance(
-            diameter: 2.9,
-            area: 6.6,
+            diameter: 2.3,
+            area: 5.1,
             mole: jordanBackMole,
             moleScan: jordanScan6
         )
         
         let jordanBackInstance7 = MoleInstance(
-            diameter: 2.9,
-            area: 6.6,
+            diameter: 2.3,
+            area: 5.1,
             mole: jordanBackMole,
             moleScan: jordanScan7
         )
         
         let jordanBackInstance8 = MoleInstance(
-            diameter: 2.9,
-            area: 6.6,
+            diameter: 7.5,
+            area: 14.3,
             mole: jordanBackMole,
             moleScan: jordanScan8
         )

@@ -63,7 +63,8 @@ struct MoleDetailView: View {
                             selectedIndex: $appState.selectedIndex,
                             onDeleteSelectedInstance: {
                                 appState.requestDeleteSelectedDetailInstance()
-                            }
+                            },
+                            side: .both // Full circle for detail view
                         )
                             .frame(maxWidth: 420)
                     }
@@ -102,11 +103,25 @@ struct MoleDetailView: View {
                         // show the metric evolution chart for the selected metric, allowing users to track changes in their mole's characteristics over time.
                         if appState.scans.count > 1 {
                             HStack(spacing: 0) {
-                                ImageCarousel(scans: appState.scans, mole: appState.activeMole, selectedIndex: $appState.selectedEvolutionTopIndex)
-                                    .accessibilityIdentifier("leftCarousel")
+                                ImageCarousel(
+                                    scans: appState.scans,
+                                    mole: appState.activeMole,
+                                    selectedIndex: $appState.selectedEvolutionTopIndex,
+                                    side: .left,
+                                    otherSelectedIndex: appState.selectedEvolutionBottomIndex
+                                )
+                                .accessibilityIdentifier("leftCarousel")
+
                                 Divider()
-                                ImageCarousel(scans: appState.scans, mole: appState.activeMole, selectedIndex: $appState.selectedEvolutionBottomIndex)
-                                    .accessibilityIdentifier("rightCarousel")
+
+                                ImageCarousel(
+                                    scans: appState.scans,
+                                    mole: appState.activeMole,
+                                    selectedIndex: $appState.selectedEvolutionBottomIndex,
+                                    side: .right,
+                                    otherSelectedIndex: appState.selectedEvolutionTopIndex
+                                )
+                                .accessibilityIdentifier("rightCarousel")
                             }
                             .accessibilityElement(children: .contain)
                             .accessibilityIdentifier("dualCarouselContainer")
@@ -137,7 +152,13 @@ struct MoleDetailView: View {
                                 .padding(.top, 8)
                                 .accessibilityIdentifier("metricPicker")
 
-                                ChartView(mole: appState.activeMole, metric: appState.selectedMetric)
+                                ChartView(
+                                    mole: appState.activeMole,
+                                    metric: appState.selectedMetric,
+                                    scans: appState.scans,
+                                    topSelectedIndex: appState.selectedEvolutionTopIndex,
+                                    bottomSelectedIndex: appState.selectedEvolutionBottomIndex
+                                )
                             }
                             .padding(.vertical, 12)
                             .background(
@@ -155,9 +176,14 @@ struct MoleDetailView: View {
                             // If there is only one scan, show the image carousel without the option to compare or track metric evolution, 
                             // and display a message prompting the user to add more scans to unlock these features.
                             HStack(spacing: 0) {
-                                ImageCarousel(scans: appState.scans, mole: appState.activeMole, selectedIndex: $appState.selectedEvolutionBottomIndex)
-                                    .frame(maxWidth: 420)
-                                    .accessibilityIdentifier("singleCarousel")
+                                ImageCarousel(
+                                    scans: appState.scans,
+                                    mole: appState.activeMole,
+                                    selectedIndex: $appState.selectedEvolutionBottomIndex,
+                                    side: .right,
+                                    otherSelectedIndex: appState.selectedEvolutionTopIndex // <-- Added
+                                )
+                                .accessibilityIdentifier("singleCarousel")
                             }
                             .padding(.vertical, 12)
                             .background(

@@ -141,19 +141,19 @@ final class MoleDetailFlowUITests: XCTestCase {
     }
 
     func testLeftArmMoleShowsFirstScanDiameterAndArea() {
-        // With latest-first ordering, the first scan for Left Arm Mole is alexScan2
-        // (5 days ago) with diameter 4.8 mm and area 15.4 mm².
+        // With latest-first ordering, the first scan for Left Arm Mole is alexScan4
+        // (6 days ago) with diameter 5.0 mm and area 16.0 mm².
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
 
         XCTAssertTrue(
-            app.staticTexts["Diameter: 4.8 mm"].firstMatch.waitForExistence(timeout: 3)
-            || app.staticTexts["Diameter: 4,8 mm"].firstMatch.waitForExistence(timeout: 3),
-            "Carousel should display diameter 4.8/4,8 mm for the latest Left Arm scan"
+            app.staticTexts["Diameter: 5.0 mm"].firstMatch.waitForExistence(timeout: 3)
+            || app.staticTexts["Diameter: 5,0 mm"].firstMatch.waitForExistence(timeout: 3),
+            "Carousel should display diameter 5.0/5,0 mm for the latest Left Arm scan"
         )
         XCTAssertTrue(
-            app.staticTexts["Area: 15.4 mm²"].firstMatch.exists
-            || app.staticTexts["Area: 15,4 mm²"].firstMatch.exists,
-            "Carousel should display area 15.4/15,4 mm² for the latest Left Arm scan"
+            app.staticTexts["Area: 16.0 mm²"].firstMatch.exists
+            || app.staticTexts["Area: 16,0 mm²"].firstMatch.exists,
+            "Carousel should display area 16.0/16,0 mm² for the latest Left Arm scan"
         )
     }
 
@@ -190,20 +190,20 @@ final class MoleDetailFlowUITests: XCTestCase {
     }
 
     func testLeftArmMoleAreaTrendEvolutionMatchesMockData() {
-        // Areas sorted by date: 16.0 → 13.8 → 15.4 → evolution = 15.4 - 16.0 = -0.6 mm²
+        // Areas sorted by date: 15.4 → 13.8 → 16.0 → evolution = 16.0 - 15.4 = +0.6 mm²
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
         Helpers.switchToEvolution(in: app)
 
         XCTAssertTrue(app.staticTexts["Area Trend"].waitForExistence(timeout: 5),
                        "Chart should default to Area Trend")
         XCTAssertTrue(
-            app.staticTexts["-0.6 mm²"].exists || app.staticTexts["-0,6 mm²"].exists,
-            "Area Trend evolution should be -0.6/-0,6 mm² for the seeded Left Arm scans"
+            app.staticTexts["+0.6 mm²"].exists || app.staticTexts["+0,6 mm²"].exists,
+            "Area Trend evolution should be +0.6/+0,6 mm² for the seeded Left Arm scans"
         )
     }
 
     func testLeftArmMoleDiameterTrendEvolutionMatchesMockData() {
-        // Diameters sorted by date: 5.0 → 4.2 → 4.8 → evolution = 4.8 - 5.0 = -0.2 mm
+        // Diameters sorted by date: 4.8 → 4.2 → 5.0 → evolution = 5 - 4.8 = +0.2 mm
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
         Helpers.switchToEvolution(in: app)
 
@@ -214,8 +214,8 @@ final class MoleDetailFlowUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Diameter Trend"].waitForExistence(timeout: 3),
                        "Chart should switch to Diameter Trend")
         XCTAssertTrue(
-            app.staticTexts["-0.2 mm"].exists || app.staticTexts["-0,2 mm"].exists,
-            "Diameter Trend evolution should be -0.2/-0,2 mm for the seeded Left Arm scans"
+            app.staticTexts["+0.2 mm"].exists || app.staticTexts["+0,2 mm"].exists,
+            "Diameter Trend evolution should be +0.2/+0,2 mm for the seeded Left Arm scans"
         )
     }
 
