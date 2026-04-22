@@ -230,7 +230,7 @@ struct ImageCarousel: View {
 
     enum DotItem: Hashable {
         case index(Int)
-        case ellipsis(String)
+        case ellipsis
     }
 
     private var safeOtherSelectedIndex: Int? {
@@ -256,15 +256,15 @@ struct ImageCarousel: View {
 
             // Beginning
             if safeIndex <= 2 {
-                items = [.index(0), .index(1), .index(2), .ellipsis("right"), .index(last)]
+                items = [.index(0), .index(1), .index(2), .ellipsis, .index(last)]
             }
             // End
             else if safeIndex >= last - 2 {
-                items = [.index(0), .ellipsis("left"), .index(last - 2), .index(last - 1), .index(last)]
+                items = [.index(0), .ellipsis, .index(last - 2), .index(last - 1), .index(last)]
             }
             // Middle
             else {
-                items = [.index(0), .ellipsis("left"), .index(safeIndex - 1), .index(safeIndex), .index(safeIndex + 1), .ellipsis("right"), .index(last)]
+                items = [.index(0), .ellipsis, .index(safeIndex - 1), .index(safeIndex), .index(safeIndex + 1), .ellipsis, .index(last)]
             }
         }
         
