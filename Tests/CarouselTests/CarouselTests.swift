@@ -19,7 +19,7 @@ struct DotPaginationTests {
     @Test
     func testMoreThanFiveItems_Beginning() {
         let items = ImageCarousel.calculateDotItems(count: 10, safeIndex: 1, side: .both)
-        let expected: [ImageCarousel.DotItem] = [.index(0), .index(1), .index(2), .ellipsis("right"), .index(9)]
+        let expected: [ImageCarousel.DotItem] = [.index(0), .index(1), .index(2), .ellipsis, .index(9)]
         #expect(items == expected)
     }
 
@@ -27,7 +27,7 @@ struct DotPaginationTests {
     func testMoreThanFiveItems_Middle() {
         let items = ImageCarousel.calculateDotItems(count: 10, safeIndex: 5, side: .both)
         let expected: [ImageCarousel.DotItem] = [
-            .index(0), .ellipsis("left"), .index(4), .index(5), .index(6), .ellipsis("right"), .index(9)
+            .index(0), .ellipsis, .index(4), .index(5), .index(6), .ellipsis, .index(9)
         ]
         #expect(items == expected)
     }
@@ -38,7 +38,7 @@ struct DotPaginationTests {
         let items = ImageCarousel.calculateDotItems(count: 10, safeIndex: 1, side: .left)
         
         // Notice the expected array is reversed compared to the Beginning test above
-        let expected: [ImageCarousel.DotItem] = [.index(9), .ellipsis("right"), .index(2), .index(1), .index(0)]
+        let expected: [ImageCarousel.DotItem] = [.index(9), .ellipsis, .index(2), .index(1), .index(0)]
         #expect(items == expected)
     }
 }
