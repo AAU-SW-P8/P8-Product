@@ -82,7 +82,8 @@ struct MoleSegmentationGuidanceCard: View {
                 Text(step.description)
                     .font(.footnote)
                     .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(2)
+                    .frame(minHeight: 34, alignment: .topLeading)
             }
 
             Spacer(minLength: 0)
