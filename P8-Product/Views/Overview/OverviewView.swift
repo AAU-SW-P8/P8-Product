@@ -121,9 +121,8 @@ private struct OverviewContentView: View {
                 appState.initializeSelectionIfNeeded(with: newValue)
             }
             .onChange(of: appState.selectedPerson?.id) { _, _ in
-                // Keep live filter choices when switching pages/person, but drop options that are no longer valid.
-                selectedBodyParts = selectedBodyParts.intersection(Set(availableBodyParts))
                 closeFilterPopup()
+                selectedBodyParts = []
             }
             .onChange(of: showingFilters) { _, isVisible in
                 if !isVisible {
