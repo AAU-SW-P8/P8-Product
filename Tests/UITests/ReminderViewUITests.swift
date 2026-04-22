@@ -457,6 +457,28 @@ final class ReminderViewUITests: XCTestCase {
 		XCTAssertLessThan(leftArm.frame.minY, back.frame.minY)
 	}
 
+	func testDetailViewShowsDueDateSummaryForMoleWithDueDate() {
+		// Verifies detail view renders the next-due summary line for moles with a due date.
+		Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
+
+		let dueSummary = app.staticTexts["moleDetailNextDueDateSummary"].firstMatch
+		XCTAssertTrue(dueSummary.waitForExistence(timeout: 3), "Expected due-date summary to be visible in detail view")
+		XCTAssertTrue(dueSummary.label.contains("Next due date:"), "Expected summary to contain due-date text")
+	}
+
+	func testDetailViewHidesDueDateSummaryForMoleWithoutDueDate() throws {
+		// Verifies detail view does not render the summary line when a mole has no due date.
+		Helpers.openReminderTab(in: app)
+
+		try setDefaultReminderEnabled(false)
+
+		Helpers.openMoleDetail(person: "Alex", mole: "Back Mole", in: app)
+	
+		XCTAssertFalse(app.staticTexts["moleDetailNextDueDateSummary"].waitForExistence(timeout: 2), "Expected no due-date summary for mole without due date")
+	}
+
+
+
 	// MARK: - Empty Store
 
 	func testEmptyStoreShowsNoMolesMessage() {
