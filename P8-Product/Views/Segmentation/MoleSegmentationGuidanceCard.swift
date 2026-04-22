@@ -18,7 +18,7 @@ struct MoleSegmentationGuidanceStep {
     }
 
     /// Creates a guidance step based on the current state of the segmentation process.
-    static func make(isProcessing: Bool, hasDetections: Bool) -> MoleSegmentationGuidanceStep {
+    static func make(isProcessing: Bool, hasDetections: Bool, hasAttemptedSegmentation: Bool = false) -> MoleSegmentationGuidanceStep {
         if isProcessing {
             return MoleSegmentationGuidanceStep(
                 index: 2,
@@ -27,13 +27,22 @@ struct MoleSegmentationGuidanceStep {
                 description: "Wait while we detect moles in your photo."
             )
         }
-        // If not processing and has detections, prompt user to select mole. If not processing and no detections, prompt user to scan.
+        // If not processing and has detections, prompt user to select mole.
         if hasDetections {
             return MoleSegmentationGuidanceStep(
                 index: 3,
                 total: 3,
                 title: "Find your mole",
                 description: "Press and hold directly on the mole area to select it."
+            )
+        }
+        // If not processing, segmentation was attempted but no detections found
+        if hasAttemptedSegmentation && !hasDetections {
+            return MoleSegmentationGuidanceStep(
+                index: 3,
+                total: 3,
+                title: "No moles detected",
+                description: "Try adjusting detection parameters or taking a clearer photo."
             )
         }
 

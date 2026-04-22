@@ -17,6 +17,7 @@ class MoleSegmentationAppState {
     
     var isProcessing: Bool = false
     var statusMessage: String = "Ready"
+    var hasAttemptedSegmentation: Bool = false
     var confidenceThreshold: Float = 0.3
     var nmsThreshold: Float = 1.0
     
@@ -103,6 +104,7 @@ class MoleSegmentationAppState {
                     self.maskOverlay = result?.0
                     self.detectedBoxes = result?.1 ?? []
                     self.maskOnlyImage = result?.2
+                    self.hasAttemptedSegmentation = true
                     self.statusMessage = result != nil ? "Segmentation complete. Long press a mole to add it." : "No moles detected"
                     self.isProcessing = false
                 }
@@ -141,6 +143,7 @@ class MoleSegmentationAppState {
         selectedBodyPart = .unassigned
         selectedExistingBodyPart = nil
         statusMessage = "Ready"
+        hasAttemptedSegmentation = false
     }
     
     // MARK: - Data Saving Logic

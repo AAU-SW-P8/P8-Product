@@ -180,10 +180,13 @@ struct SelectMolePanelView: View {
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 12)
             .frame(height: 56)
+            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(style: StrokeStyle(lineWidth: 1, dash: [6]))
-                    .foregroundStyle(.white.opacity(0.35))
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(
+                        .white.opacity(0.35),
+                        style: StrokeStyle(lineWidth: 1, dash: [6])
+                    )
             )
         }
         .buttonStyle(.plain)

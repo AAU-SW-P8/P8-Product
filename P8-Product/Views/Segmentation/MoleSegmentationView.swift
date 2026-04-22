@@ -58,7 +58,8 @@ struct MoleSegmentationView: View {
     private var guidanceStep: MoleSegmentationGuidanceStep {
         MoleSegmentationGuidanceStep.make(
             isProcessing: appState.isProcessing,
-            hasDetections: !appState.detectedBoxes.isEmpty
+            hasDetections: !appState.detectedBoxes.isEmpty,
+            hasAttemptedSegmentation: appState.hasAttemptedSegmentation
         )
     }
 
