@@ -121,20 +121,20 @@ struct MockData {
 
         // Link everything together via MoleInstances
         let alexLeftArmInstance1 = MoleInstance(
-            diameter: 4.0,
+            diameter: 4.2,
             area: 13.8,
             mole: alexLeftArmMole,
             moleScan: alexScan1
         )
         let alexLeftArmInstance2 = MoleInstance(
-            diameter: 4.04,
+            diameter: 4.8,
             area: 15.4,
             mole: alexLeftArmMole,
             moleScan: alexScan2
         )
         
         let alexLeftArmInstance3 = MoleInstance(
-            diameter: 4.04,
+            diameter: 5.0,
             area: 16.0,
             mole: alexLeftArmMole,
             moleScan: alexScan4
