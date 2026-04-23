@@ -23,11 +23,11 @@ final class TabStateUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3),
                       "Overview should start on Alex in the seeded data")
 
-        Helpers.openCompareTab(in: app)
+        Helpers.openReminderTab(in: app)
 
         XCTAssertTrue(
-            app.staticTexts["selectMolePrompt"].waitForExistence(timeout: 3),
-            "Compare tab should reflect the selected person"
+            app.tabBars.buttons["Reminder"].waitForExistence(timeout: 3),
+            "Reminder tab should open successfully"
         )
 
         Helpers.openOverviewTab(in: app)
@@ -36,52 +36,39 @@ final class TabStateUITests: XCTestCase {
             app.staticTexts["Alex"].waitForExistence(timeout: 3),
             "Overview tab should keep the selected person when switching tabs"
         )
-
-        Helpers.openCompareTab(in: app)
-        
-        XCTAssertTrue(
-            Helpers.selectedPersonButton(named: "Alex", in: app).waitForExistence(timeout: 3),
-            "Compare tab should still show Alex after returning from Overview"
-        )
     }
 
-    func testChangingPersonInComparePersistsBackToOverview() {
+    func testChangingPersonInOverviewPersistsAfterOpeningDetail() {
         Helpers.openOverviewTab(in: app)
 
         XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3),
                       "Overview should begin with Alex selected")
 
-        Helpers.openCompareTab(in: app)
-
-        Helpers.selectPerson("Alex", in: app)
-        XCTAssertTrue(
-            app.staticTexts["selectMolePrompt"].waitForExistence(timeout: 3),
-            "Compare should show Alex before switching people"
-        )
-
-        Helpers.selectPerson("Jordan", in: app)
+        Helpers.movePersonSelection(to: "Jordan", in: app)
+        Helpers.openMoleDetail(person: "Jordan", mole: "Face Mole", in: app)
 
         Helpers.openOverviewTab(in: app)
 
         XCTAssertTrue(
             app.staticTexts["Jordan"].waitForExistence(timeout: 3),
-            "Overview should reflect the selection made in Compare"
+            "Overview should reflect the selection after visiting detail"
         )
     }
 
     func testDeletingTaylorFallsBackToAlexAcrossTabs() {
         Helpers.openOverviewTab(in: app)
 
-        Helpers.moveOverviewSelection(to: "Taylor", in: app)
+        Helpers.movePersonSelection(to: "Taylor", in: app)
 
         XCTAssertTrue(
             app.staticTexts["Taylor"].waitForExistence(timeout: 3),
             "Overview should be on Taylor before deletion"
         )
-        Helpers.openCompareTab(in: app)
+
+        Helpers.openReminderTab(in: app)
         XCTAssertTrue(
-            app.staticTexts["Taylor"].waitForExistence(timeout: 3),
-            "Compare should also show Taylor before deletion"
+            app.tabBars.buttons["Reminder"].waitForExistence(timeout: 3),
+            "Reminder should open before returning to delete"
         )
 
         Helpers.openOverviewTab(in: app)
@@ -92,10 +79,11 @@ final class TabStateUITests: XCTestCase {
             "Overview should fall back to Alex after deleting Taylor"
         )
 
-        Helpers.openCompareTab(in: app)
+        Helpers.openReminderTab(in: app)
+        Helpers.openOverviewTab(in: app)
         XCTAssertTrue(
             app.staticTexts["Alex"].waitForExistence(timeout: 3),
-            "Compare should also fall back to Alex after deleting Taylor"
+            "Overview should still be Alex after tab switches"
         )
     }
 
