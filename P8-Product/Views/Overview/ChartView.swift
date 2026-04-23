@@ -95,15 +95,83 @@ struct ChartView: View {
             return DataPoint(
                 index: index,
                 date: scan.captureDate,
-                value: value
+                value: roundedMetricValue(value)
             )
         }
+    }
+    static func roundedMetricValue(_ value: Double) -> Double {
+        Double(round(10 * value) / 10)
     }
 
     /// Computes the data points for the chart based on the scans and the selected metric.
     private var chartData: [DataPoint] {
         Self.makeChartData(for: mole, metric: metric, scans: scans)
     }
+
+    private var yScaleDomain: ClosedRange<Double> {
+        Self.yScaleDomain(for: chartData)
+    }
+
+    static func yScaleDomain(for points: [DataPoint]) -> ClosedRange<Double> {
+        let values = points.map(\.value)
+        guard let minValue = values.min(), let maxValue = values.max() else {
+            return 0...1
+        }
+        if minValue == maxValue {
+            let padding = max(abs(minValue) * 0.05, 1)
+            return (minValue - padding)...(maxValue + padding)
+        }
+        
+        let spread = maxValue - minValue
+        let padding = max(spread * 0.1, 1)
+        return (minValue - padding)...(maxValue + padding)
+    }
+    
+    /*
+    private var xScaleDomain: ClosedRange<Date> {
+        Self.xScaleDomain(for: chartData)
+    }
+
+    private var xAxisDates: [Date] {
+        Self.xAxisDates(for: chartData)
+    }
+
+    static func xScaleDomain(for points: [DataPoint]) -> ClosedRange<Date> {
+        let dates = points.map(\.date).sorted()
+        guard let minDate = dates.first, let maxDate = dates.last else {
+            let now = Date()
+            return now.addingTimeInterval(-864_000)...now.addingTimeInterval(864_000)
+        }
+        let spread = maxDate.timeIntervalSince(minDate)
+        let padding = spread > 0 ? max(spread * 0.15, 43_200) : 864_000
+        return minDate.addingTimeInterval(-padding)...maxDate.addingTimeInterval(padding)
+        
+    }
+
+    static func xAxisDates(for points: [DataPoint]) -> [Date] {
+        let sortedDates = Array(Set(points.map(\.date))).sorted()
+
+        switch sortedDates.count {
+        case 0:
+            return []
+        case 1:
+            return sortedDates
+        default:
+            let middleIndex = sortedDates.count / 2
+            return [sortedDates.first!, sortedDates[middleIndex], sortedDates.last!]
+        }
+    }
+
+    private static let shortDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d MMM"
+        return formatter
+    }()
+
+    private func formattedXAxisLabel(for date: Date) -> String {
+        Self.shortDateFormatter.string(from: date)
+    }
+    */
 
     /// Calculates the overall change in the metric from the first to the last data point.
     private var evolution: Double {
@@ -131,7 +199,7 @@ struct ChartView: View {
 
     /// Helper to format the metric values for display in the chart annotations.
     private func formattedMetricValue(_ value: Double) -> String {
-        "\(String(format: "%.1f", value))"
+        "\(String(format: "%.1f", Self.roundedMetricValue(value)))"
     }
 
     /**
@@ -241,7 +309,11 @@ struct ChartView: View {
             .chartXAxis {
                 AxisMarks(values: .automatic(desiredCount: 3)) { value in
                     AxisGridLine()
-                    AxisValueLabel(format: .dateTime.year())
+                    AxisValueLabel {
+                        if let dateValue = value.as(Date.self) {
+                            Text(formattedXAxisLabel(for: dateValue))
+                        }
+                    }
                 }
             }
             .chartYAxis {
@@ -254,7 +326,7 @@ struct ChartView: View {
                     }
                 }
             }
-            .chartYScale(domain: .automatic(includesZero: false))
+            .chartYScale(domain: yScaleDomain)
             .padding()
         }
     }
