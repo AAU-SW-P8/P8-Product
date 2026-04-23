@@ -164,6 +164,16 @@ class CalculatorLinear {
     }
 
     /// Walks the bounding box, collecting weighted mask points and aligned depth samples.
+    /// 
+    /// - Parameters:
+    ///   - mask: RGBA pixel data for the segmented image.
+    ///   - bounds: Clamped pixel bounds of the selected box.
+    ///   - depth: Locked-buffer view of the depth map.
+    ///   - confidence: Locked-buffer view of the confidence map, or `nil` if unavailable.
+    ///   - sensorWidth: Physical sensor width in pixels, used for depth alignment.
+    ///   - sensorHeight: Physical sensor height in pixels, used for depth alignment.
+    ///   - orientation: Orientation of the captured image before normalization, used for depth alignment.
+    /// - Returns: A `MoleSamples` payload containing all valid sampled points, or an empty payload if no valid samples are found.
     private func samplePixels(
         mask: (pixels: [UInt8], width: Int, height: Int),
         bounds: (minX: Int, minY: Int, maxX: Int, maxY: Int),
@@ -227,6 +237,13 @@ class CalculatorLinear {
     }
 
     /// Reads one depth pixel, rejecting it when confidence is too low or the depth is out of range.
+    /// 
+    /// - Parameters:
+    ///   - dx: X coordinate in the depth map.
+    ///   - dy: Y coordinate in the depth map.
+    ///   - depth: Locked-buffer view of the depth map.
+    ///   - confidence: Locked-buffer view of the confidence map, or `nil` if unavailable.
+    /// - Returns: A valid depth value in meters, or `nil` if the pixel is invalid or unreliable.
     private func sampleDepth(
         atX dx: Int,
         y dy: Int,
@@ -249,6 +266,11 @@ class CalculatorLinear {
     // MARK: - Measurement
 
     /// Computes area in mm² using the linear mm-per-pixel factor.
+    /// 
+    /// - Parameters:
+    ///   - samples: Collected mask points and weights.
+    ///   - mmPerPixel: Millimeters-per-pixel factor derived from the median depth and the calibration table.
+    /// - Returns: Estimated area in square millimeters.
     private func computeAreaMM2(from samples: MoleSamples, mmPerPixel: Double) -> CGFloat {
         let weightedPixelCount = samples.weights.reduce(0, +)
         guard weightedPixelCount > 0 else { return 0.0 }
@@ -259,6 +281,11 @@ class CalculatorLinear {
     }
 
     /// Computes Feret-style diameter in mm using the linear mm-per-pixel factor.
+    /// 
+    /// - Parameters:
+    ///   - samples: Collected mask points and weights.
+    ///   - mmPerPixel: Millimeters-per-pixel factor derived from the median depth and the calibration table.
+    /// - Returns: Estimated diameter in millimeters.
     private func computeDiameterMM(from samples: MoleSamples, mmPerPixel: Double) -> CGFloat {
         guard samples.points.count >= LesionSizingConstants.minimumDiameterPointCount else {
             return 0.0

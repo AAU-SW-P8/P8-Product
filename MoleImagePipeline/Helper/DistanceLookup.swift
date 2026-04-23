@@ -60,6 +60,9 @@ struct DistanceLookup {
     /// outside the table are clamped to the nearest endpoint rather than
     /// extrapolated, since the model is only validated within the calibrated
     /// range.
+    /// 
+    /// - Parameter distanceMeters: Distance from the camera in meters.
+    /// - Returns: Estimated size of one pixel at that distance, in millimeters.
     func mmPerPixel(atDistance distanceMeters: Double) -> Double {
         guard let first = entries.first, let last = entries.last else { return 0 }
         if distanceMeters <= first.distanceMeters { return first.mmPerPixel }
