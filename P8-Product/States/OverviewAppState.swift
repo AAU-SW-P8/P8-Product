@@ -10,6 +10,7 @@ class OverviewAppState {
     enum MoleSortOption: String, CaseIterable, Identifiable {
         case recent = "Recent"
         case alphabetical = "A-Z"
+        case nextDueDate = "Next Due Date"
 
         var id: String { rawValue }
     }
@@ -217,6 +218,17 @@ class OverviewAppState {
         case .alphabetical:
             return filtered.sorted {
                 $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            }
+        case .nextDueDate:
+            return filtered.sorted { lhs, rhs in
+                let lhsDate = lhs.nextDueDate ?? .distantFuture
+                let rhsDate = rhs.nextDueDate ?? .distantFuture
+
+                if lhsDate != rhsDate {
+                    return lhsDate < rhsDate
+                }
+
+                return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
             }
         case .recent:
             return filtered.sorted {
