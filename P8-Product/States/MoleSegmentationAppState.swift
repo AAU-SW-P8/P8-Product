@@ -1,3 +1,4 @@
+import UIKit
 import SwiftUI
 import SwiftData
 import simd
@@ -287,14 +288,9 @@ class MoleSegmentationAppState {
             depthMap: depthMap,
             confidenceMap: confidenceMap,
             cameraIntrinsics: cameraIntrinsics,
-            imageOrientation: capturedImageOrientation
+            imageOrientation: capturedImageOrientation,
+            model: .projection
         )
-        // let measurement = calclinear.calculateMetrics(
-        //     from: (maskOnlyImage, [selectedBox]),
-        //     depthMap: depthMap,
-        //     confidenceMap: confidenceMap,
-        //     imageOrientation: capturedImageOrientation
-        // )
 
         let area = measurement.areaMM2.isFinite && measurement.areaMM2 > 0 ? Float(measurement.areaMM2) : 0
         let diameter = measurement.diameterMM.isFinite && measurement.diameterMM > 0 ? Float(measurement.diameterMM) : 0

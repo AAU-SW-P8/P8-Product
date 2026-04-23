@@ -26,10 +26,7 @@ struct DistanceLookup {
     init(entries: [Entry]) {
         self.entries = entries.sorted { $0.distanceMeters < $1.distanceMeters }
     }
-
-    /// Placeholder calibration modeled after a pinhole camera with a nominal
-    /// focal length of 1000 px. Replace with empirically measured values once
-    /// the calibration rig produces them.
+    
     static let `default` = DistanceLookup(entries: [
         Entry(distanceMeters: 0.20, mmPerPixel: 0.1396),
         Entry(distanceMeters: 0.21, mmPerPixel: 0.1459),

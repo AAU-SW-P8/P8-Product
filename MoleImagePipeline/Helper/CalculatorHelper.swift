@@ -206,7 +206,7 @@ enum CalculatorHelper {
     ///   - invFx: Reciprocal x focal length.
     ///   - invFy: Reciprocal y focal length.
     /// - Returns: Maximum squared distance in normalized physical space.
-    static func maxPairwiseSquaredDistance(in points: [CGPoint], invFx: Double, invFy: Double) -> Double {
+    static func maxPairwiseSquaredDistance(in points: [CGPoint], invFx: Double = 1.0, invFy: Double = 1.0) -> Double {
         var maxSquared: Double = 0
         for i in 0..<points.count {
             for j in (i + 1)..<points.count {
