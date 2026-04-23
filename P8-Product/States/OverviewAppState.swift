@@ -7,6 +7,13 @@ import simd
 @MainActor
 @Observable
 class OverviewAppState {
+    enum MoleSortOption: String, CaseIterable, Identifiable {
+        case recent = "Recent"
+        case alphabetical = "A-Z"
+
+        var id: String { rawValue }
+    }
+
     // The selected person is shared across the app through SelectionState, so that all views stay in sync without needing to pass the selection through the view hierarchy.
     @ObservationIgnored private let selectionState = SelectionState.shared
 
@@ -15,6 +22,14 @@ class OverviewAppState {
         get { selectionState.selectedPerson }
         set { selectionState.selectedPerson = newValue }
     }
+
+    var selectedMole: Mole? {
+        get { selectionState.selectedMole }
+        set { selectionState.selectedMole = newValue }
+    }
+
+    // Keeps list-driven navigation stable while detail view is open.
+    var selectedMoleNavigationID: UUID?
     
     // MARK: - UI Flow State
     var showingAddPerson: Bool = false
@@ -123,7 +138,7 @@ class OverviewAppState {
      */
     func confirmEdit() {
         if let person: Person = personToEdit, !editingName.isEmpty {
-            person.name = editingName // Updates the SwiftData Model
+            dataController.rename(person, to: editingName)
         }
         cancelEdit()
     }
@@ -163,6 +178,11 @@ class OverviewAppState {
         moleToDelete = mole
         showingDeleteMoleAlert = true
     }
+
+    func selectMole(_ mole: Mole?) {
+        selectedMole = mole
+        selectedMoleNavigationID = mole?.id
+    }
     
     func confirmDeleteMole() {
 
@@ -175,6 +195,43 @@ class OverviewAppState {
 
         dataController.delete(mole)
         
+    }
+
+    // MARK: - Overview Filtering & Sorting
+
+    func availableBodyParts(for person: Person) -> [String] {
+        Array(Set(person.moles.map(\.bodyPart)))
+            .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+    }
+
+    func displayedMoles(
+        for person: Person,
+        selectedBodyParts: Set<String>,
+        sortOption: MoleSortOption
+    ) -> [Mole] {
+        let filtered: [Mole] = person.moles.filter { mole in
+            selectedBodyParts.isEmpty || selectedBodyParts.contains(mole.bodyPart)
+        }
+
+        switch sortOption {
+        case .alphabetical:
+            return filtered.sorted {
+                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            }
+        case .recent:
+            return filtered.sorted {
+                let lhsDate = latestScan(for: $0)?.captureDate ?? .distantPast
+                let rhsDate = latestScan(for: $1)?.captureDate ?? .distantPast
+                return lhsDate > rhsDate
+            }
+        }
+    }
+
+    func latestScan(for mole: Mole) -> MoleScan? {
+        mole.instances
+            .compactMap(\.moleScan)
+            .sorted { $0.captureDate > $1.captureDate }
+            .first
     }
 
 }

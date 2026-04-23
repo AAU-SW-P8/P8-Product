@@ -17,6 +17,7 @@ class MoleSegmentationAppState {
     
     var isProcessing: Bool = false
     var statusMessage: String = "Ready"
+    var hasAttemptedSegmentation: Bool = false
     var confidenceThreshold: Float = 0.3
     var nmsThreshold: Float = 1.0
     
@@ -24,12 +25,32 @@ class MoleSegmentationAppState {
     var showSettings: Bool = false
     var showPersonPicker: Bool = false
     var showMoleActionDialog: Bool = false
+    var showExistingBodyPartPicker: Bool = false
     var showExistingMolePicker: Bool = false
+    var showNewMoleMetadataSheet: Bool = false
+    var showSelectMolePanel: Bool = false
     
     // MARK: - Selection State
     var selectedPersonForScan: Person?
     var selectedBoxForMole: CGRect?
     var activeAlert: AlertState?
+    var pendingSuccessToast: String?
+    var newMoleName: String = ""
+    var selectedBodyPart: BodyPart = .unassigned
+    var selectedExistingBodyPart: String?
+
+    var newMoleNameValidationMessage: String? {
+        guard let person: Person = selectedPersonForScan else { return nil }
+        let trimmedName: String = newMoleName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return nil }
+
+        guard dataController.hasMole(named: trimmedName, for: person) else { return nil }
+        return "A mole named \"\(trimmedName)\" already exists for \(person.name)."
+    }
+
+    var canSaveNewMole: Bool {
+        newMoleNameValidationMessage == nil
+    }
     
     // Dependencies
     private let dataController: DataController
@@ -53,8 +74,8 @@ class MoleSegmentationAppState {
     func startSegmentationFlow(people: [Person]) {
         if people.isEmpty {
             activeAlert = .error("Please add a person in the Overview first.")
-        } else if people.count == 1 {
-            selectedPersonForScan = people[0]
+        } else if people.count == 1, let onlyPerson: Person = people.first {
+            selectedPersonForScan = onlyPerson
             resegment()
         } else {
             showPersonPicker = true
@@ -84,6 +105,7 @@ class MoleSegmentationAppState {
                     self.maskOverlay = result?.0
                     self.detectedBoxes = result?.1 ?? []
                     self.maskOnlyImage = result?.2
+                    self.hasAttemptedSegmentation = true
                     self.statusMessage = result != nil ? "Segmentation complete. Long press a mole to add it." : "No moles detected"
                     self.isProcessing = false
                 }
@@ -104,16 +126,85 @@ class MoleSegmentationAppState {
      Should be called when the user wants to start fresh or after saving a scan.
      */
     func clearSegmentation() {
+        isProcessing = false
         maskOverlay = nil
         maskOnlyImage = nil
         detectedBoxes = []
+        showPersonPicker = false
+        showMoleActionDialog = false
+        showExistingBodyPartPicker = false
+        showExistingMolePicker = false
+        showNewMoleMetadataSheet = false
+        showSelectMolePanel = false
         selectedBoxForMole = nil
         selectedPersonForScan = nil
-        statusMessage = "Cleared"
-        modelLoader.segmentor?.clearCache()
+        activeAlert = nil
+        pendingSuccessToast = nil
+        newMoleName = ""
+        selectedBodyPart = .unassigned
+        selectedExistingBodyPart = nil
+        statusMessage = "Ready"
+        hasAttemptedSegmentation = false
     }
     
     // MARK: - Data Saving Logic
+
+    /// Opens the metadata UI for creating a new mole.
+    func beginNewMoleFlow() {
+        guard selectedBoxForMole != nil else {
+            activeAlert = .error("Please long-press a detected mole first.")
+            return
+        }
+
+        newMoleName = ""
+        selectedBodyPart = .unassigned
+        showNewMoleMetadataSheet = true
+    }
+
+    /// Starts the existing-mole flow by asking for body part first.
+    func beginExistingMoleFlow() {
+        guard selectedBoxForMole != nil else {
+            activeAlert = .error("Please long-press a detected mole first.")
+            return
+        }
+
+        let bodyParts: [String] = existingBodyPartsForSelectedPerson()
+        guard !bodyParts.isEmpty else {
+            activeAlert = .error("No existing moles found for this person.")
+            return
+        }
+
+        selectedExistingBodyPart = nil
+        showExistingBodyPartPicker = true
+    }
+
+    func existingBodyPartsForSelectedPerson() -> [String] {
+        guard let person: Person = selectedPersonForScan else { return [] }
+        let uniqueParts: Set<String> = Set(person.moles.map { $0.bodyPart })
+        return uniqueParts.sorted { lhs, rhs in
+            lhs.localizedCaseInsensitiveCompare(rhs) == .orderedAscending
+        }
+    }
+
+    func existingMolesForSelectedBodyPart() -> [Mole] {
+        guard let person: Person = selectedPersonForScan else { return [] }
+
+        let filteredMoles: [Mole]
+        if let bodyPart: String = selectedExistingBodyPart {
+            filteredMoles = person.moles.filter { $0.bodyPart == bodyPart }
+        } else {
+            filteredMoles = person.moles
+        }
+
+        return filteredMoles.sorted { lhs, rhs in
+            lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+        }
+    }
+
+    func chooseExistingBodyPart(_ bodyPart: String) {
+        selectedExistingBodyPart = bodyPart
+        showExistingMolePicker = true
+    }
     
     /**
      Handles the logic for when a new mole is selected to be added. 
@@ -124,16 +215,32 @@ class MoleSegmentationAppState {
      */
     func handleNewMoleSelection() {
         guard let person: Person = selectedPersonForScan, let image: UIImage = testImage, let box: CGRect = selectedBoxForMole else { return }
+
+        guard canSaveNewMole else {
+            return
+        }
+
         if let cropped: UIImage = cropImage(image, to: box) {
             let measurement = calculateSelectedMoleMeasurement()
-            dataController.addMoleAndScan(
+            let didSave: Bool = dataController.addMoleAndScan(
                 to: person,
                 image: cropped,
+                name: newMoleName,
+                bodyPart: selectedBodyPart.rawValue,
                 area: measurement.area,
                 diameter: measurement.diameter
             )
+
+            guard didSave else {
+                activeAlert = .error("A mole with that name already exists for \(person.name).")
+                return
+            }
+
             statusMessage = "Added mole to \(person.name)!"
-            activeAlert = .success("Successfully saved scan.")
+            pendingSuccessToast = "✓ New mole saved!"
+            showNewMoleMetadataSheet = false
+            newMoleName = ""
+            selectedBodyPart = .unassigned
         }
     }
     
@@ -162,7 +269,8 @@ class MoleSegmentationAppState {
 
             // 3. Update UI state
             statusMessage = "Added scan to \(mole.name)!"
-            activeAlert = .success("Successfully saved scan.")
+            pendingSuccessToast = "✓ Added to \(mole.name)"
+            selectedExistingBodyPart = nil
         }
     }
 
