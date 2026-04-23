@@ -254,7 +254,7 @@ struct MoleSegmentationView: View {
     }
 
     private func formattedCurrentDiameter(for mole: Mole) -> String {
-        let latestInstance: MoleInstance? = mole.instances.max {
+        let latestInstance: MoleScan? = mole.instances.max {
             ($0.moleScan?.captureDate ?? .distantPast) < ($1.moleScan?.captureDate ?? .distantPast)
         }
 

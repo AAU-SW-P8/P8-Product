@@ -37,8 +37,8 @@ struct ImageCarousel: View {
         Self.selectedScan(in: scans, at: selectedIndex)
     }
 
-    private var selectedInstance: MoleInstance? {
-        Self.selectedInstance(in: scans, at: selectedIndex, for: mole)
+    private var selectedScan: MoleScan? {
+        Self.selectedScan(in: scans, at: selectedIndex, for: mole)
     }
 
     private var displayedScans: [(displayIndex: Int, originalIndex: Int, scan: MoleScan)] {
@@ -163,12 +163,12 @@ struct ImageCarousel: View {
 
                     Spacer()
 
-                    if let onDeleteSelectedInstance {
-                        Button(role: .destructive, action: onDeleteSelectedInstance) {
+                    if let onDeleteSelectedScan {
+                        Button(role: .destructive, action: onDeleteSelectedScan) {
                             Image(systemName: "trash")
                         }
                         .frame(width: 28)
-                        .accessibilityIdentifier("deleteMoleInstanceButton")
+                        .accessibilityIdentifier("deleteMoleScanButton")
                     } else {
                         Color.clear
                             .frame(width: 28, height: 1)
@@ -205,7 +205,7 @@ struct ImageCarousel: View {
     }
 
     /**
-        Returns the MoleInstance corresponding to the given index and mole filter, using selectedScan to find the correct scan first.
+        Returns the MoleScan corresponding to the given index and mole filter, using selectedScan to find the correct scan first.
         If a mole is provided, it will return the instance matching that mole's ID. 
         If no mole is provided, it will return the first instance in the selected scan.
         Parameters:
@@ -213,11 +213,11 @@ struct ImageCarousel: View {
         - index: The requested index for selection.
         - mole: An optional Mole object to filter the instances by.
      */
-    static func selectedInstance(in scans: [MoleScan], at index: Int, for mole: Mole?) -> MoleInstance? {
+    static func selectedScan(in scans: [MoleScan], at index: Int, for mole: Mole?) -> MoleScan? {
         guard let scan = selectedScan(in: scans, at: index) else { return nil }
 
         if let mole {
-            return scan.instances.first(where: { $0.mole?.id == mole.id })
+            return scan.first(where: { $0.mole?.id == mole.id })
         }
 
         return scan.instances.first

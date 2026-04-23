@@ -25,7 +25,7 @@ final class MoleDetailAppState {
 	var selectedEvolutionBottomIndex: Int = 0
 	var shouldDismissDetailView: Bool = false
 	var showingDeleteDetailInstanceAlert: Bool = false
-	var detailInstanceToDelete: MoleInstance?
+	var detailScanToDelete: MoleScan?
 
 	init(
 		mole: Mole,
@@ -103,25 +103,25 @@ final class MoleDetailAppState {
 	}
 
 	func requestDeleteSelectedDetailInstance() {
-		guard let instance: MoleInstance = ImageCarousel.selectedInstance(in: scans, at: selectedIndex, for: activeMole) else {
+		guard let scan: MoleScan = ImageCarousel.selectedScan(in: scans, at: selectedIndex, for: activeMole) else {
 			return
 		}
 
-		detailInstanceToDelete = instance
+		detailScanToDelete = scan
 		showingDeleteDetailInstanceAlert = true
 	}
 
 	func confirmDeleteSelectedDetailInstance() {
 		defer {
-			detailInstanceToDelete = nil
+			detailScanToDelete = nil
 			showingDeleteDetailInstanceAlert = false
 		}
 
-		guard let instance: MoleInstance = detailInstanceToDelete else {
+		guard let scan: MoleScan = detailScanToDelete else {
 			return
 		}
 
-		dataController.delete(instance)
+		dataController.delete(scan)
 
 		let selectedMole: Mole = activeMole
 		let hasAnyScansLeft: Bool = selectedMole.instances.contains { $0 !== instance && $0.moleScan != nil }
