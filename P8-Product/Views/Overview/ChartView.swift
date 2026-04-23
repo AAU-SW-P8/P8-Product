@@ -127,51 +127,21 @@ struct ChartView: View {
         return (minValue - padding)...(maxValue + padding)
     }
     
-    /*
-    private var xScaleDomain: ClosedRange<Date> {
-        Self.xScaleDomain(for: chartData)
+    private var dateRange: ClosedRange<Date> {
+        Self.dateRange(for: chartData)
     }
 
-    private var xAxisDates: [Date] {
-        Self.xAxisDates(for: chartData)
-    }
-
-    static func xScaleDomain(for points: [DataPoint]) -> ClosedRange<Date> {
-        let dates = points.map(\.date).sorted()
-        guard let minDate = dates.first, let maxDate = dates.last else {
+    static func dateRange(for points: [DataPoint]) -> ClosedRange<Date> {
+        let sortedDates = points.map(\.date).sorted()
+        guard let first = sortedDates.first, let last = sortedDates.last else {
             let now = Date()
-            return now.addingTimeInterval(-864_000)...now.addingTimeInterval(864_000)
+            return now...now
         }
-        let spread = maxDate.timeIntervalSince(minDate)
-        let padding = spread > 0 ? max(spread * 0.15, 43_200) : 864_000
-        return minDate.addingTimeInterval(-padding)...maxDate.addingTimeInterval(padding)
-        
+
+        // Add a small buffer (1 day) to the end so the last point has breathing room.
+        let extendedEnd = Calendar.current.date(byAdding: .day, value: 1, to: last) ?? last
+        return first...extendedEnd
     }
-
-    static func xAxisDates(for points: [DataPoint]) -> [Date] {
-        let sortedDates = Array(Set(points.map(\.date))).sorted()
-
-        switch sortedDates.count {
-        case 0:
-            return []
-        case 1:
-            return sortedDates
-        default:
-            let middleIndex = sortedDates.count / 2
-            return [sortedDates.first!, sortedDates[middleIndex], sortedDates.last!]
-        }
-    }
-
-    private static let shortDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "d MMM"
-        return formatter
-    }()
-
-    private func formattedXAxisLabel(for date: Date) -> String {
-        Self.shortDateFormatter.string(from: date)
-    }
-    */
 
     /// Calculates the overall change in the metric from the first to the last data point.
     private var evolution: Double {
@@ -273,10 +243,10 @@ struct ChartView: View {
             Chart {
                 ForEach(chartData) { point in
                     LineMark(
-                        x: .value("Date", point.date),
+                        x: .value("Date",Calendar.current.startOfDay(for: point.date)),
                         y: .value(metric.title, point.value)
                     )
-                    .interpolationMethod(.catmullRom)
+                    .interpolationMethod(.linear)
                     .foregroundStyle(.blue)
 
                     PointMark(
@@ -306,16 +276,6 @@ struct ChartView: View {
                     }
                 }
             }
-            .chartXAxis {
-                AxisMarks(values: .automatic(desiredCount: 3)) { value in
-                    AxisGridLine()
-                    AxisValueLabel {
-                        if let dateValue = value.as(Date.self) {
-                            Text(formattedXAxisLabel(for: dateValue))
-                        }
-                    }
-                }
-            }
             .chartYAxis {
                 AxisMarks(values: .automatic(desiredCount: 3)) { value in
                     AxisGridLine()
@@ -327,7 +287,9 @@ struct ChartView: View {
                 }
             }
             .chartYScale(domain: yScaleDomain)
+            .chartXScale(domain: dateRange)
             .padding()
+            
         }
     }
 }
