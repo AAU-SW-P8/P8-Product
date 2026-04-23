@@ -185,22 +185,21 @@ class DataController {
         guard !hasMole(named: resolvedName, for: person) else {
             return false
         }
-        )
-        let initialDueDate: Date? = nextDueDate(
-            for: person.defaultReminderFrequency,
-            referenceDate: scan.captureDate,
-            isEnabled: person.defaultReminderEnabled
-        )
         let mole: Mole = Mole(
             name: resolvedName,
             bodyPart: bodyPart,
             isReminderActive: person.defaultReminderEnabled,
             reminderFrequency: nil,
-            nextDueDate: initialDueDate,
+            nextDueDate: nil,
             person: person
         )
         
         let scan: MoleScan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9), diameter: diameter, area: area, mole: mole)
+        mole.nextDueDate = nextDueDate(
+            for: person.defaultReminderFrequency,
+            referenceDate: scan.captureDate,
+            isEnabled: person.defaultReminderEnabled
+        )
         
         context.insert(mole)
         context.insert(scan)
@@ -306,7 +305,7 @@ class DataController {
         mole.scans
             .filter { scan in
                 guard let excludedScan else { return true }
-                return scan.scans.contains { $0 !== excludedScan }
+                return scan !== excludedScan
             }
             .map(\.captureDate)
             .max()
@@ -336,6 +335,12 @@ class DataController {
     func delete(_ mole: Mole) {
         deleteAndSave(errorMessage: "Failed to delete mole") { context in
             context.delete(mole)
+        }
+    }
+
+    func delete(_ scan: MoleScan) {
+        deleteAndSave(errorMessage: "Failed to delete scan") { context in
+            context.delete(scan)
         }
     }
 

@@ -80,16 +80,16 @@ struct ChartView: View {
 
     static func makeChartData(for mole: Mole, metric: ChartMetric, scans: [MoleScan]) -> [DataPoint] {
         scans.enumerated().compactMap { index, scan in
-            guard let instance = scan.instances.first(where: { $0.mole?.id == mole.id }) else {
+            guard scan.mole?.id == mole.id else {
                 return nil
             }
 
             let value: Double
             switch metric {
             case .area:
-                value = Double(instance.area)
+                value = Double(scan.area)
             case .diameter:
-                value = Double(instance.diameter)
+                value = Double(scan.diameter)
             }
 
             return DataPoint(

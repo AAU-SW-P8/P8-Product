@@ -228,8 +228,7 @@ class OverviewAppState {
     }
 
     func latestScan(for mole: Mole) -> MoleScan? {
-        mole.instances
-            .compactMap(\.moleScan)
+        mole.scans
             .sorted { $0.captureDate > $1.captureDate }
             .first
     }

@@ -44,8 +44,7 @@ final class MoleDetailAppState {
 	}
 
 	var scans: [MoleScan] {
-		activeMole.instances
-			.compactMap(\.moleScan)
+		activeMole.scans
 			.sorted { $0.captureDate > $1.captureDate }
 	}
 
@@ -124,7 +123,7 @@ final class MoleDetailAppState {
 		dataController.delete(scan)
 
 		let selectedMole: Mole = activeMole
-		let hasAnyScansLeft: Bool = selectedMole.instances.contains { $0 !== instance && $0.moleScan != nil }
+		let hasAnyScansLeft: Bool = selectedMole.scans.contains { $0 !== scan }
 		if !hasAnyScansLeft {
 			dataController.delete(selectedMole)
 			selectionState.selectedMole = nil
@@ -132,7 +131,7 @@ final class MoleDetailAppState {
 			return
 		}
 
-		dataController.recalculateNextDueDate(for: selectedMole, excluding: instance)
+		dataController.recalculateNextDueDate(for: selectedMole, excluding: scan)
 		persistMoleChanges()
 
 		clampSelectedIndicesIfNeeded()
@@ -143,7 +142,7 @@ final class MoleDetailAppState {
 	}
 
 	func cancelDeleteSelectedDetailInstance() {
-		detailInstanceToDelete = nil
+		detailScanToDelete = nil
 		showingDeleteDetailInstanceAlert = false
 	}
 

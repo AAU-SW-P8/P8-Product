@@ -19,7 +19,7 @@ struct OverviewMoleListView: View {
     // MARK: - View Body
     var body: some View {
         List {
-            ForEach(moles) { mole in
+            ForEach(moles, id: \.id) { mole in
                 NavigationLink(
                     destination: MoleDetailView(mole: mole),
                     tag: mole.id,
@@ -40,7 +40,7 @@ struct OverviewMoleListView: View {
             }
         }
         .listStyle(.plain)
-        .id(person)
+        .id(person.id)
         .transition(.asymmetric(
             insertion: .move(edge: appState.slideEdge),
             removal: .move(edge: appState.slideEdge == .leading ? .trailing : .leading)

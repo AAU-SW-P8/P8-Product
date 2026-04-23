@@ -23,7 +23,7 @@ struct ImageCarousel: View {
     var mole: Mole? = nil
     @Binding var selectedIndex: Int
     @State private var scrollPositionID: UUID?
-    var onDeleteSelectedInstance: (() -> Void)? = nil
+    var onDeleteSelectedScan: (() -> Void)? = nil
     var height: CGFloat = 200
 
     var side: CarouselSide = .both
@@ -31,10 +31,6 @@ struct ImageCarousel: View {
 
     private var safeIndex: Int {
         Self.safeIndex(for: scans, requested: selectedIndex)
-    }
-
-    private var selectedScan: MoleScan? {
-        Self.selectedScan(in: scans, at: selectedIndex)
     }
 
     private var selectedScan: MoleScan? {
@@ -146,36 +142,34 @@ struct ImageCarousel: View {
             Text(selectedScan.captureDate, format: .dateTime.year().month().day().hour().minute())
                 .font(.caption2)
 
-            if let selectedInstance = selectedInstance {
-                HStack {
+            HStack {
+                Color.clear
+                    .frame(width: 28, height: 1)
+
+                Spacer()
+
+                VStack(spacing: 2) {
+                    Text("Diameter: \(Double(selectedScan.diameter), specifier: "%.1f") mm")
+                    Text("Area: \(Double(selectedScan.area), specifier: "%.1f") mm²")
+                }
+                .font(.caption2)
+                .fontWeight(.semibold)
+                .foregroundColor(.secondary)
+
+                Spacer()
+
+                if let onDeleteSelectedScan {
+                    Button(role: .destructive, action: onDeleteSelectedScan) {
+                        Image(systemName: "trash")
+                    }
+                    .frame(width: 28)
+                    .accessibilityIdentifier("deleteMoleScanButton")
+                } else {
                     Color.clear
                         .frame(width: 28, height: 1)
-
-                    Spacer()
-
-                    VStack(spacing: 2) {
-                        Text("Diameter: \(Double(selectedInstance.diameter), specifier: "%.1f") mm")
-                        Text("Area: \(Double(selectedInstance.area), specifier: "%.1f") mm²")
-                    }
-                    .font(.caption2)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.secondary)
-
-                    Spacer()
-
-                    if let onDeleteSelectedScan {
-                        Button(role: .destructive, action: onDeleteSelectedScan) {
-                            Image(systemName: "trash")
-                        }
-                        .frame(width: 28)
-                        .accessibilityIdentifier("deleteMoleScanButton")
-                    } else {
-                        Color.clear
-                            .frame(width: 28, height: 1)
-                    }
                 }
-                .padding(.top, 4)
             }
+            .padding(.top, 4)
         }
     }
 
@@ -217,10 +211,10 @@ struct ImageCarousel: View {
         guard let scan = selectedScan(in: scans, at: index) else { return nil }
 
         if let mole {
-            return scan.first(where: { $0.mole?.id == mole.id })
+            return scans.first(where: { $0.mole?.id == mole.id })
         }
 
-        return scan.instances.first
+        return scans.first
     }
 
     enum DotItem: Hashable {

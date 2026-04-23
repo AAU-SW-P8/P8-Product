@@ -248,17 +248,17 @@ struct MoleSegmentationView: View {
     }
 
     private func formattedLastScanDate(for mole: Mole) -> String {
-        let latestDate: Date? = mole.instances.compactMap { $0.moleScan?.captureDate }.max()
+        let latestDate: Date? = mole.scans.map(\.captureDate).max()
         guard let latestDate else { return "--" }
         return latestDate.formatted(date: .abbreviated, time: .omitted)
     }
 
     private func formattedCurrentDiameter(for mole: Mole) -> String {
-        let latestInstance: MoleScan? = mole.instances.max {
-            ($0.moleScan?.captureDate ?? .distantPast) < ($1.moleScan?.captureDate ?? .distantPast)
+        let latestScan: MoleScan? = mole.scans.max {
+            $0.captureDate < $1.captureDate
         }
 
-        guard let diameter: Float = latestInstance?.diameter, diameter > 0 else {
+        guard let diameter: Float = latestScan?.diameter, diameter > 0 else {
             return "-- mm"
         }
 
