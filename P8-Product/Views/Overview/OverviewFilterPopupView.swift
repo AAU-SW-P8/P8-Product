@@ -32,48 +32,47 @@ struct OverviewFilterPopupView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("Sort Order") {
+                Section {
                     Picker("Sort By", selection: $sortOption) {
                         ForEach(OverviewAppState.MoleSortOption.allCases) { option in
                             Text(option.rawValue).tag(option)
                         }
                     }
-                    .pickerStyle(.menu) // The "Bubble" style you like
-                }
-                
-                ScrollView(.vertical, showsIndicators: false) {
-                Section {
-                    // "All" Row
-                    Button(action: { selectedBodyParts = [] }) {
-                        HStack {
-                            Text("All Body Parts")
-                                .foregroundColor(.primary)
-                            Spacer()
-                            if selectedBodyParts.isEmpty {
-                                Image(systemName: "checkmark")
-                                    .foregroundColor(.accentColor)
-                                    .font(.system(size: 14, weight: .bold))
-                            }
-                        }
-                    }
-                    
-                    // Specific Body Parts
-                    ForEach(availableBodyParts, id: \.self) { bodyPart in
-                        Button(action: { onToggleBodyPart(bodyPart) }) {
-                            HStack {
-                                Text(bodyPart)
-                                    .foregroundColor(.primary)
-                                Spacer()
-                                if selectedBodyParts.contains(bodyPart) {
-                                    Image(systemName: "checkmark")
-                                        .foregroundColor(.accentColor)
-                                        .font(.system(size: 14, weight: .bold))
-                                }
-                            }
-                        }
-                    }
+                    .pickerStyle(.menu)
                 } header: {
-                    Text("Filter by Body Part")
+                    Text("Sort By")
+                }
+
+                Section {
+                    VStack(spacing: 0) {
+                        filterOptionRow(
+                            title: "All Body Parts",
+                            isSelected: selectedBodyParts.isEmpty,
+                            action: { selectedBodyParts = [] }
+                        )
+
+                        ForEach(availableBodyParts, id: \.self) { bodyPart in
+                            Divider()
+                                .padding(.leading, 14)
+
+                            filterOptionRow(
+                                title: bodyPart,
+                                isSelected: selectedBodyParts.contains(bodyPart),
+                                action: { onToggleBodyPart(bodyPart) }
+                            )
+                        }
+                    }
+                    .background(Color(.secondarySystemGroupedBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(Color(.separator).opacity(0.2), lineWidth: 1)
+                    )
+                    .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                } header: {
+                    Text("Filter By")
                 } footer: {
                     if availableBodyParts.isEmpty {
                         Text("No data available to filter.")
@@ -82,6 +81,7 @@ struct OverviewFilterPopupView: View {
             }
             .navigationTitle("Filter & Sort")
             .navigationBarTitleDisplayMode(.inline)
+            .listStyle(.insetGrouped)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Reset", action: onReset)
@@ -92,8 +92,31 @@ struct OverviewFilterPopupView: View {
                         .fontWeight(.bold)
                 }
             }
-            }
         }
     }
-}
 
+    @ViewBuilder
+    private func filterOptionRow(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Text(title)
+                    .foregroundColor(.primary)
+                    .font(.body.weight(.medium))
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .foregroundColor(.accentColor)
+                        .font(.system(size: 14, weight: .bold))
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(isSelected ? Color.accentColor.opacity(0.12) : Color.clear)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
