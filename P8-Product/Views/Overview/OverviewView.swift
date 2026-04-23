@@ -45,6 +45,12 @@ private struct OverviewContentView: View {
     var body: some View {
         navigationContent
             .modifier(OverviewAlertsModifier(appState: appState))
+            .onAppear {
+                appState.initializeSelectionIfNeeded(with: people)
+            }
+            .onChange(of: people) { _, newValue in
+                appState.initializeSelectionIfNeeded(with: newValue)
+            }
     }
 
     // MARK: - Subviews
