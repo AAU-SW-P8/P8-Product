@@ -31,9 +31,27 @@ struct DistanceLookup {
     /// focal length of 1000 px. Replace with empirically measured values once
     /// the calibration rig produces them.
     static let `default` = DistanceLookup(entries: [
-        Entry(distanceMeters: 0.30, mmPerPixel: 0.21180873146861826),
-        Entry(distanceMeters: 0.31, mmPerPixel: 0.22392515847384573),
-        Entry(distanceMeters: 0.32, mmPerPixel: 0.22859006246349024),
+        Entry(distanceMeters: 0.20, mmPerPixel: 0.1396),
+        Entry(distanceMeters: 0.21, mmPerPixel: 0.1459),
+        Entry(distanceMeters: 0.22, mmPerPixel: 0.1539),
+        Entry(distanceMeters: 0.23, mmPerPixel: 0.1605),
+        Entry(distanceMeters: 0.24, mmPerPixel: 0.1695),
+        Entry(distanceMeters: 0.25, mmPerPixel: 0.1757),
+        Entry(distanceMeters: 0.26, mmPerPixel: 0.1825),
+        Entry(distanceMeters: 0.27, mmPerPixel: 0.1916),
+        Entry(distanceMeters: 0.28, mmPerPixel: 0.1986),
+        Entry(distanceMeters: 0.29, mmPerPixel: 0.2042),
+        Entry(distanceMeters: 0.30, mmPerPixel: 0.2121),
+        Entry(distanceMeters: 0.31, mmPerPixel: 0.2215),
+        Entry(distanceMeters: 0.32, mmPerPixel: 0.2300),
+        Entry(distanceMeters: 0.33, mmPerPixel: 0.2348),
+        Entry(distanceMeters: 0.34, mmPerPixel: 0.2425),
+        Entry(distanceMeters: 0.35, mmPerPixel: 0.2470),
+        Entry(distanceMeters: 0.36, mmPerPixel: 0.2551),
+        Entry(distanceMeters: 0.37, mmPerPixel: 0.2643),
+        Entry(distanceMeters: 0.38, mmPerPixel: 0.2688),
+        Entry(distanceMeters: 0.39, mmPerPixel: 0.2806),
+        Entry(distanceMeters: 0.40, mmPerPixel: 0.2866)
     ])
 
     /// Returns the millimeters-per-pixel value for the given distance.
