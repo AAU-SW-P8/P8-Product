@@ -55,7 +55,6 @@
 		97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				ReminderOverview/ReminderOverview.swift,
 				UITests/CameraViewUITests.swift,
 				UITests/CompareViewUITests.swift,
 				UITests/Helpers.swift,
