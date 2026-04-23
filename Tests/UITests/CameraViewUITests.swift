@@ -113,6 +113,8 @@ final class CameraViewUITests: XCTestCase {
         var segmentationRoot = app.descendants(matching: .any)
             .matching(identifier: "moleSegmentationView")
             .firstMatch
+        var bottomActionArea = app.otherElements["moleSegmentationBottomActionArea"]
+        var primaryActionButton = app.buttons["moleSegmentationPrimaryActionButton"]
 
         if !segmentationRoot.waitForExistence(timeout: 3) {
             Thread.sleep(forTimeInterval: 20)
@@ -121,11 +123,21 @@ final class CameraViewUITests: XCTestCase {
             segmentationRoot = app.descendants(matching: .any)
                 .matching(identifier: "moleSegmentationView")
                 .firstMatch
+            bottomActionArea = app.otherElements["moleSegmentationBottomActionArea"]
+            primaryActionButton = app.buttons["moleSegmentationPrimaryActionButton"]
         }
 
         XCTAssertTrue(
             segmentationRoot.waitForExistence(timeout: 3),
             "CameraView should push MoleSegmentationView once `capturedImage` is set"
+        )
+        XCTAssertTrue(
+            bottomActionArea.waitForExistence(timeout: 3),
+            "MoleSegmentationView should render its bottom action area after navigation"
+        )
+        XCTAssertTrue(
+            primaryActionButton.waitForExistence(timeout: 3),
+            "MoleSegmentationView should expose its primary action button after navigation"
         )
     }
 
