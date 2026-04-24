@@ -107,7 +107,7 @@ struct PipelineTests {
 
         // Round-trip through Float so the comparison matches the
         // implementation's `Double(instance.area)` widening.
-        let expected: [Double] = [Float(16.0), Float(15.4), Float(13.8)].map(Double.init)
+        let expected: [Double] = [16.0, 15.4, 13.8]
         #expect(points.map { $0.value } == expected)
     }
 
@@ -128,7 +128,7 @@ struct PipelineTests {
         let scans = [scan20, scan10, scan0]
         let points = ChartView.makeChartData(for: mole, metric: .diameter, scans: scans)
 
-        let expected: [Double] = [Float(5.0), Float(4.8), Float(4.2)].map(Double.init)
+        let expected: [Double] = [5.0, 4.8, 4.2]
         #expect(points.map { $0.value } == expected)
     }
 
