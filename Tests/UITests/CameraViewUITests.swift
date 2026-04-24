@@ -107,6 +107,7 @@ final class CameraViewUITests: XCTestCase {
             Self.onePixelPNGBase64(),
         ]
         app.launch()
+        Thread.sleep(forTimeInterval: 3) // Wait for ContentView to process the injected image and trigger navigation
 
         Helpers.openCaptureTab(in: app)
 
