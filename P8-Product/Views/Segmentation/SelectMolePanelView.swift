@@ -160,6 +160,7 @@ struct SelectMolePanelView: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("segmentationChooseExistingMoleButton")
     }
 
     private var panelNewMoleButton: some View {
@@ -190,6 +191,7 @@ struct SelectMolePanelView: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("segmentationChooseNewMoleButton")
     }
 
     private var panelCancelButton: some View {
@@ -199,6 +201,7 @@ struct SelectMolePanelView: View {
         .font(.footnote)
         .foregroundStyle(.secondary)
         .padding(.bottom, 16)
+        .accessibilityIdentifier("segmentationSelectMoleCancelButton")
     }
 
     @ViewBuilder
@@ -242,5 +245,6 @@ struct SelectMolePanelView: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("segmentationExistingMoleRow_\(mole.name)")
     }
 }

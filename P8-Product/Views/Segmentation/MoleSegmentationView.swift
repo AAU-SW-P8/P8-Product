@@ -67,6 +67,10 @@ struct MoleSegmentationView: View {
         appState.maskOverlay != nil || !appState.detectedBoxes.isEmpty
     }
 
+    private var allowsUITestMockSelection: Bool {
+        ProcessInfo.processInfo.arguments.contains("-UITest_MockSegmentationResult")
+    }
+
     // MARK: - View Body
     var body: some View {
         ZStack {
@@ -76,25 +80,7 @@ struct MoleSegmentationView: View {
                     maskOverlay: appState.maskOverlay,
                     detectedBoxes: appState.detectedBoxes,
                     onLongPressDetectedBox: { box in
-                        appState.selectedBoxForMole = box
-
-                        if people.isEmpty {
-                            appState.activeAlert = .error("Please add a person in the Overview first.")
-                            return
-                        }
-
-                        if people.count == 1 {
-                            appState.selectedPersonForScan = people.first
-                        } else if appState.selectedPersonForScan == nil {
-                            appState.selectedPersonForScan = people.first
-                        }
-
-                        appState.selectedExistingBodyPart = nil
-                        selectMolePanelStep = .chooseAction
-                        bottomSheetDragOffset = 0
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
-                            appState.showSelectMolePanel = true
-                        }
+                        presentSelectionFlow(for: box)
                     }
                 )
             } else {
@@ -117,6 +103,18 @@ struct MoleSegmentationView: View {
         }
         .safeAreaInset(edge: .bottom) {
             bottomActionArea
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if allowsUITestMockSelection, appState.detectedBoxes.isEmpty == false {
+                Button("Use Mock Detection") {
+                    guard let firstBox = appState.detectedBoxes.first else { return }
+                    presentSelectionFlow(for: firstBox)
+                }
+                .buttonStyle(.borderedProminent)
+                .padding(.trailing, 16)
+                .padding(.bottom, 92)
+                .accessibilityIdentifier("segmentationUseMockDetectionButton")
+            }
         }
         .overlay {
             if appState.showSelectMolePanel {
@@ -172,6 +170,9 @@ struct MoleSegmentationView: View {
         }
         .alert(item: $appState.activeAlert) { alert in
             Alert(title: Text(alert.title), message: Text(alert.message), dismissButton: .default(Text("OK")))
+        }
+        .onAppear {
+            injectUITestSegmentationResultIfNeeded()
         }
         .onChange(of: appState.pendingSuccessToast) { _, newValue in
             guard let newValue else { return }
@@ -274,6 +275,28 @@ struct MoleSegmentationView: View {
         }
     }
 
+    private func presentSelectionFlow(for box: CGRect) {
+        appState.selectedBoxForMole = box
+
+        if people.isEmpty {
+            appState.activeAlert = .error("Please add a person in the Overview first.")
+            return
+        }
+
+        if people.count == 1 {
+            appState.selectedPersonForScan = people.first
+        } else if appState.selectedPersonForScan == nil {
+            appState.selectedPersonForScan = people.first
+        }
+
+        appState.selectedExistingBodyPart = nil
+        selectMolePanelStep = .chooseAction
+        bottomSheetDragOffset = 0
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+            appState.showSelectMolePanel = true
+        }
+    }
+
     private func successToastView(message: String) -> some View {
         Text(message)
             .font(.subheadline)
@@ -303,6 +326,21 @@ struct MoleSegmentationView: View {
                 }
             }
         }
+    }
+
+    private func injectUITestSegmentationResultIfNeeded() {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard arguments.contains("-UITest_MockSegmentationResult"),
+              appState.detectedBoxes.isEmpty,
+              let image = appState.testImage else {
+            return
+        }
+
+        appState.maskOverlay = image
+        appState.maskOnlyImage = image
+        appState.detectedBoxes = [CGRect(origin: .zero, size: image.size)]
+        appState.hasAttemptedSegmentation = true
+        appState.statusMessage = "Segmentation complete. Long press a mole to add it."
     }
 
     /**

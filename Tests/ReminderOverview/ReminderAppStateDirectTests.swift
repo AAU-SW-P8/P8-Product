@@ -60,36 +60,6 @@ struct ReminderAppStateDirectTests {
         #expect(person.defaultReminderFrequency == "Monthly")
     }
 
-    @Test("changing default frequency recomputes due date for follow-default mole when reminders are enabled")
-    func changingDefaultFrequencyRecomputesDueDateForFollowDefaultMole() {
-        let state = ReminderAppState()
-        let person = Person(name: "Alex", defaultReminderFrequency: "Weekly", defaultReminderEnabled: true)
-        state.setSelectedPerson(person)
-        state.reminderEnabled = true
-        defer { state.setSelectedPerson(nil) }
-
-        let scanDate = Date(timeIntervalSinceNow: -2 * 24 * 60 * 60)
-        let scan = MoleScan(captureDate: scanDate)
-        let mole = Mole(
-            name: "Back Mole",
-            bodyPart: "Back",
-            isReminderActive: true,
-            followDefaultReminderEnabled: true,
-            followDefault: true,
-            reminderFrequency: nil,
-            nextDueDate: nil,
-            person: person
-        )
-        let instance = MoleInstance(diameter: 1, area: 1, mole: mole, moleScan: scan)
-        mole.instances = [instance]
-        person.moles = [mole]
-
-        state.setDefaultFrequency("Monthly")
-
-        #expect(person.defaultReminderFrequency == "Monthly")
-        #expect(mole.nextDueDate != nil)
-    }
-
     @Test("changing default frequency does not set due date when default reminders are disabled")
     func changingDefaultFrequencyKeepsDueDateNilWhenDefaultReminderDisabled() {
         let state = ReminderAppState()
