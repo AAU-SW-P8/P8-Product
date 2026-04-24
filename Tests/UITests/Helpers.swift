@@ -21,8 +21,37 @@ final class Helpers {
 		XCTAssertTrue(app.staticTexts["Default Reminder Enabled"].waitForExistence(timeout: 3), "Default reminder text should be visible", file: file, line: line)
 		
 	}
-	static func openCaptureTab(in app: XCUIApplication) {
-		app.tabBars.buttons["Capture"].tap()
+	static func openCaptureTab(
+		in app: XCUIApplication,
+		file: StaticString = #filePath,
+		line: UInt = #line
+	) {
+		let captureTab = app.tabBars.buttons["Capture"]
+		captureTab.tap()
+
+		XCTAssertTrue(
+			captureTab.waitForExistence(timeout: 3),
+			"Capture tab button should exist in the tab bar",
+			file: file,
+			line: line
+		)
+		XCTAssertTrue(
+			captureTab.isSelected,
+			"Capture tab should be selected after opening it",
+			file: file,
+			line: line
+		)
+
+		let placeholderHeadline = app.staticTexts["Opening camera..."].firstMatch
+		let segmentationRoot = app.otherElements["moleSegmentationView"].firstMatch
+		let settingsButton = app.buttons["segmentationSettingsButton"].firstMatch
+	
+		XCTAssertTrue(
+			placeholderHeadline.waitForExistence(timeout: 3) || segmentationRoot.waitForExistence(timeout: 3) || settingsButton.waitForExistence(timeout: 3),
+			"Capture tab should show either the placeholder headline or the segmentation screen",
+			file: file,
+			line: line
+		)
 	}
 
 

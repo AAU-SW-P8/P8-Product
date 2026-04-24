@@ -321,6 +321,7 @@ struct MoleSegmentationView: View {
                 Label("Settings", systemImage: "slider.horizontal.3")
             }
             .disabled(appState.isProcessing)
+            .accessibilityIdentifier("segmentationSettingsButton")
         }
     }
 
