@@ -41,4 +41,32 @@ struct DotPaginationTests {
         let expected: [ImageCarousel.DotItem] = [.index(9), .ellipsis, .index(2), .index(1), .index(0)]
         #expect(items == expected)
     }
+
+    @Test
+    func selectedScanForMole_UsesSelectedIndexWhenMoleMatches() {
+        let mole = Mole(
+            name: "Arm Mole",
+            bodyPart: "Arm",
+            isReminderActive: false,
+            reminderFrequency: nil,
+            nextDueDate: nil
+        )
+
+        let first = MoleScan(diameter: 4.0, area: 10.0, mole: mole)
+        let second = MoleScan(diameter: 5.5, area: 12.0, mole: mole)
+        let scans = [first, second]
+
+        let selected = ImageCarousel.selectedScan(in: scans, at: 1, for: mole)
+        #expect(selected?.id == second.id)
+    }
+
+    @Test
+    func selectedScanWithoutMole_UsesSelectedIndex() {
+        let first = MoleScan(diameter: 3.0, area: 8.0)
+        let second = MoleScan(diameter: 6.0, area: 18.0)
+        let scans = [first, second]
+
+        let selected = ImageCarousel.selectedScan(in: scans, at: 1, for: nil)
+        #expect(selected?.id == second.id)
+    }
 }

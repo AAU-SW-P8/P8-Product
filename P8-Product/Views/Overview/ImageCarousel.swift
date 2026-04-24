@@ -211,10 +211,16 @@ struct ImageCarousel: View {
         guard let scan = selectedScan(in: scans, at: index) else { return nil }
 
         if let mole {
+            // Keep swipe/index behavior when the selected scan belongs to this mole.
+            if scan.mole?.id == mole.id {
+                return scan
+            }
+
+            // Fallback for mixed scan arrays where the indexed scan belongs to another mole.
             return scans.first(where: { $0.mole?.id == mole.id })
         }
 
-        return scans.first
+        return scan
     }
 
     enum DotItem: Hashable {
