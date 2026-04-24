@@ -95,14 +95,52 @@ struct ChartView: View {
             return DataPoint(
                 index: index,
                 date: scan.captureDate,
-                value: value
+                value: roundedMetricValue(value)
             )
         }
+    }
+    static func roundedMetricValue(_ value: Double) -> Double {
+        Double(round(10 * value) / 10)
     }
 
     /// Computes the data points for the chart based on the scans and the selected metric.
     private var chartData: [DataPoint] {
         Self.makeChartData(for: mole, metric: metric, scans: scans)
+    }
+
+    private var yScaleDomain: ClosedRange<Double> {
+        Self.yScaleDomain(for: chartData)
+    }
+
+    static func yScaleDomain(for points: [DataPoint]) -> ClosedRange<Double> {
+        let values = points.map(\.value)
+        guard let minValue = values.min(), let maxValue = values.max() else {
+            return 0...1
+        }
+        if minValue == maxValue {
+            let padding = max(abs(minValue) * 0.05, 1)
+            return (minValue - padding)...(maxValue + padding)
+        }
+        
+        let spread = maxValue - minValue
+        let padding = max(spread * 0.1, 1)
+        return (minValue - padding)...(maxValue + padding)
+    }
+    
+    private var dateRange: ClosedRange<Date> {
+        Self.dateRange(for: chartData)
+    }
+
+    static func dateRange(for points: [DataPoint]) -> ClosedRange<Date> {
+        let sortedDates = points.map(\.date).sorted()
+        guard let first = sortedDates.first, let last = sortedDates.last else {
+            let now = Date()
+            return now...now
+        }
+
+        // Add a small buffer (1 day) to the end so the last point has breathing room.
+        let extendedEnd = Calendar.current.date(byAdding: .day, value: 1, to: last) ?? last
+        return first...extendedEnd
     }
 
     /// Calculates the overall change in the metric from the first to the last data point.
@@ -131,7 +169,7 @@ struct ChartView: View {
 
     /// Helper to format the metric values for display in the chart annotations.
     private func formattedMetricValue(_ value: Double) -> String {
-        "\(String(format: "%.1f", value))"
+        "\(String(format: "%.1f", Self.roundedMetricValue(value)))"
     }
 
     /**
@@ -205,10 +243,10 @@ struct ChartView: View {
             Chart {
                 ForEach(chartData) { point in
                     LineMark(
-                        x: .value("Date", point.date),
+                        x: .value("Date",Calendar.current.startOfDay(for: point.date)),
                         y: .value(metric.title, point.value)
                     )
-                    .interpolationMethod(.catmullRom)
+                    .interpolationMethod(.linear)
                     .foregroundStyle(.blue)
 
                     PointMark(
@@ -238,12 +276,6 @@ struct ChartView: View {
                     }
                 }
             }
-            .chartXAxis {
-                AxisMarks(values: .automatic(desiredCount: 3)) { value in
-                    AxisGridLine()
-                    AxisValueLabel(format: .dateTime.year())
-                }
-            }
             .chartYAxis {
                 AxisMarks(values: .automatic(desiredCount: 3)) { value in
                     AxisGridLine()
@@ -254,8 +286,10 @@ struct ChartView: View {
                     }
                 }
             }
-            .chartYScale(domain: .automatic(includesZero: false))
+            .chartYScale(domain: yScaleDomain)
+            .chartXScale(domain: dateRange)
             .padding()
+            
         }
     }
 }
