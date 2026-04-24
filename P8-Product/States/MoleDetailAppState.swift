@@ -72,7 +72,9 @@ final class MoleDetailAppState {
 			return
 		}
 
-		selectionState.selectedMole = initialMole
+		if selectionState.selectedMole == nil {
+			selectionState.selectedMole = initialMole
+		}
 		setDefaultEvolutionIndices()
 	}
 

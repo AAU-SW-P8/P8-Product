@@ -107,8 +107,13 @@ class OverviewAppState {
      Should be called when confirming the addition of a new person.
      */
     func confirmAddPerson() {
-        guard !newPersonName.isEmpty else { return }
-        let newPerson: Person = dataController.addPerson(name: newPersonName)
+        let trimmedName = newPersonName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else {
+            cancelAddPerson()
+            return
+        }
+
+        let newPerson: Person = dataController.addPerson(name: trimmedName)
         selectedPerson = newPerson
         newPersonName = ""
         showingAddPerson = false
@@ -138,8 +143,9 @@ class OverviewAppState {
      Should be called when confirming the edit of a person.
      */
     func confirmEdit() {
-        if let person: Person = personToEdit, !editingName.isEmpty {
-            dataController.rename(person, to: editingName)
+        let trimmedName = editingName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let person: Person = personToEdit, !trimmedName.isEmpty {
+            dataController.rename(person, to: trimmedName)
         }
         cancelEdit()
     }

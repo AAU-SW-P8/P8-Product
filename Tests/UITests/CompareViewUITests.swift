@@ -88,6 +88,48 @@ final class MoleDetailFlowUITests: XCTestCase {
                       "Evolution page should remain visible for the newly selected mole")
     }
 
+    func testSwitchedMolePersistsAfterLeavingDetailAndReturning() {
+        Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
+        Helpers.chooseMoleFromDetailTitle("Back Mole", in: app)
+
+        XCTAssertTrue(
+            app.staticTexts["Diameter: 3.6 mm"].firstMatch.waitForExistence(timeout: 5)
+            || app.staticTexts["Diameter: 3,6 mm"].firstMatch.waitForExistence(timeout: 5),
+            "Back Mole should be visible before leaving detail"
+        )
+
+        Helpers.openOverviewTab(in: app)
+
+        XCTAssertTrue(
+            app.staticTexts["Diameter: 3.6 mm"].firstMatch.waitForExistence(timeout: 5)
+            || app.staticTexts["Diameter: 3,6 mm"].firstMatch.waitForExistence(timeout: 5),
+            "Back Mole should remain the active mole when returning to detail"
+        )
+    }
+
+    func testSwitchedMolePersistsAcrossTabSwitchesWhileDetailIsOpen() {
+        Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
+        Helpers.chooseMoleFromDetailTitle("Back Mole", in: app)
+
+        XCTAssertTrue(
+            app.staticTexts["Diameter: 3.6 mm"].firstMatch.waitForExistence(timeout: 5)
+            || app.staticTexts["Diameter: 3,6 mm"].firstMatch.waitForExistence(timeout: 5),
+            "Back Mole should be visible before switching tabs"
+        )
+
+        Helpers.switchToEvolution(in: app)
+        Helpers.openReminderTab(in: app)
+        Helpers.openOverviewTab(in: app)
+
+        XCTAssertTrue(app.segmentedControls["moleDetailPagePicker"].waitForExistence(timeout: 3),
+                      "Detail flow should still be open after tab switches")
+        XCTAssertTrue(
+            app.staticTexts["Diameter: 3.6 mm"].firstMatch.waitForExistence(timeout: 5)
+            || app.staticTexts["Diameter: 3,6 mm"].firstMatch.waitForExistence(timeout: 5),
+            "Back Mole should remain selected after tab switches"
+        )
+    }
+
     // MARK: - Mock Container Data Verification
     //
     // The following tests assert that every value seeded by `MockData.insertSampleData`

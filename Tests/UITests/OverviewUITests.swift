@@ -85,6 +85,24 @@ final class OverviewUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3), "Selection should remain on Alex when empty name is submitted")
     }
 
+    func testCreatePersonWithWhitespaceOnlyNameDoesNotCreatePerson() {
+        Helpers.openOverviewTab(in: app)
+
+        app.buttons["person.fill.badge.plus"].firstMatch.tap()
+
+        let addAlert = app.alerts["Add Person"]
+        XCTAssertTrue(addAlert.waitForExistence(timeout: 3))
+
+        let nameField = addAlert.textFields["Name"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: 3))
+        nameField.replaceText(with: "   ")
+
+        addAlert.buttons["Add"].tap()
+
+        XCTAssertFalse(addAlert.waitForExistence(timeout: 1), "Add alert should dismiss after attempting to add a whitespace-only name")
+        XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3), "Selection should remain on Alex when whitespace-only name is submitted")
+    }
+
     func testRenamePersonCancelDoesNotChangeName() {
         Helpers.openOverviewTab(in: app)
 
@@ -130,6 +148,29 @@ final class OverviewUITests: XCTestCase {
         editAlert.buttons["Save"].tap()
 
         XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3), "Saving empty name should keep previous name")
+    }
+
+    func testRenamePersonWithWhitespaceOnlyNameDoesNotChangeName() {
+        Helpers.openOverviewTab(in: app)
+
+        let currentPerson = app.staticTexts["Alex"]
+        XCTAssertTrue(currentPerson.waitForExistence(timeout: 3))
+        currentPerson.press(forDuration: 1.0)
+
+        let editButton = app.buttons["Edit Name"]
+        XCTAssertTrue(editButton.waitForExistence(timeout: 3))
+        editButton.tap()
+
+        let editAlert = app.alerts["Edit Person"]
+        XCTAssertTrue(editAlert.waitForExistence(timeout: 3))
+
+        let nameField = editAlert.textFields["Name"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: 3))
+        nameField.replaceText(with: "   ")
+
+        editAlert.buttons["Save"].tap()
+
+        XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3), "Saving whitespace-only name should keep previous name")
     }
 
     func testDeletePersonCancelKeepsPerson() {
