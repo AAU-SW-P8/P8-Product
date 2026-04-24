@@ -28,6 +28,7 @@ struct MoleSegmentationBottomActionAreaView: View {
             }
             .buttonStyle(.plain)
             .disabled(isProcessing)
+            .accessibilityIdentifier("moleSegmentationPrimaryActionButton")
 
             Text("Your photos never leave your device")
                 .font(.footnote)
@@ -37,5 +38,6 @@ struct MoleSegmentationBottomActionAreaView: View {
         .padding(.top, 10)
         .padding(.bottom, 8)
         .background(.ultraThinMaterial)
+        .accessibilityIdentifier("moleSegmentationBottomActionArea")
     }
 }

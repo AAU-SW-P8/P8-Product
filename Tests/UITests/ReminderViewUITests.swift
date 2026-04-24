@@ -136,7 +136,7 @@ final class ReminderViewUITests: XCTestCase {
 
 	func testReminderTabShowsSeededPersonAndMoleCardContent() {
 		XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3))
-		XCTAssertTrue(app.staticTexts["Mole Left Arm Mole"].waitForExistence(timeout: 3))
+		XCTAssertTrue(app.staticTexts["Left Arm Mole"].waitForExistence(timeout: 3))
 		XCTAssertTrue(app.staticTexts["Reminder"].exists)
 		XCTAssertTrue(app.staticTexts["Reminder Frequency"].exists)
 	}
@@ -184,7 +184,7 @@ final class ReminderViewUITests: XCTestCase {
 	// MARK: - Reminder Controls
 
 	func testReminderModeOptionsAreVisibleForMole() {
-		XCTAssertTrue(app.staticTexts["Mole Left Arm Mole"].waitForExistence(timeout: 3))
+		XCTAssertTrue(app.staticTexts["Left Arm Mole"].waitForExistence(timeout: 3))
 
         let enabledPicker = leftArmMoleEnabledControl
         XCTAssertTrue(enabledPicker.waitForExistence(timeout: 3), "The Reminder Enabled picker was not found.")
@@ -198,7 +198,7 @@ final class ReminderViewUITests: XCTestCase {
 
 	func testReminderModeChangesMoleFrequencyControlEnabledState() throws {
 		// Verifies reminder mode toggles whether the per-mole frequency picker is editable.
-		XCTAssertTrue(app.staticTexts["Mole Left Arm Mole"].waitForExistence(timeout: 3))
+		XCTAssertTrue(app.staticTexts["Left Arm Mole"].waitForExistence(timeout: 3))
 
         let enabledPicker = leftArmMoleEnabledControl
         let frequencyButton = leftArmMoleFrequencyControl
@@ -381,7 +381,7 @@ final class ReminderViewUITests: XCTestCase {
 	func testMoleFrequencySelectionPersistsAfterPersonSwitch() throws {
 		// Verifies a mole frequency selection survives a person switch and return.
 		XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3))
-		XCTAssertTrue(app.staticTexts["Mole Left Arm Mole"].waitForExistence(timeout: 3))
+		XCTAssertTrue(app.staticTexts["Left Arm Mole"].waitForExistence(timeout: 3))
 
 		let moleFrequency = try requireMoleFrequencyButton()
 		moleFrequency.tap()
@@ -401,7 +401,7 @@ final class ReminderViewUITests: XCTestCase {
 	func testChangingDefaultFrequencyDoesNotOverrideCustomMoleFrequency() throws {
 		// Verifies custom mole frequency stays independent from the person's default frequency.
 		XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3))
-		XCTAssertTrue(app.staticTexts["Mole Left Arm Mole"].waitForExistence(timeout: 3))
+		XCTAssertTrue(app.staticTexts["Left Arm Mole"].waitForExistence(timeout: 3))
 
 		let moleFrequency = try requireMoleFrequencyButton()
 		moleFrequency.tap()
@@ -418,12 +418,12 @@ final class ReminderViewUITests: XCTestCase {
 
 	func testDueDateIsShownAsFormattedDateWhenPresent() {
 		// Verifies moles with a due date render a formatted date string.
-		XCTAssertTrue(app.staticTexts["Mole Left Arm Mole"].waitForExistence(timeout: 3))
+		XCTAssertTrue(app.staticTexts["Left Arm Mole"].waitForExistence(timeout: 3))
 
 		let labels = app.staticTexts.allElementsBoundByIndex.map(\.label)
 		let hasDateLikeLabel = labels.contains { label in
-			guard label != "Mole Left Arm Mole",
-			      label != "Mole Back Mole",
+			guard label != "Left Arm Mole",
+			      label != "Back Mole",
 			      label != "Reminder",
 			      label != "Default Reminder Enabled",
 			      label != "Default Reminder Frequency",
@@ -443,19 +443,41 @@ final class ReminderViewUITests: XCTestCase {
 
 	func testNoDateSetLabelShownForMoleWithoutDueDate() {
 		// Verifies moles without a due date render the fallback label.
-		XCTAssertTrue(app.staticTexts["Mole Back Mole"].waitForExistence(timeout: 3))
+		XCTAssertTrue(app.staticTexts["Back Mole"].waitForExistence(timeout: 3))
 		XCTAssertTrue(app.staticTexts["No date set"].waitForExistence(timeout: 3))
 	}
 
 	func testUpcomingCheckinsAreSortedByDueDateWithNilDatesLast() {
 		// Verifies the upcoming check-in list is ordered by due date with nil values last.
-		let leftArm = app.staticTexts["Mole Left Arm Mole"]
-		let back = app.staticTexts["Mole Back Mole"]
+		let leftArm = app.staticTexts["Left Arm Mole"]
+		let back = app.staticTexts["Back Mole"]
 
 		XCTAssertTrue(leftArm.waitForExistence(timeout: 3))
 		XCTAssertTrue(back.waitForExistence(timeout: 3))
 		XCTAssertLessThan(leftArm.frame.minY, back.frame.minY)
 	}
+
+	func testDetailViewShowsDueDateSummaryForMoleWithDueDate() {
+		// Verifies detail view renders the next-due summary line for moles with a due date.
+		Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
+
+		let dueSummary = app.staticTexts["moleDetailNextDueDateSummary"].firstMatch
+		XCTAssertTrue(dueSummary.waitForExistence(timeout: 3), "Expected due-date summary to be visible in detail view")
+		XCTAssertTrue(dueSummary.label.contains("Next due date:"), "Expected summary to contain due-date text")
+	}
+
+	func testDetailViewHidesDueDateSummaryForMoleWithoutDueDate() throws {
+		// Verifies detail view does not render the summary line when a mole has no due date.
+		Helpers.openReminderTab(in: app)
+
+		try setDefaultReminderEnabled(false)
+
+		Helpers.openMoleDetail(person: "Alex", mole: "Back Mole", in: app)
+	
+		XCTAssertFalse(app.staticTexts["moleDetailNextDueDateSummary"].waitForExistence(timeout: 2), "Expected no due-date summary for mole without due date")
+	}
+
+
 
 	// MARK: - Empty Store
 
