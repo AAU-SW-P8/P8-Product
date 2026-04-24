@@ -243,7 +243,7 @@ struct ChartView: View {
             Chart {
                 ForEach(chartData) { point in
                     LineMark(
-                        x: .value("Date",Calendar.current.startOfDay(for: point.date)),
+                        x: .value("Date", point.date),
                         y: .value(metric.title, point.value)
                     )
                     .interpolationMethod(.linear)

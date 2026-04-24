@@ -93,7 +93,6 @@ private struct OverviewContentView: View {
                 onReset: {
                     selectedBodyParts = []
                     sortOption = .recent
-                    showingFilters = false
                 }
             )
             .presentationDetents([.medium, .large]) // Standard iOS detents
@@ -164,6 +163,4 @@ private struct OverviewContentView: View {
             sortOption: sortOption
         )
     }
-
-    /// Toggles the selection of a body part in the filter options. If the body part is already selected, it removes it from the set of selected body parts. If it is not selected, it adds it to the set. This function is called when the user taps on a body part in the filter popup, allowing them to customize which body parts are included in the mole list.
 }

@@ -10,15 +10,10 @@ import SwiftUI
 /// the user's current selections, providing an intuitive interface for managing the overview display settings.
 /// - Parameters:
 ///     - sortOption: A binding to the current sorting option selected by the user.
-///     - showingBodyPartDropdown: A binding that controls the visibility of the body part selection dropdown.
 ///     - selectedBodyParts: A binding to the set of body parts currently selected for filtering.
 ///     - availableBodyParts: An array of body parts that can be selected for filtering, based on the data available in the app.
-///     - selectedBodyPartsSummary: A string summarizing the currently selected body parts, displayed on
-///     - body part dropdown button when the dropdown is not expanded.
-///     - onToggleBodyPartDropdown: A closure that toggles the visibility of the body part dropdown when the user taps the corresponding button.
 ///     - onToggleBodyPart: A closure that updates the set of selected body parts when the user selects or deselects a body part.
 ///     - onReset: A closure that resets all filters to their default values.
-///     - onDone: A closure that confirms the current filter selections and closes the popup.
 struct OverviewFilterPopupView: View {
     @Binding var sortOption: OverviewAppState.MoleSortOption
     @Binding var selectedBodyParts: Set<String>
