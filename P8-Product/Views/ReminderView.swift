@@ -63,7 +63,7 @@ struct ReminderView: View {
                                     ForEach(selectedPersonMoles) { mole in
                                         VStack(alignment: .leading, spacing: 8) {
                                             HStack {
-                                                Text("Mole \(mole.name)")
+                                                Text("\(mole.name)")
                                                 Spacer()
                                                 if let dueDate = mole.nextDueDate {
                                                     Text(dueDate, format: .dateTime.month().day().hour().minute())

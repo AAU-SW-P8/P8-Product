@@ -67,6 +67,8 @@ struct MoleDetailView: View {
                             side: .both // Full circle for detail view
                         )
                             .frame(maxWidth: 420)
+                            .accessibilityIdentifier("detailCarousel")
+                        
                     }
                     .padding(.vertical, 12)
                     .background(
@@ -79,6 +81,14 @@ struct MoleDetailView: View {
                     )
                     .padding(.horizontal)
                     .padding(.top, 8)
+
+                    if let nextDueDateSummary = nextDueDateSummary(for: appState.activeMole) {
+                        nextDueDateSummary
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 10)
+                            .accessibilityIdentifier("moleDetailNextDueDateSummary")
+                    }
                     Spacer()
                 }
             } else {
@@ -263,4 +273,22 @@ struct MoleDetailView: View {
             appState.consumeDismissRequest()
         }
     }
+
+    // MARK: - Helpers
+    
+    private func nextDueDateSummary(for mole: Mole) -> Text? {
+        guard let nextDueDate = mole.nextDueDate else { return nil }
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let dueDay = calendar.startOfDay(for: nextDueDate)
+        let daysUntilDue = calendar.dateComponents([.day], from: today, to: dueDay).day ?? 0
+        let dayLabel = daysUntilDue == 1 ? "day" : "days"
+
+        let bellImage: Text = Text(Image(systemName: "bell.fill"))
+            .foregroundStyle(.orange)
+
+        return bellImage + Text(" Next due date: \(nextDueDate.formatted(.dateTime.year().month().day())) (in \(daysUntilDue) \(dayLabel))")
+    }
+
+    
 }
