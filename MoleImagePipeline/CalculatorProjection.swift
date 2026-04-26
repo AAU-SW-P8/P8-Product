@@ -16,6 +16,17 @@ class CalculatorProjection: Calculator {
 
     /// Converts sampled points and depths into a physical measurement using the
     /// pinhole projection defined by the camera intrinsics.
+    override func measure(from samples: Calculator.MoleSamples, cameraIntrinsics: simd_float3x3?) -> Calculator.MoleMeasurement {
+        guard let cameraIntrinsics = cameraIntrinsics else { return .zero }
+        let fx = cameraIntrinsics[0][0]
+        let fy = cameraIntrinsics[1][1]
+        guard fx > 0 && fy > 0 else { return .zero }
+        let intrinsics = (fx: Double(fx), fy: Double(fy))
+        return Calculator.MoleMeasurement(
+            areaMM2: computeAreaMM2(from: samples, intrinsics),
+            diameterMM: computeDiameterMM(from: samples, intrinsics)
+        )
+    }
 
     /// Computes area in mm² from sampled mask weights and depth values.
     private func computeAreaMM2(from samples: Calculator.MoleSamples, _ intrinsics: (fx: Double, fy: Double)) -> CGFloat {

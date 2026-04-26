@@ -56,282 +56,109 @@ struct DistanceLookupTests {
     }
 }
 
-@Suite("CalculatorLinearHelper")
-struct CalculatorLinearHelperTests {
-
-    @Test func maxPairwiseSquaredPixelDistance_twoPoints_returnsSquaredEuclidean() {
-        let points = [CGPoint(x: 0, y: 0), CGPoint(x: 3, y: 4)]
-        let result = CalculatorLinearHelper.maxPairwiseSquaredPixelDistance(in: points)
-        #expect(abs(result - 25.0) < 1e-9)
-    }
-
-    @Test func maxPairwiseSquaredPixelDistance_unitSquare_returnsDiagonalSquared() {
-        let points = [
-            CGPoint(x: 0, y: 0),
-            CGPoint(x: 1, y: 0),
-            CGPoint(x: 1, y: 1),
-            CGPoint(x: 0, y: 1)
-        ]
-        let result = CalculatorLinearHelper.maxPairwiseSquaredPixelDistance(in: points)
-        #expect(abs(result - 2.0) < 1e-9)
-    }
-
-    @Test func maxPairwiseSquaredPixelDistance_singlePoint_returnsZero() {
-        let result = CalculatorLinearHelper.maxPairwiseSquaredPixelDistance(in: [CGPoint(x: 5, y: 5)])
-        #expect(result == 0)
-    }
-}
-
+/// Linear-strategy tests. Sampling-pipeline behavior (alpha weighting,
+/// confidence filtering, depth-range guards, nil-input guards) is exercised
+/// once via the projection model in `CalculatorTests`; this suite only covers
+/// the math that's specific to the linear lookup-driven strategy.
+///
+/// `DistanceLookup.default` cannot be replaced through the public router, so
+/// these tests pick depths whose lookup values are known exactly.
 @Suite("CalculatorLinear")
 struct CalculatorLinearTests {
 
-    // Identity lookup: at 1 m, one pixel is 1 mm — keeps arithmetic easy.
-    private func identityLookup() -> DistanceLookup {
-        DistanceLookup(entries: [
-            DistanceLookup.Entry(distanceMeters: 0.05, mmPerPixel: 0.05),
-            DistanceLookup.Entry(distanceMeters: 1.00, mmPerPixel: 1.00),
-            DistanceLookup.Entry(distanceMeters: 2.00, mmPerPixel: 2.00)
-        ])
-    }
+    // Exact entries from DistanceLookup.default used below.
+    private let mmPerPixelAt30cm = 0.2121
+    private let mmPerPixelAt20cm = 0.1396
 
-    // MARK: - Area
-
-    @Test func calculateArea_singlePixelAtOneMeter_returnsOneSquareMillimeter() throws {
-        let calculator = CalculatorLinear(distanceLookup: identityLookup())
-        let mask = makeMaskImage(width: 2, height: 2, alphaByPixel: [255, 0,
-                                                                      0,   0])
-        let depth = try makeDepthPixelBuffer(width: 2, height: 2, values: [1, 1,
-                                                                             1, 1])
-
-        let area = calculator.calculateMetrics(
-            from: (mask, [CGRect(x: 0, y: 0, width: 2, height: 2)]),
-            depthMap: depth,
-            confidenceMap: nil,
-            imageOrientation: .up
-        ).areaMM2
-
-        // 1 masked pixel × (1 mm/pixel)² = 1 mm².
-        #expect(abs(Double(area) - 1.0) < 1e-6)
-    }
-
-    @Test func calculateArea_fullAlpha_matchesExpected() throws {
-        let calculator = CalculatorLinear(distanceLookup: identityLookup())
-        let mask = makeMaskImage(width: 2, height: 2, alphaByPixel: [127, 127,
-                                                                      127, 127])
-        let depth = try makeDepthPixelBuffer(width: 2, height: 2, values: [1, 1,
-                                                                             1, 1])
-
-        let area = calculator.calculateMetrics(
-            from: (mask, [CGRect(x: 0, y: 0, width: 2, height: 2)]),
-            depthMap: depth,
-            confidenceMap: nil,
-            imageOrientation: .up
-        ).areaMM2
-
-        // prob = 127 / 127.5 ≈ 0.996, 4 pixels, mm/pixel = 1.
-        let probPerPixel = 127.0 / 127.5
-        let expected = 4.0 * probPerPixel * 1.0 * 1.0
-        #expect(abs(Double(area) - expected) < 1e-6)
-    }
-
-    @Test func calculateArea_partialAlpha_contributesProportionally() throws {
-        let calculator = CalculatorLinear(distanceLookup: identityLookup())
-        let mask = makeMaskImage(width: 1, height: 1, alphaByPixel: [64])
-        let depth = try makeDepthPixelBuffer(width: 1, height: 1, values: [1])
+    @Test func calculateArea_singlePixel_usesLookupValueAtMedianDepth() throws {
+        let calculator = Calculator()
+        let mask = makeMaskImage(width: 1, height: 1, alphaByPixel: [255])
+        let depth = try makeDepthPixelBuffer(width: 1, height: 1, values: [0.30])
 
         let area = calculator.calculateMetrics(
             from: (mask, [CGRect(x: 0, y: 0, width: 1, height: 1)]),
             depthMap: depth,
             confidenceMap: nil,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .linear
         ).areaMM2
 
-        let prob = 64.0 / 127.5
-        #expect(abs(Double(area) - prob) < 1e-6)
+        // 1 pixel × (0.2121 mm/px)².
+        let expected = mmPerPixelAt30cm * mmPerPixelAt30cm
+        #expect(abs(Double(area) - expected) < 1e-6)
     }
 
-    @Test func calculateArea_medianDepthDrivesLookup() throws {
-        // 3 pixels, depths [0.20, 0.20, 0.50]. Median = 0.20, which the lookup
-        // maps (linearly between 0.05 and 1.0) to mmPerPixel ≈ 0.2026.
-        let calculator = CalculatorLinear(distanceLookup: identityLookup())
+    @Test func calculateArea_medianDepthDrivesLookup_outlierIgnored() throws {
+        // Depths [0.30, 0.30, 0.50]. Median = 0.30, so the 0.50 m outlier
+        // must not shift the mm/pixel factor used for area.
+        let calculator = Calculator()
         let mask = makeMaskImage(width: 3, height: 1, alphaByPixel: [255, 255, 255])
-        let depth = try makeDepthPixelBuffer(width: 3, height: 1, values: [0.20, 0.20, 0.50])
+        let depth = try makeDepthPixelBuffer(width: 3, height: 1, values: [0.30, 0.30, 0.50])
 
         let area = calculator.calculateMetrics(
             from: (mask, [CGRect(x: 0, y: 0, width: 3, height: 1)]),
             depthMap: depth,
             confidenceMap: nil,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .linear
         ).areaMM2
 
-        let medianDepth = 0.20
-        let low = DistanceLookup.Entry(distanceMeters: 0.05, mmPerPixel: 0.05)
-        let high = DistanceLookup.Entry(distanceMeters: 1.00, mmPerPixel: 1.00)
-        let t = (medianDepth - low.distanceMeters) / (high.distanceMeters - low.distanceMeters)
-        let mmPerPixel = low.mmPerPixel + t * (high.mmPerPixel - low.mmPerPixel)
-        let expected = 3.0 * mmPerPixel * mmPerPixel
+        let expected = 3.0 * mmPerPixelAt30cm * mmPerPixelAt30cm
         #expect(abs(Double(area) - expected) < 1e-6)
     }
 
-    @Test func calculateArea_scalesWithLookupValue() throws {
-        // Custom lookup: 2 mm/pixel at 1 m → area must scale by 4.
-        let lookup = DistanceLookup(entries: [
-            DistanceLookup.Entry(distanceMeters: 0.5, mmPerPixel: 1.0),
-            DistanceLookup.Entry(distanceMeters: 1.0, mmPerPixel: 2.0),
-            DistanceLookup.Entry(distanceMeters: 2.0, mmPerPixel: 4.0)
-        ])
-        let calculator = CalculatorLinear(distanceLookup: lookup)
+    @Test func calculateArea_depthBelowCalibratedRange_clampsToFirstEntry() throws {
+        // 0.10 m is a valid depth sample but below the lookup's calibrated
+        // minimum (0.20 m), so mmPerPixel clamps to the first entry rather
+        // than extrapolating.
+        let calculator = Calculator()
         let mask = makeMaskImage(width: 1, height: 1, alphaByPixel: [255])
-        let depth = try makeDepthPixelBuffer(width: 1, height: 1, values: [1])
+        let depth = try makeDepthPixelBuffer(width: 1, height: 1, values: [0.10])
 
         let area = calculator.calculateMetrics(
             from: (mask, [CGRect(x: 0, y: 0, width: 1, height: 1)]),
             depthMap: depth,
             confidenceMap: nil,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .linear
         ).areaMM2
 
-        // 1 pixel × (2 mm/pixel)² = 4 mm².
-        #expect(abs(Double(area) - 4.0) < 1e-6)
-    }
-
-    @Test func calculateArea_allDepthsInvalid_returnsZero() throws {
-        let calculator = CalculatorLinear(distanceLookup: identityLookup())
-        let mask = makeMaskImage(width: 2, height: 1, alphaByPixel: [255, 255])
-        let depth = try makeDepthPixelBuffer(width: 2, height: 1, values: [0.01, 3.0])
-
-        let area = calculator.calculateMetrics(
-            from: (mask, [CGRect(x: 0, y: 0, width: 2, height: 1)]),
-            depthMap: depth,
-            confidenceMap: nil,
-            imageOrientation: .up
-        ).areaMM2
-
-        #expect(area == 0.0)
-    }
-
-    @Test func calculateArea_lowConfidenceDepth_excludedFromMedian() throws {
-        let calculator = CalculatorLinear(distanceLookup: identityLookup())
-        let mask = makeMaskImage(width: 2, height: 1, alphaByPixel: [255, 255])
-        let depth = try makeDepthPixelBuffer(width: 2, height: 1, values: [0.20, 1.00])
-        let confidence = try makeConfidencePixelBuffer(width: 2, height: 1, values: [0, 2])
-
-        let area = calculator.calculateMetrics(
-            from: (mask, [CGRect(x: 0, y: 0, width: 2, height: 1)]),
-            depthMap: depth,
-            confidenceMap: confidence,
-            imageOrientation: .up
-        ).areaMM2
-
-        // Only the high-confidence 1 m depth survives → mmPerPixel = 1.
-        let expected = 2.0 * 1.0 * 1.0
+        let expected = mmPerPixelAt20cm * mmPerPixelAt20cm
         #expect(abs(Double(area) - expected) < 1e-6)
     }
 
-    // MARK: - Guard paths
-
-    @Test func calculateMetrics_nilDepthMap_returnsZeros() throws {
-        let calculator = CalculatorLinear(distanceLookup: identityLookup())
-        let mask = makeMaskImage(width: 1, height: 1, alphaByPixel: [255])
-
-        let metrics = calculator.calculateMetrics(
-            from: (mask, [CGRect(x: 0, y: 0, width: 1, height: 1)]),
-            depthMap: nil,
-            confidenceMap: nil,
-            imageOrientation: .up
-        )
-
-        #expect(metrics.areaMM2 == 0.0)
-        #expect(metrics.diameterMM == 0.0)
-    }
-
-    @Test func calculateMetrics_emptyBoundingBoxes_returnsZeros() throws {
-        let calculator = CalculatorLinear(distanceLookup: identityLookup())
-        let mask = makeMaskImage(width: 1, height: 1, alphaByPixel: [255])
-        let depth = try makeDepthPixelBuffer(width: 1, height: 1, values: [1])
-
-        let metrics = calculator.calculateMetrics(
-            from: (mask, []),
-            depthMap: depth,
-            confidenceMap: nil,
-            imageOrientation: .up
-        )
-
-        #expect(metrics.areaMM2 == 0.0)
-        #expect(metrics.diameterMM == 0.0)
-    }
-
-    // MARK: - Diameter
-
-    @Test func calculateDiameter_twoAdjacentPixels_returnsOneMillimeter() throws {
-        let calculator = CalculatorLinear(distanceLookup: identityLookup())
+    @Test func calculateDiameter_twoAdjacentPixels_usesLookupValue() throws {
+        let calculator = Calculator()
         let mask = makeMaskImage(width: 2, height: 1, alphaByPixel: [255, 255])
-        let depth = try makeDepthPixelBuffer(width: 2, height: 1, values: [1, 1])
+        let depth = try makeDepthPixelBuffer(width: 2, height: 1, values: [0.30, 0.30])
 
         let diameter = calculator.calculateMetrics(
             from: (mask, [CGRect(x: 0, y: 0, width: 2, height: 1)]),
             depthMap: depth,
             confidenceMap: nil,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .linear
         ).diameterMM
 
-        // sqrt(1 px²) × 1 mm/px = 1 mm.
-        #expect(abs(Double(diameter) - 1.0) < 1e-6)
+        // sqrt(1 px²) × 0.2121 mm/px = 0.2121 mm.
+        #expect(abs(Double(diameter) - mmPerPixelAt30cm) < 1e-6)
     }
-
-    @Test func calculateDiameter_singlePixel_returnsZero() throws {
-        let calculator = CalculatorLinear(distanceLookup: identityLookup())
-        let mask = makeMaskImage(width: 1, height: 1, alphaByPixel: [255])
-        let depth = try makeDepthPixelBuffer(width: 1, height: 1, values: [1])
-
-        let diameter = calculator.calculateMetrics(
-            from: (mask, [CGRect(x: 0, y: 0, width: 1, height: 1)]),
-            depthMap: depth,
-            confidenceMap: nil,
-            imageOrientation: .up
-        ).diameterMM
-
-        #expect(diameter == 0.0)
-    }
-
-    @Test func calculateDiameter_scalesWithLookupValue() throws {
-        let lookup = DistanceLookup(entries: [
-            DistanceLookup.Entry(distanceMeters: 0.5, mmPerPixel: 1.0),
-            DistanceLookup.Entry(distanceMeters: 1.0, mmPerPixel: 2.0),
-            DistanceLookup.Entry(distanceMeters: 2.0, mmPerPixel: 4.0)
-        ])
-        let calculator = CalculatorLinear(distanceLookup: lookup)
-        let mask = makeMaskImage(width: 2, height: 1, alphaByPixel: [255, 255])
-        let depth = try makeDepthPixelBuffer(width: 2, height: 1, values: [1, 1])
-
-        let diameter = calculator.calculateMetrics(
-            from: (mask, [CGRect(x: 0, y: 0, width: 2, height: 1)]),
-            depthMap: depth,
-            confidenceMap: nil,
-            imageOrientation: .up
-        ).diameterMM
-
-        // 1 px span × 2 mm/px = 2 mm.
-        #expect(abs(Double(diameter) - 2.0) < 1e-6)
-    }
-
-    // MARK: - Combined
 
     @Test func calculateMetrics_returnsBothAreaAndDiameter() throws {
-        let calculator = CalculatorLinear(distanceLookup: identityLookup())
+        let calculator = Calculator()
         let mask = makeMaskImage(width: 2, height: 1, alphaByPixel: [255, 255])
-        let depth = try makeDepthPixelBuffer(width: 2, height: 1, values: [1, 1])
+        let depth = try makeDepthPixelBuffer(width: 2, height: 1, values: [0.30, 0.30])
 
         let metrics = calculator.calculateMetrics(
             from: (mask, [CGRect(x: 0, y: 0, width: 2, height: 1)]),
             depthMap: depth,
             confidenceMap: nil,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .linear
         )
 
-        // 2 pixels × 1 mm² each → 2 mm²; 1 pixel span × 1 mm/px → 1 mm.
-        #expect(abs(Double(metrics.areaMM2) - 2.0) < 1e-6)
-        #expect(abs(Double(metrics.diameterMM) - 1.0) < 1e-6)
+        #expect(abs(Double(metrics.areaMM2) - 2.0 * mmPerPixelAt30cm * mmPerPixelAt30cm) < 1e-6)
+        #expect(abs(Double(metrics.diameterMM) - mmPerPixelAt30cm) < 1e-6)
     }
 
     // MARK: - Test helpers
@@ -369,41 +196,6 @@ struct CalculatorLinearTests {
         )!
 
         return UIImage(cgImage: cgImage, scale: 1.0, orientation: .up)
-    }
-
-    private func makeConfidencePixelBuffer(width: Int, height: Int, values: [UInt8]) throws -> CVPixelBuffer {
-        precondition(values.count == width * height)
-
-        var pixelBuffer: CVPixelBuffer?
-        let status = CVPixelBufferCreate(
-            kCFAllocatorDefault,
-            width,
-            height,
-            kCVPixelFormatType_OneComponent8,
-            nil,
-            &pixelBuffer
-        )
-
-        guard status == kCVReturnSuccess, let pixelBuffer else {
-            throw NSError(domain: "CalculatorLinearTests", code: Int(status))
-        }
-
-        CVPixelBufferLockBaseAddress(pixelBuffer, [])
-        defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, []) }
-
-        guard let base = CVPixelBufferGetBaseAddress(pixelBuffer) else {
-            throw NSError(domain: "CalculatorLinearTests", code: -1)
-        }
-
-        let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
-        let ptr = base.assumingMemoryBound(to: UInt8.self)
-        for y in 0..<height {
-            for x in 0..<width {
-                ptr[y * bytesPerRow + x] = values[y * width + x]
-            }
-        }
-
-        return pixelBuffer
     }
 
     private func makeDepthPixelBuffer(width: Int, height: Int, values: [Float32]) throws -> CVPixelBuffer {

@@ -107,25 +107,19 @@ class Calculator {
         guard !samples.depths.isEmpty else { return .zero }
 
         let strategy: Calculator
-        let details: Any
         switch model {
-        case .linear:
-            strategy = CalculatorLinear()
-            let medianDepth = CalculatorHelper.median(of: samples.depths)
-            details = distanceLookup.mmPerPixel(atDistance: medianDepth)
-        case .projection:
-            strategy = CalculatorProjection()
-            guard let cameraIntrinsics = cameraIntrinsics else { return .zero }
-            let fx = cameraIntrinsics[0][0]
-            let fy = cameraIntrinsics[1][1]
-            guard fx > 0 && fy > 0 else { return .zero }
-            details = (fx: Double(fx), fy: Double(fy))
+        case .linear:     strategy = CalculatorLinear()
+        case .projection: strategy = CalculatorProjection()
         }
+        return strategy.measure(from: samples, cameraIntrinsics: cameraIntrinsics)
+    }
 
-        return Calculator.MoleMeasurement(
-            areaMM2: strategy.computeAreaMM2(from: samples, details),
-            diameterMM: strategy.computeDiameterMM(from: samples, details)
-        )
+    /// Strategy hook: turn samples into a physical measurement.
+    ///
+    /// Subclasses derive their own scaling details (mm/pixel for linear,
+    /// validated intrinsics for projection) and return the final measurement.
+    func measure(from samples: MoleSamples, cameraIntrinsics: simd_float3x3?) -> MoleMeasurement {
+        fatalError("Subclasses must override measure(from:cameraIntrinsics:)")
     }
 
     // MARK: - Shared measurement pipeline

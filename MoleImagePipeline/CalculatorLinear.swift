@@ -14,6 +14,15 @@ class CalculatorLinear: Calculator {
 
     // MARK: - Measurement
 
+    override func measure(from samples: Calculator.MoleSamples, cameraIntrinsics: simd_float3x3?) -> Calculator.MoleMeasurement {
+        let medianDepth = CalculatorHelper.median(of: samples.depths)
+        let mmPerPixel = distanceLookup.mmPerPixel(atDistance: medianDepth)
+        return Calculator.MoleMeasurement(
+            areaMM2: computeAreaMM2(from: samples, mmPerPixel),
+            diameterMM: computeDiameterMM(from: samples, mmPerPixel)
+        )
+    }
+
     /// Computes area in mm² using the linear mm-per-pixel factor.
     private func computeAreaMM2(from samples: Calculator.MoleSamples, _ mmPerPixel: Double) -> CGFloat {
         let weightedPixelCount = samples.weights.reduce(0, +)
