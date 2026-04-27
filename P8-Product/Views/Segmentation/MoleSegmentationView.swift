@@ -109,6 +109,7 @@ struct MoleSegmentationView: View {
             }
         }
         .navigationTitle("Mole Segmentation")
+        .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("moleSegmentationView")
         .toolbar { toolbarContent }
         .safeAreaInset(edge: .top) {
@@ -320,6 +321,7 @@ struct MoleSegmentationView: View {
                 Label("Settings", systemImage: "slider.horizontal.3")
             }
             .disabled(appState.isProcessing)
+            .accessibilityIdentifier("segmentationSettingsButton")
         }
     }
 
