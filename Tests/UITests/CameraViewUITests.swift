@@ -92,36 +92,10 @@ final class CameraViewUITests: XCTestCase {
     }
 
     // MARK: - Navigation to MoleSegmentationView
-    //
     // The production `-UITest_InjectCapturedImage <base64-PNG>` launch
     // argument is consumed by ContentView, which decodes the payload into a
     // UIImage and hands it to `CameraView(preloadedImage:)`. That triggers
     // the same `onChange` path a real capture would
-    
-    /*
-    func testCapturedImageNavigatesToMoleSegmentationView() {
-        app.terminate()
-        app.launchArguments = [
-            "-SkipModelLoading",
-            "-UITest_InMemoryStore",
-            "-UITest_InjectCapturedImage",
-            Self.onePixelPNGBase64(),
-        ]
-        app.launch()
-        Thread.sleep(forTimeInterval: 3) // Wait for ContentView to process the injected image and trigger navigation
-
-        Helpers.openCaptureTab(in: app)
-
-        let segmentationRoot = app.otherElements["moleSegmentationView"].firstMatch
-        let settingsButton = app.buttons["segmentationSettingsButton"].firstMatch
-
-        XCTAssertTrue(
-            segmentationRoot.waitForExistence(timeout: 8) || settingsButton.waitForExistence(timeout: 8) ,
-            "CameraView should push MoleSegmentationView once `capturedImage` is set"
-        )
-    }
-     */
-
     func testSegmentationViewIsNotShownWithoutCapturedImage() {
         // Without an injected image on the simulator there's no way to
         // produce a capturedImage, so the navigation must stay on the placeholder.

@@ -44,7 +44,6 @@
 			membershipExceptions = (
 				UITests/CameraViewUITests.swift,
 				UITests/CompareViewUITests.swift,
-				UITests/EndToEnd.swift,
 				UITests/Helpers.swift,
 				UITests/ImageCarouselUITests.swift,
 				UITests/OverviewUITests.swift,
@@ -58,8 +57,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				CalculatorTests.swift,
-				CarouselTests/CarouselTests.swift,
-				CarouselTests/MarkerTests.swift,
 				ChartViewTest.swift,
 				MoleSegmentation/MoleSegmentationAppStateTests.swift,
 				Overview/OverviewAppStateTests.swift,
@@ -92,8 +89,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				CalculatorTests.swift,
-				CarouselTests/CarouselTests.swift,
-				CarouselTests/MarkerTests.swift,
 				ChartViewTest.swift,
 				MoleSegmentation/MoleSegmentationAppStateTests.swift,
 				Overview/OverviewAppStateTests.swift,
@@ -107,7 +102,6 @@
 				SAMPipelineTests/TestHelpers.swift,
 				UITests/CameraViewUITests.swift,
 				UITests/CompareViewUITests.swift,
-				UITests/EndToEnd.swift,
 				UITests/Helpers.swift,
 				UITests/ImageCarouselUITests.swift,
 				UITests/OverviewUITests.swift,
