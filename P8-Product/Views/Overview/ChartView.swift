@@ -53,6 +53,7 @@ struct ChartView: View {
         let date: Date
         let value: Double
 
+        /// Compares two chart points by content, ignoring generated identifier values.
         static func == (lhs: DataPoint, rhs: DataPoint) -> Bool {
             lhs.index == rhs.index && lhs.date == rhs.date && lhs.value == rhs.value
         }
@@ -78,6 +79,12 @@ struct ChartView: View {
         ImageCarousel.safeIndex(for: scans, requested: bottomSelectedIndex)
     }
 
+    /// Builds chart-ready data points for the requested metric using scans that belong to the supplied mole.
+    /// - Parameters:
+    ///   - mole: The mole whose measurements should be visualized.
+    ///   - metric: The metric to extract for each scan.
+    ///   - scans: Candidate scans to convert into chart points.
+    /// - Returns: A list of chart points in scan order.
     static func makeChartData(for mole: Mole, metric: ChartMetric, scans: [MoleScan]) -> [DataPoint] {
         scans.enumerated().compactMap { index, scan in
             guard scan.mole?.id == mole.id else {
@@ -99,6 +106,10 @@ struct ChartView: View {
             )
         }
     }
+
+    /// Rounds a metric value to one decimal place for consistent chart display.
+    /// - Parameter value: The raw metric value.
+    /// - Returns: The rounded metric value.
     static func roundedMetricValue(_ value: Double) -> Double {
         Double(round(10 * value) / 10)
     }
@@ -112,6 +123,9 @@ struct ChartView: View {
         Self.yScaleDomain(for: chartData)
     }
 
+    /// Calculates a padded y-axis domain based on the provided points.
+    /// - Parameter points: Data points used to derive axis bounds.
+    /// - Returns: A range suitable for chart y-axis scaling.
     static func yScaleDomain(for points: [DataPoint]) -> ClosedRange<Double> {
         let values = points.map(\.value)
         guard let minValue = values.min(), let maxValue = values.max() else {
@@ -131,6 +145,9 @@ struct ChartView: View {
         Self.dateRange(for: chartData)
     }
 
+    /// Calculates the x-axis date range with a one-day buffer after the newest point.
+    /// - Parameter points: Data points used to derive temporal bounds.
+    /// - Returns: The date range used for chart x-axis scaling.
     static func dateRange(for points: [DataPoint]) -> ClosedRange<Date> {
         let sortedDates = points.map(\.date).sorted()
         guard let first = sortedDates.first, let last = sortedDates.last else {
@@ -191,6 +208,12 @@ struct ChartView: View {
         }
     }
     
+    /// Determines which marker shape should be shown for a point based on selected indices.
+    /// - Parameters:
+    ///   - pointIndex: Index of the plotted point.
+    ///   - safeTopIndex: Clamped index from the top carousel.
+    ///   - safeBottomIndex: Clamped index from the bottom carousel.
+    /// - Returns: The marker kind for the point, or `nil` when it is not selected.
     static func calculateMarkerKind(pointIndex: Int, safeTopIndex: Int, safeBottomIndex: Int) -> SelectedMarkerKind? {
             let isTopSelected = pointIndex == safeTopIndex
             let isBottomSelected = pointIndex == safeBottomIndex
@@ -206,6 +229,9 @@ struct ChartView: View {
             }
         }
 
+    /// Returns the symbol view used to represent a selected point marker in the chart.
+    /// - Parameter kind: The marker variant to render.
+    /// - Returns: A marker symbol view.
     @ViewBuilder
     private func markerSymbol(for kind: SelectedMarkerKind) -> some View {
         switch kind {

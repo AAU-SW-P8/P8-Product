@@ -301,6 +301,13 @@ class DataController {
         return max(Date(), computedDate)
     }
 
+    /// Returns the most recent capture date for the given mole.
+    ///
+    /// If an `excludedScan` is provided, that scan is ignored when determining the latest date.
+    /// - Parameters:
+    ///   - mole: The mole whose scans should be evaluated.
+    ///   - excludedScan: An optional scan to exclude from the search.
+    /// - Returns: The latest capture date among the mole’s remaining scans, or `nil` if no valid date exists.
     func latestCaptureDate(for mole: Mole, excluding excludedScan: MoleScan? = nil) -> Date? {
         mole.scans
             .filter { scan in
@@ -311,6 +318,16 @@ class DataController {
             .max()
     }
 
+    /// Recalculates the next due date for a mole based on its scan history.
+    ///
+    /// This function updates the `nextDueDate` property of the specified mole by analyzing its scan records
+    /// and determining when the next examination should be scheduled. An optional scan can be excluded from
+    /// the calculation, which is useful when removing or updating a specific scan.
+    ///
+    /// - Parameters:
+    ///   - mole: The `Mole` object for which to recalculate the next due date.
+    ///   - excludedScan: An optional `MoleScan` to exclude from the calculation. If provided, this scan
+    ///     will be ignored when determining the next due date. Defaults to `nil`.
     func recalculateNextDueDate(for mole: Mole, excluding excludedScan: MoleScan? = nil) {
         guard effectiveReminderEnabled(for: mole),
               let frequencyLabel = effectiveFrequencyLabel(for: mole),
@@ -326,24 +343,42 @@ class DataController {
         )
     }
 
+    /// Deletes the specified `Person` from the container.
+    ///
+    /// Removes the provided `Person` instance from the underlying collection/data store.
+    ///
+    /// - Parameter person: The `Person` to delete.
+    /// - Note: If the person does not exist in the container, this operation should have no effect.
     func delete(_ person: Person) {
         deleteAndSave(errorMessage: "Failed to delete person") { context in
             context.delete(person)
         }
     }
     
+    /// Removes a `Mole` from the container.
+    ///
+    /// - Parameter mole: The `Mole` instance to delete.
     func delete(_ mole: Mole) {
         deleteAndSave(errorMessage: "Failed to delete mole") { context in
             context.delete(mole)
         }
     }
 
+    /// Deletes the specified `MoleScan` from the container.
+    ///
+    /// - Parameter scan: The `MoleScan` instance to remove.
     func delete(_ scan: MoleScan) {
         deleteAndSave(errorMessage: "Failed to delete scan") { context in
             context.delete(scan)
         }
     }
 
+    /// Deletes the relevant object(s) from the persistence context and immediately saves the change.
+    ///
+    /// Use this helper to keep deletion logic centralized and to ensure the context is persisted
+    /// right after items are marked for removal.
+    ///
+    /// - Important: Call this method on the correct queue/thread for the underlying persistence context.
     private func deleteAndSave(
         errorMessage: String,
         performDelete: (ModelContext) -> Void
@@ -357,6 +392,10 @@ class DataController {
         }
     }
     
+    /// Adds a new `Person` to the container using the provided name.
+    ///
+    /// - Parameter name: The name to assign to the newly created person.
+    /// - Returns: The newly created `Person` instance.
     func addPerson(name: String) -> Person {
         let context: ModelContext = container.mainContext
         let person: Person = Person(name: name)
@@ -369,6 +408,11 @@ class DataController {
         return person
     }
 
+    /// Renames the specified person to a new name.
+    ///
+    /// - Parameters:
+    ///   - person: The `Person` instance to rename.
+    ///   - newName: The new name to assign to the person.
     func rename(_ person: Person, to newName: String) {
         let context: ModelContext = container.mainContext
         person.name = newName
