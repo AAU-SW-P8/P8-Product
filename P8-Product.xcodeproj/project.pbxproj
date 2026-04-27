@@ -46,6 +46,7 @@
 				UITests/CompareViewUITests.swift,
 				UITests/Helpers.swift,
 				UITests/ImageCarouselUITests.swift,
+				UITests/InjectedPicturesUITests.swift,
 				UITests/OverviewUITests.swift,
 				UITests/ProductUITestsLaunchTests.swift,
 				UITests/ReminderViewUITests.swift,
@@ -57,6 +58,8 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				CalculatorTests.swift,
+				CarouselTests/CarouselTests.swift,
+				CarouselTests/MarkerTests.swift,
 				ChartViewTest.swift,
 				MoleSegmentation/MoleSegmentationAppStateTests.swift,
 				Overview/OverviewAppStateTests.swift,
@@ -89,6 +92,8 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				CalculatorTests.swift,
+				CarouselTests/CarouselTests.swift,
+				CarouselTests/MarkerTests.swift,
 				ChartViewTest.swift,
 				MoleSegmentation/MoleSegmentationAppStateTests.swift,
 				Overview/OverviewAppStateTests.swift,
@@ -104,6 +109,7 @@
 				UITests/CompareViewUITests.swift,
 				UITests/Helpers.swift,
 				UITests/ImageCarouselUITests.swift,
+				UITests/InjectedPicturesUITests.swift,
 				UITests/OverviewUITests.swift,
 				UITests/ProductUITestsLaunchTests.swift,
 				UITests/ReminderViewUITests.swift,
