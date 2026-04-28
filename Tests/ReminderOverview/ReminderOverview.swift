@@ -370,8 +370,6 @@ struct ReminderOverviewTest {
     }
 
     private func makeMole(lastCheckIn: Date) -> Mole {
-        let scan = MoleScan(captureDate: lastCheckIn)
-        let instance = MoleInstance(diameter: 2, area: 4, moleScan: scan)
         let mole = Mole(
             name: "Mole 1",
             bodyPart: "Arm",
@@ -379,7 +377,9 @@ struct ReminderOverviewTest {
             reminderFrequency: nil,
             nextDueDate: nil
         )
-        mole.instances = [instance]
+
+        let scan = MoleScan(captureDate: lastCheckIn, diameter: 2, area: 4, mole: mole)
+        mole.scans = [scan]
         return mole
     }
 
@@ -406,7 +406,7 @@ struct ReminderOverviewTest {
         }
 
         let calendar = Calendar.current
-        let lastCheckIn = mole.instances.compactMap { $0.moleScan?.captureDate }.max()
+        let lastCheckIn = mole.scans.compactMap { $0.captureDate }.max()
         guard let lastCheckIn else { return }
 
         let nextDueDate: Date?

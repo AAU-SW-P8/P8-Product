@@ -26,8 +26,8 @@ final class Mole {
     var person: Person?
     
     // If this Mole is deleted, all its instances are deleted
-    @Relationship(deleteRule: .cascade, inverse: \MoleInstance.mole)
-    var instances: [MoleInstance] = []
+    @Relationship(deleteRule: .cascade, inverse: \MoleScan.mole)
+    var scans: [MoleScan] = []
     
     /// Creates a new Mole record.
     /// - Parameters:

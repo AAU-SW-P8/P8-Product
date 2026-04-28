@@ -22,13 +22,12 @@ struct PipelineTests {
     // data flow at the source: `ChartView.makeChartData(for:metric:)`.
 
     /// Builds an in-memory SwiftData container so the tests can construct fully
-    /// linked Mole / MoleInstance / MoleScan graphs without touching the on-disk
+    /// linked Mole /  MoleScan graphs without touching the on-disk
     /// store used by the running app.
     private func makeInMemoryContext() throws -> ModelContext {
         let schema = Schema([
             Person.self,
             Mole.self,
-            MoleInstance.self,
             MoleScan.self
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
@@ -49,7 +48,7 @@ struct PipelineTests {
         return mole
     }
 
-    /// Inserts a scan + instance pair linked to the given mole.
+    /// Inserts a scan linked to the given mole.
     @discardableResult
     private func attachInstance(
         to mole: Mole,
@@ -57,17 +56,14 @@ struct PipelineTests {
         diameter: Float,
         area: Float,
         captureDate: Date
-    ) -> MoleInstance {
-        let scan = MoleScan(captureDate: captureDate)
-        let instance = MoleInstance(
+    ) -> MoleScan {
+        let scan = MoleScan(
+            captureDate: captureDate,
             diameter: diameter,
             area: area,
-            mole: mole,
-            moleScan: scan
-        )
+            mole: mole)
         context.insert(scan)
-        context.insert(instance)
-        return instance
+        return scan
     }
 
     @Test func chartDataFollowsProvidedScanOrder() throws {
@@ -79,14 +75,10 @@ struct PipelineTests {
         let day10 = day0.addingTimeInterval(10 * 86_400)
         let day20 = day0.addingTimeInterval(20 * 86_400)
 
-        let scan0 = MoleScan(captureDate: day0)
-        let scan10 = MoleScan(captureDate: day10)
-        let scan20 = MoleScan(captureDate: day20)
+        let scan0 = MoleScan(captureDate: day0, diameter: 4.2, area: 13.8, mole: mole)
+        let scan10 = MoleScan(captureDate: day10, diameter: 4.8, area: 15.4, mole: mole)
+        let scan20 = MoleScan(captureDate: day20, diameter: 5.0, area: 16.0, mole: mole)
         [scan0, scan10, scan20].forEach(context.insert)
-
-        context.insert(MoleInstance(diameter: 4.2, area: 13.8, mole: mole, moleScan: scan0))
-        context.insert(MoleInstance(diameter: 4.8, area: 15.4, mole: mole, moleScan: scan10))
-        context.insert(MoleInstance(diameter: 5.0, area: 16.0, mole: mole, moleScan: scan20))
         try context.save()
 
         let scans = [scan20, scan10, scan0]
@@ -104,14 +96,10 @@ struct PipelineTests {
         let day10 = day0.addingTimeInterval(10 * 86_400)
         let day20 = day0.addingTimeInterval(20 * 86_400)
 
-        let scan0 = MoleScan(captureDate: day0)
-        let scan10 = MoleScan(captureDate: day10)
-        let scan20 = MoleScan(captureDate: day20)
+        let scan0 = MoleScan(captureDate: day0, diameter: 4.2, area: 13.8, mole: mole)
+        let scan10 = MoleScan(captureDate: day10, diameter: 4.8, area: 15.4, mole: mole)
+        let scan20 = MoleScan(captureDate: day20, diameter: 5.0, area: 16.0, mole: mole)
         [scan0, scan10, scan20].forEach(context.insert)
-
-        context.insert(MoleInstance(diameter: 4.2, area: 13.8, mole: mole, moleScan: scan0))
-        context.insert(MoleInstance(diameter: 4.8, area: 15.4, mole: mole, moleScan: scan10))
-        context.insert(MoleInstance(diameter: 5.0, area: 16.0, mole: mole, moleScan: scan20))
         try context.save()
 
         let scans = [scan20, scan10, scan0]
@@ -131,14 +119,10 @@ struct PipelineTests {
         let day10 = day0.addingTimeInterval(10 * 86_400)
         let day20 = day0.addingTimeInterval(20 * 86_400)
 
-        let scan0 = MoleScan(captureDate: day0)
-        let scan10 = MoleScan(captureDate: day10)
-        let scan20 = MoleScan(captureDate: day20)
+        let scan0 = MoleScan(captureDate: day0, diameter: 4.2, area: 13.8, mole: mole)
+        let scan10 = MoleScan(captureDate: day10, diameter: 4.8, area: 15.4, mole: mole)
+        let scan20 = MoleScan(captureDate: day20, diameter: 5.0, area: 16.0, mole: mole)
         [scan0, scan10, scan20].forEach(context.insert)
-
-        context.insert(MoleInstance(diameter: 4.2, area: 13.8, mole: mole, moleScan: scan0))
-        context.insert(MoleInstance(diameter: 4.8, area: 15.4, mole: mole, moleScan: scan10))
-        context.insert(MoleInstance(diameter: 5.0, area: 16.0, mole: mole, moleScan: scan20))
         try context.save()
 
         let scans = [scan20, scan10, scan0]
@@ -158,12 +142,9 @@ struct PipelineTests {
         let day0 = Date(timeIntervalSince1970: 1_700_000_000)
         let day1 = day0.addingTimeInterval(86_400)
 
-        let scan0 = MoleScan(captureDate: day0)
-        let scan1 = MoleScan(captureDate: day1)
+        let scan0 = MoleScan(captureDate: day0, diameter: 5.0, area: 16.0, mole: mole)
+        let scan1 = MoleScan(captureDate: day1, diameter: 5.0, area: 16.0, mole: mole)
         [scan0, scan1].forEach(context.insert)
-
-        context.insert(MoleInstance(diameter: 5.0, area: 16.0, mole: mole, moleScan: scan0))
-        context.insert(MoleInstance(diameter: 5.0, area: 16.0, mole: mole, moleScan: scan1))
         try context.save()
 
         let points = ChartView.makeChartData(for: mole, metric: .area, scans: [scan1, scan0])
@@ -173,25 +154,30 @@ struct PipelineTests {
         #expect(points.map { $0.date } == [day1, day0])
     }
 
-    @Test func chartDataExcludesInstancesWithoutScans() throws {
+    @Test func chartDataExcludesScansWithoutMole() throws {
         let context = try makeInMemoryContext()
         let mole = makeMole(in: context)
 
         let day0 = Date(timeIntervalSince1970: 1_700_000_000)
-        attachInstance(to: mole, in: context, diameter: 4.0, area: 12.0, captureDate: day0)
+        let attachedScan = attachInstance(to: mole, in: context, diameter: 4.0, area: 12.0, captureDate: day0)
 
-        // Orphan instance with no scan — should be filtered out.
-        let orphan = MoleInstance(diameter: 9.9, area: 99.9, mole: mole, moleScan: nil)
-        context.insert(orphan)
+        // Orphan scan with no mole should be filtered out.
+        let orphanScan = MoleScan(
+            captureDate: day0.addingTimeInterval(86_400),
+            diameter: 9.9,
+            area: 99.9,
+            mole: nil
+        )
+        context.insert(orphanScan)
         try context.save()
 
-        let points = ChartView.makeChartData(for: mole, metric: .area, scans: mole.instances.compactMap { $0.moleScan })
+        let points = ChartView.makeChartData(for: mole, metric: .area, scans: [attachedScan, orphanScan])
 
         #expect(points.count == 1)
         #expect(points.first?.value == Double(Float(12.0)))
     }
 
-    @Test func chartDataIsEmptyForMoleWithNoInstances() throws {
+    @Test func chartDataIsEmptyForMoleWithNoScans() throws {
         let context = try makeInMemoryContext()
         let mole = makeMole(in: context)
         try context.save()
@@ -220,14 +206,10 @@ struct PipelineTests {
         let bytes1 = Data([0xA1])
         let bytes2 = Data([0xA2])
 
-        let scan0 = MoleScan(captureDate: day0,  imageData: bytes0)
-        let scan1 = MoleScan(captureDate: day10, imageData: bytes1)
-        let scan2 = MoleScan(captureDate: day20, imageData: bytes2)
+        let scan0 = MoleScan(captureDate: day0,  imageData: bytes0, diameter: 4.2, area: 13.8, mole: mole)
+        let scan1 = MoleScan(captureDate: day10, imageData: bytes1, diameter: 4.8, area: 15.4, mole: mole)
+        let scan2 = MoleScan(captureDate: day20, imageData: bytes2, diameter: 5.0, area: 16.0, mole: mole)
         [scan0, scan1, scan2].forEach(context.insert)
-
-        context.insert(MoleInstance(diameter: 4.2, area: 13.8, mole: mole, moleScan: scan0))
-        context.insert(MoleInstance(diameter: 4.8, area: 15.4, mole: mole, moleScan: scan1))
-        context.insert(MoleInstance(diameter: 5.0, area: 16.0, mole: mole, moleScan: scan2))
         try context.save()
 
         let scans = [scan0, scan1, scan2]   // ascending order, like CompareView feeds in
@@ -237,44 +219,53 @@ struct PipelineTests {
         #expect(ImageCarousel.selectedScan(in: scans, at: 2)?.imageData == bytes2)
     }
 
-    @Test func carouselSelectionPicksInstanceMatchingMole() throws {
-        // A single scan can have multiple instances (one per mole). The
-        // carousel must surface the instance whose mole matches the binding,
-        // not just the first one in the array.
+    @Test func carouselSelectionPicksScanMatchingMole() throws {
+        // Each scan now carries its own mole and measurement values.
+        // The carousel should surface the scan whose mole matches the binding.
         let context = try makeInMemoryContext()
         let leftArm = makeMole(in: context, name: "Left Arm")
         let back    = makeMole(in: context, name: "Back")
 
-        let scan = MoleScan(
+        let leftScan = MoleScan(
             captureDate: Date(timeIntervalSince1970: 1_700_000_000),
-            imageData: Data([0xFF])
+            imageData: Data([0xFF]),
+            diameter: 5.0,
+            area: 16.0,
+            mole: leftArm
         )
-        context.insert(scan)
-        context.insert(MoleInstance(diameter: 5.0, area: 16.0, mole: leftArm, moleScan: scan))
-        context.insert(MoleInstance(diameter: 3.6, area: 10.1, mole: back,    moleScan: scan))
+        let backScan = MoleScan(
+            captureDate: Date(timeIntervalSince1970: 1_700_000_000),
+            imageData: Data([0xFF]),
+            diameter: 3.6,
+            area: 10.1,
+            mole: back
+        )
+        context.insert(leftScan)
+        context.insert(backScan)
         try context.save()
 
-        let leftPick = ImageCarousel.selectedInstance(in: [scan], at: 0, for: leftArm)
-        let backPick = ImageCarousel.selectedInstance(in: [scan], at: 0, for: back)
+        let leftPick = ImageCarousel.selectedScan(in: [leftScan], at: 0, for: leftArm)
+        let backPick = ImageCarousel.selectedScan(in: [backScan], at: 0, for: back)
 
         #expect(leftPick?.diameter == 5.0)
         #expect(backPick?.diameter == 3.6)
     }
 
-    @Test func carouselSelectionFallsBackToFirstInstanceWhenNoMoleFilter() throws {
+    @Test func carouselSelectionFallsBackToFirstScanWhenNoMoleFilter() throws {
         let context = try makeInMemoryContext()
         let mole = makeMole(in: context)
 
         let scan = MoleScan(
             captureDate: Date(timeIntervalSince1970: 1_700_000_000),
-            imageData: Data([0x10])
+            imageData: Data([0x10]),
+            diameter: 4.0,
+            area: 12.0,
+            mole: mole
         )
         context.insert(scan)
-        let instance = MoleInstance(diameter: 4.0, area: 12.0, mole: mole, moleScan: scan)
-        context.insert(instance)
         try context.save()
 
-        let pick = ImageCarousel.selectedInstance(in: [scan], at: 0, for: nil)
+        let pick = ImageCarousel.selectedScan(in: [scan], at: 0, for: nil)
 
         #expect(pick?.diameter == 4.0)
         #expect(pick?.area == 12.0)
@@ -289,15 +280,19 @@ struct PipelineTests {
 
         let scan0 = MoleScan(
             captureDate: Date(timeIntervalSince1970: 1_700_000_000),
-            imageData: Data([0x01])
+            imageData: Data([0x01]),
+            diameter: 4.0,
+            area: 12.0,
+            mole: mole
         )
         let scan1 = MoleScan(
             captureDate: Date(timeIntervalSince1970: 1_700_086_400),
-            imageData: Data([0x02])
+            imageData: Data([0x02]),
+            diameter: 4.5,
+            area: 13.0,
+            mole: mole
         )
         [scan0, scan1].forEach(context.insert)
-        context.insert(MoleInstance(diameter: 4.0, area: 12.0, mole: mole, moleScan: scan0))
-        context.insert(MoleInstance(diameter: 4.5, area: 13.0, mole: mole, moleScan: scan1))
         try context.save()
 
         let scans = [scan0, scan1]
@@ -311,7 +306,7 @@ struct PipelineTests {
 
     @Test func carouselSelectionReturnsNilForEmptyScans() {
         #expect(ImageCarousel.selectedScan(in: [], at: 0) == nil)
-        #expect(ImageCarousel.selectedInstance(in: [], at: 0, for: nil) == nil)
+        #expect(ImageCarousel.selectedScan(in: [], at: 0, for: nil) == nil)
         #expect(ImageCarousel.safeIndex(for: [], requested: 3) == 0)
     }
 

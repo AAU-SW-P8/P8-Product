@@ -13,9 +13,11 @@ final class MoleScan {
     
     var captureDate: Date = Date()
     
-    // If a MoleScan is deleted, all its instances are deleted
-    @Relationship(deleteRule: .cascade, inverse: \MoleInstance.moleScan)
-    var instances: [MoleInstance] = []
+    var diameter: Float
+    var area: Float
+    
+    // The inverse relationships back to the mole the scan belongs to
+    var mole: Mole?
     
     /// Creates a new MoleScan record.
     /// - Parameters:
@@ -24,9 +26,15 @@ final class MoleScan {
     init
     (
         captureDate: Date = Date(),
-        imageData: Data? = nil
+        imageData: Data? = nil,
+        diameter: Float = 0.0,
+        area: Float = 0.0,
+        mole: Mole? = nil
     ) {
         self.captureDate = captureDate
         self.imageData = imageData
+        self.diameter = diameter
+        self.area = area
+        self.mole = mole
     }
 }
