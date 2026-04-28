@@ -6,9 +6,9 @@ enum ARCameraConstants {
     /// Measurements and thresholds used for LiDAR and depth evaluation.
     enum Measurement {
         /// Desired subject distance in meters.
-        static let targetDistance: Float = 0.35
+        static let targetDistance: Float = 0.30
         /// Allowed deviation around `targetDistance`, in meters.
-        static let distanceTolerance: Float = 0.05
+        static let distanceTolerance: Float = 0.10
         /// Initial seeded distance before any readings are available.
         static let initialDistance: Float = 100.0
         /// Minimum depth in meters considered valid (filters out sensor noise/occlusions).

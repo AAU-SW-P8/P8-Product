@@ -56,6 +56,7 @@
 		97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				CalculatorLinearTests.swift,
 				CalculatorTests.swift,
 				CarouselTests/CarouselTests.swift,
 				CarouselTests/MarkerTests.swift,
@@ -90,6 +91,7 @@
 		DB2D85A72F8F8F6B00D8E438 /* Exceptions for "Tests" folder in "P8-Product" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				CalculatorLinearTests.swift,
 				CalculatorTests.swift,
 				CarouselTests/CarouselTests.swift,
 				CarouselTests/MarkerTests.swift,
