@@ -44,7 +44,7 @@ private struct OverviewContentView: View {
     // MARK: - View Body
     var body: some View {
         navigationContent
-            .modifier(OverviewAlertsModifier(appState: appState))
+            .modifier(OverviewAlertsModifier(appState: appState, people: people))
             .onAppear {
                 appState.initializeSelectionIfNeeded(with: people)
             }

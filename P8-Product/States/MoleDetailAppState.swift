@@ -25,8 +25,13 @@ final class MoleDetailAppState {
 	var selectedEvolutionBottomIndex: Int = 0
 	var shouldDismissDetailView: Bool = false
 	var showingDeleteDetailInstanceAlert: Bool = false
-	var detailInstanceToDelete: MoleInstance?
+	var detailScanToDelete: MoleScan?
 
+	/// Creates state and dependencies for a mole detail flow.
+	/// - Parameters:
+	///   - mole: The mole shown when no global mole selection exists.
+	///   - dataController: Data layer used for persistence and deletion.
+	///   - selectionState: Shared selection state across app screens.
 	init(
 		mole: Mole,
 		dataController: DataController,
@@ -44,8 +49,7 @@ final class MoleDetailAppState {
 	}
 
 	var scans: [MoleScan] {
-		activeMole.instances
-			.compactMap(\.moleScan)
+		activeMole.scans
 			.sorted { $0.captureDate > $1.captureDate }
 	}
 
@@ -66,6 +70,8 @@ final class MoleDetailAppState {
 
 	// MARK: - Actions
 
+	/// Initializes selection and chart indices when the view appears.
+	/// If the selected person changed globally, this will request dismissal instead.
 	func handleAppear() {
 		dismissIfSelectedPersonChanged()
 		guard !shouldDismissDetailView else {
@@ -78,6 +84,8 @@ final class MoleDetailAppState {
 		setDefaultEvolutionIndices()
 	}
 
+	/// Selects a different mole within the active person context and resets carousel/evolution indices.
+	/// - Parameter mole: The mole to make active.
 	func selectMole(_ mole: Mole) {
 		selectionState.selectedPerson = mole.person
 		selectionState.selectedMole = mole
@@ -85,6 +93,7 @@ final class MoleDetailAppState {
 		setDefaultEvolutionIndices()
 	}
 
+	/// Clamps all scan-related selected indices to valid bounds based on the current scan count.
 	func clampSelectedIndicesIfNeeded() {
 		let maxIndex: Int = max(0, scans.count - 1)
 		selectedIndex = min(selectedIndex, maxIndex)
@@ -92,6 +101,7 @@ final class MoleDetailAppState {
 		selectedEvolutionBottomIndex = min(selectedEvolutionBottomIndex, maxIndex)
 	}
 
+	/// Marks the detail flow for dismissal if the globally selected person no longer matches this mole's person.
 	func dismissIfSelectedPersonChanged() {
 		let activeMolePersonID: UUID? = activeMole.person?.id
 		let globallySelectedPersonID: UUID? = selectionState.selectedPerson?.id
@@ -104,29 +114,31 @@ final class MoleDetailAppState {
 		shouldDismissDetailView = true
 	}
 
+	/// Prepares deletion of the currently selected scan and triggers the delete confirmation alert.
 	func requestDeleteSelectedDetailInstance() {
-		guard let instance: MoleInstance = ImageCarousel.selectedInstance(in: scans, at: selectedIndex, for: activeMole) else {
+		guard let scan: MoleScan = ImageCarousel.selectedScan(in: scans, at: selectedIndex, for: activeMole) else {
 			return
 		}
 
-		detailInstanceToDelete = instance
+		detailScanToDelete = scan
 		showingDeleteDetailInstanceAlert = true
 	}
 
+	/// Confirms deletion of the pending scan, updates/removes related mole data, and adjusts UI selection state.
 	func confirmDeleteSelectedDetailInstance() {
 		defer {
-			detailInstanceToDelete = nil
+			detailScanToDelete = nil
 			showingDeleteDetailInstanceAlert = false
 		}
 
-		guard let instance: MoleInstance = detailInstanceToDelete else {
+		guard let scan: MoleScan = detailScanToDelete else {
 			return
 		}
 
-		dataController.delete(instance)
+		dataController.delete(scan)
 
 		let selectedMole: Mole = activeMole
-		let hasAnyScansLeft: Bool = selectedMole.instances.contains { $0 !== instance && $0.moleScan != nil }
+		let hasAnyScansLeft: Bool = selectedMole.scans.contains { $0 !== scan }
 		if !hasAnyScansLeft {
 			dataController.delete(selectedMole)
 			selectionState.selectedMole = nil
@@ -134,29 +146,33 @@ final class MoleDetailAppState {
 			return
 		}
 
-		dataController.recalculateNextDueDate(for: selectedMole, excluding: instance)
+		dataController.recalculateNextDueDate(for: selectedMole, excluding: scan)
 		persistMoleChanges()
 
 		clampSelectedIndicesIfNeeded()
 	}
 
+	/// Clears a pending dismiss request after the UI has consumed it.
 	func consumeDismissRequest() {
 		shouldDismissDetailView = false
 	}
 
+	/// Cancels scan deletion flow and hides the delete confirmation alert.
 	func cancelDeleteSelectedDetailInstance() {
-		detailInstanceToDelete = nil
+		detailScanToDelete = nil
 		showingDeleteDetailInstanceAlert = false
 	}
 
 
 
+	/// Sets evolution comparison defaults to oldest (top) and newest (bottom) valid scan indices.
 	private func setDefaultEvolutionIndices() {
 		let maxIndex = max(0, scans.count - 1)
 		selectedEvolutionTopIndex = maxIndex
 		selectedEvolutionBottomIndex = 0
 	}
 
+	/// Persists any mole-related state changes to the main SwiftData context.
 	private func persistMoleChanges() {
 		do {
 			try dataController.container.mainContext.save()

@@ -114,7 +114,6 @@ struct ContentView: View {
     let container = try! ModelContainer(
     for: Person.self,
         Mole.self,
-        MoleInstance.self,
         MoleScan.self,
         configurations: config
     )

@@ -81,7 +81,6 @@ class DataController {
         let schema = Schema([
             Person.self,
             Mole.self,
-            MoleInstance.self,
             MoleScan.self
         ])
 
@@ -186,31 +185,24 @@ class DataController {
         guard !hasMole(named: resolvedName, for: person) else {
             return false
         }
-        
-        let scan: MoleScan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9))
-        let initialDueDate: Date? = nextDueDate(
-            for: person.defaultReminderFrequency,
-            referenceDate: scan.captureDate,
-            isEnabled: person.defaultReminderEnabled
-        )
         let mole: Mole = Mole(
             name: resolvedName,
             bodyPart: bodyPart,
             isReminderActive: person.defaultReminderEnabled,
             reminderFrequency: nil,
-            nextDueDate: initialDueDate,
+            nextDueDate: nil,
             person: person
         )
-        let instance: MoleInstance = MoleInstance(
-            diameter: diameter,
-            area: area,
-            mole: mole,
-            moleScan: scan
+        
+        let scan: MoleScan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9), diameter: diameter, area: area, mole: mole)
+        mole.nextDueDate = nextDueDate(
+            for: person.defaultReminderFrequency,
+            referenceDate: scan.captureDate,
+            isEnabled: person.defaultReminderEnabled
         )
         
-        context.insert(scan)
         context.insert(mole)
-        context.insert(instance)
+        context.insert(scan)
         
         do {
             try context.save()
@@ -250,7 +242,7 @@ class DataController {
     }
     
     /**
-        Adds a new scan to an existing mole by creating a new `MoleScan` and linking it with a new `MoleInstance`.
+        Adds a new scan to an existing mole by creating a new `MoleScan`.
         - Parameters:
             - mole: The existing `Mole` to which the new scan will be linked.
             - image: The `UIImage` representing the new scan to be added.
@@ -259,16 +251,13 @@ class DataController {
         let context: ModelContext = container.mainContext
 
         // Create the scan and the linking instance
-        let scan: MoleScan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9))
-        let instance: MoleInstance = MoleInstance(
-            diameter: diameter,
-            area: area,
-            mole: mole,
-            moleScan: scan
-        )
+        let scan: MoleScan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9),
+                                        diameter: diameter,
+                                        area: area,
+                                        mole: mole)
+        
 
         context.insert(scan)
-        context.insert(instance)
         recalculateNextDueDate(for: mole)
 
         do {
@@ -312,20 +301,37 @@ class DataController {
         return max(Date(), computedDate)
     }
 
-    func latestCaptureDate(for mole: Mole, excluding excludedInstance: MoleInstance? = nil) -> Date? {
-        mole.instances
-            .filter { instance in
-                guard let excludedInstance else { return true }
-                return instance !== excludedInstance
+    /// Returns the most recent capture date for the given mole.
+    ///
+    /// If an `excludedScan` is provided, that scan is ignored when determining the latest date.
+    /// - Parameters:
+    ///   - mole: The mole whose scans should be evaluated.
+    ///   - excludedScan: An optional scan to exclude from the search.
+    /// - Returns: The latest capture date among the mole’s remaining scans, or `nil` if no valid date exists.
+    func latestCaptureDate(for mole: Mole, excluding excludedScan: MoleScan? = nil) -> Date? {
+        mole.scans
+            .filter { scan in
+                guard let excludedScan else { return true }
+                return scan !== excludedScan
             }
-            .compactMap { $0.moleScan?.captureDate }
+            .map(\.captureDate)
             .max()
     }
 
-    func recalculateNextDueDate(for mole: Mole, excluding excludedInstance: MoleInstance? = nil) {
+    /// Recalculates the next due date for a mole based on its scan history.
+    ///
+    /// This function updates the `nextDueDate` property of the specified mole by analyzing its scan records
+    /// and determining when the next examination should be scheduled. An optional scan can be excluded from
+    /// the calculation, which is useful when removing or updating a specific scan.
+    ///
+    /// - Parameters:
+    ///   - mole: The `Mole` object for which to recalculate the next due date.
+    ///   - excludedScan: An optional `MoleScan` to exclude from the calculation. If provided, this scan
+    ///     will be ignored when determining the next due date. Defaults to `nil`.
+    func recalculateNextDueDate(for mole: Mole, excluding excludedScan: MoleScan? = nil) {
         guard effectiveReminderEnabled(for: mole),
               let frequencyLabel = effectiveFrequencyLabel(for: mole),
-              let captureDate = latestCaptureDate(for: mole, excluding: excludedInstance) else {
+              let captureDate = latestCaptureDate(for: mole, excluding: excludedScan) else {
             mole.nextDueDate = nil
             return
         }
@@ -337,32 +343,42 @@ class DataController {
         )
     }
 
+    /// Deletes the specified `Person` from the container.
+    ///
+    /// Removes the provided `Person` instance from the underlying collection/data store.
+    ///
+    /// - Parameter person: The `Person` to delete.
+    /// - Note: If the person does not exist in the container, this operation should have no effect.
     func delete(_ person: Person) {
         deleteAndSave(errorMessage: "Failed to delete person") { context in
             context.delete(person)
         }
     }
     
+    /// Removes a `Mole` from the container.
+    ///
+    /// - Parameter mole: The `Mole` instance to delete.
     func delete(_ mole: Mole) {
         deleteAndSave(errorMessage: "Failed to delete mole") { context in
             context.delete(mole)
         }
     }
 
-    func delete(_ instance: MoleInstance) {
-        deleteAndSave(errorMessage: "Failed to delete mole instance") { context in
-            let associatedScan = instance.moleScan
-            let hasOtherInstances: Bool = associatedScan?.instances.contains { $0 !== instance} ?? false
-            
-            if let associatedScan, !hasOtherInstances {
-                context.delete(associatedScan)
-            }
-            else {
-                context.delete(instance)
-            }
+    /// Deletes the specified `MoleScan` from the container.
+    ///
+    /// - Parameter scan: The `MoleScan` instance to remove.
+    func delete(_ scan: MoleScan) {
+        deleteAndSave(errorMessage: "Failed to delete scan") { context in
+            context.delete(scan)
         }
     }
 
+    /// Deletes the relevant object(s) from the persistence context and immediately saves the change.
+    ///
+    /// Use this helper to keep deletion logic centralized and to ensure the context is persisted
+    /// right after items are marked for removal.
+    ///
+    /// - Important: Call this method on the correct queue/thread for the underlying persistence context.
     private func deleteAndSave(
         errorMessage: String,
         performDelete: (ModelContext) -> Void
@@ -376,6 +392,10 @@ class DataController {
         }
     }
     
+    /// Adds a new `Person` to the container using the provided name.
+    ///
+    /// - Parameter name: The name to assign to the newly created person.
+    /// - Returns: The newly created `Person` instance.
     func addPerson(name: String) -> Person {
         let context: ModelContext = container.mainContext
         let person: Person = Person(name: name.trimmingCharacters(in: .whitespacesAndNewlines))
@@ -388,6 +408,11 @@ class DataController {
         return person
     }
 
+    /// Renames the specified person to a new name.
+    ///
+    /// - Parameters:
+    ///   - person: The `Person` instance to rename.
+    ///   - newName: The new name to assign to the person.
     func rename(_ person: Person, to newName: String) {
         let context: ModelContext = container.mainContext
         person.name = newName.trimmingCharacters(in: .whitespacesAndNewlines)

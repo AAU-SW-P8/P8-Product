@@ -174,7 +174,7 @@ struct ReminderView: View {
                             ))
                     }
                     else {
-                        Text("No Person Selected")
+                        Text("No Person Registered")
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(.secondary)
                     }

@@ -25,18 +25,18 @@ struct OverviewHeaderView: View {
             Spacer()
             Button(action: onFilterTap) {
                 Image(systemName: "line.3.horizontal.decrease.circle")
-                    .font(.system(size: 22, weight: .semibold))
+                    .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(.primary)
-                    .frame(width: 44, height: 44)
+                    .frame(width: 40, height: 40)
             }
             .accessibilityIdentifier("overviewFilterButton")
             .accessibilityLabel(showingFilters ? "Close Filters" : "Open Filters")
 
             Button(action: onAddPersonTap) {
                 Image(systemName: "person.fill.badge.plus")
-                    .font(.system(size: 22, weight: .semibold))
+                    .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(.primary)
-                    .frame(width: 44, height: 44)
+                    .frame(width: 40, height: 40)
             }
         }
         .padding(.horizontal)

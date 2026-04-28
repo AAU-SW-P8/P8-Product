@@ -149,7 +149,7 @@ final class ImageCarouselUITests: XCTestCase {
     func testDetailCarouselShowsDeleteButton() {
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
 
-        let deleteButton = app.buttons["deleteMoleInstanceButton"]
+        let deleteButton = app.buttons["deleteMoleScanButton"]
         XCTAssertTrue(
             deleteButton.waitForExistence(timeout: 3),
             "Detail carousel should show delete button for selected scan"
@@ -164,7 +164,7 @@ final class ImageCarouselUITests: XCTestCase {
             || app.staticTexts["Diameter: 5,0 mm"].firstMatch.waitForExistence(timeout: 3),
             "Canceling delete should keep currently selected scan"
         )
-        let deleteButton = app.buttons["deleteMoleInstanceButton"]
+        let deleteButton = app.buttons["deleteMoleScanButton"]
         XCTAssertTrue(deleteButton.waitForExistence(timeout: 3))
         deleteButton.tap()
 
@@ -188,7 +188,7 @@ final class ImageCarouselUITests: XCTestCase {
             "Deleting the latest Left Arm scan should move detail view to the next available scan"
         )
 
-        let deleteButton = app.buttons["deleteMoleInstanceButton"]
+        let deleteButton = app.buttons["deleteMoleScanButton"]
         XCTAssertTrue(deleteButton.waitForExistence(timeout: 3))
         deleteButton.tap()
 
@@ -207,7 +207,7 @@ final class ImageCarouselUITests: XCTestCase {
     func testDeletingLastScanDeletesMoleAndReturnsToOverview() {
         Helpers.openMoleDetail(person: "Alex", mole: "Back Mole", in: app)
 
-        let deleteButton = app.buttons["deleteMoleInstanceButton"]
+        let deleteButton = app.buttons["deleteMoleScanButton"]
         XCTAssertTrue(deleteButton.waitForExistence(timeout: 3))
         deleteButton.tap()
 

@@ -243,30 +243,40 @@ struct MoleSegmentationView: View {
         )
     }
 
+    /// Builds the subtitle text for an existing mole row shown in the selection panel.
+    /// - Parameter mole: The mole being displayed.
+    /// - Returns: A formatted summary containing body part, latest scan date, and current diameter.
     private func moleSubtitle(for mole: Mole) -> String {
         let dateText: String = formattedLastScanDate(for: mole)
         let diameterText: String = formattedCurrentDiameter(for: mole)
         return "\(mole.bodyPart) · Last scanned \(dateText) · \(diameterText)"
     }
 
+    /// Formats the date of the most recent scan for a mole.
+    /// - Parameter mole: The mole whose latest scan date is requested.
+    /// - Returns: A localized abbreviated date string, or `"--"` if no scans exist.
     private func formattedLastScanDate(for mole: Mole) -> String {
-        let latestDate: Date? = mole.instances.compactMap { $0.moleScan?.captureDate }.max()
+        let latestDate: Date? = mole.scans.map(\.captureDate).max()
         guard let latestDate else { return "--" }
         return latestDate.formatted(date: .abbreviated, time: .omitted)
     }
 
+    /// Formats the diameter from the most recent scan for a mole.
+    /// - Parameter mole: The mole whose latest diameter is requested.
+    /// - Returns: Diameter text in millimeters with one decimal place, or `"-- mm"` when unavailable.
     private func formattedCurrentDiameter(for mole: Mole) -> String {
-        let latestInstance: MoleInstance? = mole.instances.max {
-            ($0.moleScan?.captureDate ?? .distantPast) < ($1.moleScan?.captureDate ?? .distantPast)
+        let latestScan: MoleScan? = mole.scans.max {
+            $0.captureDate < $1.captureDate
         }
 
-        guard let diameter: Float = latestInstance?.diameter, diameter > 0 else {
+        guard let diameter: Float = latestScan?.diameter, diameter > 0 else {
             return "-- mm"
         }
 
         return String(format: "%.1f mm", diameter)
     }
 
+    /// Dismisses and resets the select-mole bottom sheet state with animation.
     private func dismissSelectMolePanel() {
         withAnimation(.spring(response: 0.28, dampingFraction: 0.85)) {
             appState.showSelectMolePanel = false
@@ -311,6 +321,8 @@ struct MoleSegmentationView: View {
             )
     }
 
+    /// Shows a success toast message and schedules automatic dismissal.
+    /// - Parameter message: Message to present in the toast.
     private func showSuccessToast(_ message: String) {
         toastDismissTask?.cancel()
         withAnimation(.easeOut(duration: 0.22)) {

@@ -23,7 +23,7 @@ struct ImageCarousel: View {
     var mole: Mole? = nil
     @Binding var selectedIndex: Int
     @State private var scrollPositionID: UUID?
-    var onDeleteSelectedInstance: (() -> Void)? = nil
+    var onDeleteSelectedScan: (() -> Void)? = nil
     var height: CGFloat = 200
 
     var side: CarouselSide = .both
@@ -34,11 +34,7 @@ struct ImageCarousel: View {
     }
 
     private var selectedScan: MoleScan? {
-        Self.selectedScan(in: scans, at: selectedIndex)
-    }
-
-    private var selectedInstance: MoleInstance? {
-        Self.selectedInstance(in: scans, at: selectedIndex, for: mole)
+        Self.selectedScan(in: scans, at: selectedIndex, for: mole)
     }
 
     private var displayedScans: [(displayIndex: Int, originalIndex: Int, scan: MoleScan)] {
@@ -146,36 +142,34 @@ struct ImageCarousel: View {
             Text(selectedScan.captureDate, format: .dateTime.year().month().day().hour().minute())
                 .font(.caption2)
 
-            if let selectedInstance = selectedInstance {
-                HStack {
+            HStack {
+                Color.clear
+                    .frame(width: 28, height: 1)
+
+                Spacer()
+
+                VStack(spacing: 2) {
+                    Text("Diameter: \(Double(selectedScan.diameter), specifier: "%.1f") mm")
+                    Text("Area: \(Double(selectedScan.area), specifier: "%.1f") mm²")
+                }
+                .font(.caption2)
+                .fontWeight(.semibold)
+                .foregroundColor(.secondary)
+
+                Spacer()
+
+                if let onDeleteSelectedScan {
+                    Button(role: .destructive, action: onDeleteSelectedScan) {
+                        Image(systemName: "trash")
+                    }
+                    .frame(width: 28)
+                    .accessibilityIdentifier("deleteMoleScanButton")
+                } else {
                     Color.clear
                         .frame(width: 28, height: 1)
-
-                    Spacer()
-
-                    VStack(spacing: 2) {
-                        Text("Diameter: \(Double(selectedInstance.diameter), specifier: "%.1f") mm")
-                        Text("Area: \(Double(selectedInstance.area), specifier: "%.1f") mm²")
-                    }
-                    .font(.caption2)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.secondary)
-
-                    Spacer()
-
-                    if let onDeleteSelectedInstance {
-                        Button(role: .destructive, action: onDeleteSelectedInstance) {
-                            Image(systemName: "trash")
-                        }
-                        .frame(width: 28)
-                        .accessibilityIdentifier("deleteMoleInstanceButton")
-                    } else {
-                        Color.clear
-                            .frame(width: 28, height: 1)
-                    }
                 }
-                .padding(.top, 4)
             }
+            .padding(.top, 4)
         }
     }
 
@@ -205,7 +199,7 @@ struct ImageCarousel: View {
     }
 
     /**
-        Returns the MoleInstance corresponding to the given index and mole filter, using selectedScan to find the correct scan first.
+        Returns the MoleScan corresponding to the given index and mole filter, using selectedScan to find the correct scan first.
         If a mole is provided, it will return the instance matching that mole's ID. 
         If no mole is provided, it will return the first instance in the selected scan.
         Parameters:
@@ -213,14 +207,20 @@ struct ImageCarousel: View {
         - index: The requested index for selection.
         - mole: An optional Mole object to filter the instances by.
      */
-    static func selectedInstance(in scans: [MoleScan], at index: Int, for mole: Mole?) -> MoleInstance? {
+    static func selectedScan(in scans: [MoleScan], at index: Int, for mole: Mole?) -> MoleScan? {
         guard let scan = selectedScan(in: scans, at: index) else { return nil }
 
         if let mole {
-            return scan.instances.first(where: { $0.mole?.id == mole.id })
+            // Keep swipe/index behavior when the selected scan belongs to this mole.
+            if scan.mole?.id == mole.id {
+                return scan
+            }
+
+            // Fallback for mixed scan arrays where the indexed scan belongs to another mole.
+            return scans.first(where: { $0.mole?.id == mole.id })
         }
 
-        return scan.instances.first
+        return scan
     }
 
     enum DotItem: Hashable {

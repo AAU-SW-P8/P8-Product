@@ -25,11 +25,10 @@ struct OverviewAppStateTests {
             person: person
         )
 
-        let instances: [MoleInstance] = captureDates.map { date in
-            let scan = MoleScan(captureDate: date)
-            return MoleInstance(diameter: 1, area: 1, mole: mole, moleScan: scan)
+        let scans: [MoleScan] = captureDates.map { date in
+            return MoleScan(captureDate: date, diameter: 1, area: 1, mole: mole)
         }
-        mole.instances = instances
+        mole.scans = scans
         return mole
     }
 

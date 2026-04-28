@@ -27,7 +27,6 @@ struct ReminderAppStateDirectTests {
         defer { state.setSelectedPerson(nil) }
 
         let scanDate = Date(timeIntervalSinceNow: -2 * 24 * 60 * 60)
-        let scan = MoleScan(captureDate: scanDate)
         let mole = Mole(
             name: "Segmented Mole",
             bodyPart: "Back",
@@ -38,8 +37,8 @@ struct ReminderAppStateDirectTests {
             nextDueDate: nil,
             person: person
         )
-        let instance = MoleInstance(diameter: 1, area: 1, mole: mole, moleScan: scan)
-        mole.instances = [instance]
+        let scan = MoleScan(captureDate: scanDate, diameter: 1, area: 1, mole: mole)
+        mole.scans = [scan]
         person.moles = [mole]
 
         state.setDefaultReminderEnabled(true)
@@ -69,7 +68,6 @@ struct ReminderAppStateDirectTests {
         defer { state.setSelectedPerson(nil) }
 
         let scanDate = Date(timeIntervalSinceNow: -2 * 24 * 60 * 60)
-        let scan = MoleScan(captureDate: scanDate)
         let mole = Mole(
             name: "Back Mole",
             bodyPart: "Back",
@@ -80,8 +78,8 @@ struct ReminderAppStateDirectTests {
             nextDueDate: nil,
             person: person
         )
-        let instance = MoleInstance(diameter: 1, area: 1, mole: mole, moleScan: scan)
-        mole.instances = [instance]
+        let scan = MoleScan(captureDate: scanDate, diameter: 1, area: 1, mole: mole)
+        mole.scans = [scan]
         person.moles = [mole]
 
         state.setDefaultFrequency("Monthly")
@@ -126,7 +124,6 @@ struct ReminderAppStateDirectTests {
         defer { state.setSelectedPerson(nil) }
 
         let scanDate = Date(timeIntervalSinceNow: -3 * 24 * 60 * 60)
-        let scan = MoleScan(captureDate: scanDate)
         let mole = Mole(
             name: "Override Mole",
             bodyPart: "Back",
@@ -137,8 +134,8 @@ struct ReminderAppStateDirectTests {
             nextDueDate: nil,
             person: person
         )
-        let instance = MoleInstance(diameter: 1, area: 1, mole: mole, moleScan: scan)
-        mole.instances = [instance]
+        let scan = MoleScan(captureDate: scanDate, diameter: 1, area: 1, mole: mole)
+        mole.scans = [scan]
         person.moles = [mole]
 
         let binding = state.reminderModeBinding(for: mole)
@@ -157,7 +154,6 @@ struct ReminderAppStateDirectTests {
         defer { state.setSelectedPerson(nil) }
 
         let scanDate = Date(timeIntervalSinceNow: -2 * 24 * 60 * 60)
-        let scan = MoleScan(captureDate: scanDate)
         let mole = Mole(
             name: "Back Mole",
             bodyPart: "Back",
@@ -166,8 +162,8 @@ struct ReminderAppStateDirectTests {
             nextDueDate: nil,
             person: person
         )
-        let instance = MoleInstance(diameter: 1, area: 1, mole: mole, moleScan: scan)
-        mole.instances = [instance]
+        let scan = MoleScan(captureDate: scanDate, diameter: 1, area: 1, mole: mole)
+        mole.scans = [scan]
 
         state.updateReminder(for: mole, frequencyLabel: "Default")
 

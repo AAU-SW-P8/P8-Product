@@ -210,6 +210,51 @@ final class OverviewUITests: XCTestCase {
 
         XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3), "Selection should fall back after deleting selected person")
     }
+    
+    func testDeletePersonWithMolesDeletesPersonAndMoles() {
+        Helpers.openOverviewTab(in: app)
+        Helpers.movePersonSelection(to: "Jordan", in: app)
+
+        let taylor = app.staticTexts["Jordan"]
+        XCTAssertTrue(taylor.waitForExistence(timeout: 3))
+        taylor.press(forDuration: 1.0)
+
+        let deleteAction = app.buttons["Delete"]
+        XCTAssertTrue(deleteAction.waitForExistence(timeout: 3))
+        deleteAction.tap()
+
+        let deleteAlert = app.alerts["Delete Person"]
+        XCTAssertTrue(deleteAlert.waitForExistence(timeout: 3))
+        deleteAlert.buttons["Delete"].tap()
+
+        XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3), "Selection should fall back after deleting selected person")
+    }
+
+    func testNoPersonRegisteredTextShowsWhenNoPersonsExist() {
+        Helpers.openOverviewTab(in: app)
+
+        // Delete all existing people
+        let people = ["Alex", "Jordan", "Taylor"]
+        for person in people {
+            Helpers.movePersonSelection(to: person, in: app)
+            let personElement = app.staticTexts[person]
+            XCTAssertTrue(personElement.waitForExistence(timeout: 3))
+            personElement.press(forDuration: 1.0)
+
+            let deleteAction = app.buttons["Delete"]
+            XCTAssertTrue(deleteAction.waitForExistence(timeout: 3))
+            deleteAction.tap()
+
+            let deleteAlert = app.alerts["Delete Person"]
+            XCTAssertTrue(deleteAlert.waitForExistence(timeout: 3))
+            deleteAlert.buttons["Delete"].tap()
+        }
+
+        XCTAssertTrue(
+            app.staticTexts["No Person Registered"].waitForExistence(timeout: 3),
+            "Overview should show 'No Person Registered' when there are no people"
+        )
+    }
     // MARK: - Mole Management
     
     func testCancelDeleteMoleFromOverviewKeepsMole() {

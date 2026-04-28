@@ -61,7 +61,7 @@ struct MoleDetailView: View {
                             scans: appState.scans,
                             mole: appState.activeMole,
                             selectedIndex: $appState.selectedIndex,
-                            onDeleteSelectedInstance: {
+                            onDeleteSelectedScan: {
                                 appState.requestDeleteSelectedDetailInstance()
                             },
                             side: .both // Full circle for detail view
