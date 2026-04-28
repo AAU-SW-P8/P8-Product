@@ -45,94 +45,72 @@ private struct OverviewContentView: View {
     var body: some View {
         navigationContent
             .modifier(OverviewAlertsModifier(appState: appState))
-    }
-
-    // MARK: - Subviews
-
-    /// Header and navigation content, including the header with filter and add person buttons, the person selector with navigation between people, and the list of moles for the selected person. Also manages the presentation of the filter popup and its interaction with the rest of the UI.
-    private var navigationContent: some View {
-        NavigationStack {
-            ZStack(alignment: .topTrailing) {
-                VStack(spacing: 0) {
-                    OverviewHeaderView(
-                        showingFilters: showingFilters,
-                        onFilterTap: {
-                            showingFilters ? closeFilterPopup() : openFilterPopup()
-                        },
-                        onAddPersonTap: {
-                            appState.showingAddPerson = true
-                        }
-                    )
-                    OverviewPersonSelectorView(
-                        appState: appState,
-                        people: people
-                    )
-                    Divider()
-                    if let person: Person = appState.selectedPerson {
-                        OverviewMoleListView(
-                            appState: appState,
-                            person: person,
-                            moles: displayedMoles(for: person)
-                        )
-                    }
-                    Spacer()
-                }
-
-                if showingFilters {
-                    Color.black.opacity(0.001)
-                        .ignoresSafeArea()
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            closeFilterPopup()
-                        }
-                        .zIndex(1)
-                }
-
-                if showingFilters {
-                    OverviewFilterPopupView(
-                        sortOption: $sortOption,
-                        showingBodyPartDropdown: $showingBodyPartDropdown,
-                        selectedBodyParts: $selectedBodyParts,
-                        availableBodyParts: availableBodyParts,
-                        selectedBodyPartsSummary: selectedBodyPartsSummary,
-                        bodyPartDropdownHeight: bodyPartDropdownHeight,
-                        onToggleBodyPartDropdown: {
-                            withAnimation(.easeInOut(duration: 0.16)) {
-                                showingBodyPartDropdown.toggle()
-                            }
-                        },
-                        onToggleBodyPart: toggleBodyPart,
-                        onReset: {
-                            selectedBodyParts = []
-                            sortOption = .recent
-                        },
-                        onDone: closeFilterPopup
-                    )
-                        .padding(.top, 64)
-                        .padding(.trailing, 12)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                        .zIndex(2)
-                }
-            }
             .onAppear {
                 appState.initializeSelectionIfNeeded(with: people)
             }
             .onChange(of: people) { _, newValue in
                 appState.initializeSelectionIfNeeded(with: newValue)
             }
-            .onChange(of: appState.selectedPerson?.id) { _, _ in
-                // Keep live filter choices when switching pages/person, but drop options that are no longer valid.
-                closeFilterPopup()
-                selectedBodyParts = []
+    }
+
+    // MARK: - Subviews
+
+    /// Header and navigation content, including the header with filter and add person buttons, the person selector with navigation between people, and the list of moles for the selected person. Also manages the presentation of the filter popup and its interaction with the rest of the UI.
+    private var navigationContent: some View {
+    NavigationStack {
+        VStack(spacing: 0) {
+            OverviewHeaderView(
+                showingFilters: showingFilters,
+                onFilterTap: { showingFilters = true }, // Simply trigger the sheet
+                onAddPersonTap: { appState.showingAddPerson = true }
+            )
+            
+            OverviewPersonSelectorView(appState: appState, people: people)
+            
+            Divider()
+            
+            if let person = appState.selectedPerson {
+                OverviewMoleListView(
+                    appState: appState,
+                    person: person,
+                    moles: displayedMoles(for: person)
+                )
             }
-            .onChange(of: showingFilters) { _, isVisible in
-                if !isVisible {
-                    showingBodyPartDropdown = false
+            Spacer()
+        }
+        // RESET LOGIC: Reset filters to "All" when switching person
+        .onChange(of: appState.selectedPerson?.id) { _, _ in
+            selectedBodyParts = [] 
+            sortOption = .recent
+        }
+        // NATIVE FILTER SHEET
+        .sheet(isPresented: $showingFilters) {
+            OverviewFilterPopupView(
+                sortOption: $sortOption,
+                selectedBodyParts: $selectedBodyParts,
+                availableBodyParts: availableBodyParts,
+                onToggleBodyPart: toggleBodyPart,
+                onReset: {
+                    selectedBodyParts = []
+                    sortOption = .recent
                 }
-            }
-            .onDisappear {
-                closeFilterPopup()
-            }
+            )
+            .presentationDetents([.medium, .large]) // Standard iOS detents
+            .presentationDragIndicator(.visible)
+        }
+    }
+    }
+
+    private func toggleBodyPart(_ bodyPart: String) {
+        if selectedBodyParts.contains(bodyPart) {
+            selectedBodyParts.remove(bodyPart)
+        } else {
+            selectedBodyParts.insert(bodyPart)
+        }
+        
+        // "ALL" LOGIC: If all parts are selected, reset to "All" (empty set)
+        if !availableBodyParts.isEmpty && selectedBodyParts.count == availableBodyParts.count {
+            selectedBodyParts = []
         }
     }
 
@@ -184,14 +162,5 @@ private struct OverviewContentView: View {
             selectedBodyParts: selectedBodyParts,
             sortOption: sortOption
         )
-    }
-
-    /// Toggles the selection of a body part in the filter options. If the body part is already selected, it removes it from the set of selected body parts. If it is not selected, it adds it to the set. This function is called when the user taps on a body part in the filter popup, allowing them to customize which body parts are included in the mole list.
-    private func toggleBodyPart(_ bodyPart: String) {
-        if selectedBodyParts.contains(bodyPart) {
-            selectedBodyParts.remove(bodyPart)
-        } else {
-            selectedBodyParts.insert(bodyPart)
-        }
     }
 }

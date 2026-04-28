@@ -27,14 +27,14 @@ final class Helpers {
 		line: UInt = #line
 	) {
 		let captureTab = app.tabBars.buttons["Capture"]
-		captureTab.tap()
-
 		XCTAssertTrue(
 			captureTab.waitForExistence(timeout: 3),
 			"Capture tab button should exist in the tab bar",
 			file: file,
 			line: line
 		)
+		captureTab.tap()
+
 		XCTAssertTrue(
 			captureTab.isSelected,
 			"Capture tab should be selected after opening it",

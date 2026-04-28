@@ -162,6 +162,51 @@ struct OverviewAppStateTests {
         #expect(sorted.map(\.name) == ["New", "Old", "Very Old", "No Scan"])
     }
 
+    @Test("displayed moles sort by next due date and put no-due-date moles last")
+    func displayedMolesSortByNextDueDate() {
+        let state = makeState()
+        let person = Person(name: "Alex")
+
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let dueSoon = now.addingTimeInterval(1 * 86_400)
+        let dueLater = now.addingTimeInterval(7 * 86_400)
+
+        let laterMole = Mole(
+            name: "Later",
+            bodyPart: "Back",
+            isReminderActive: true,
+            reminderFrequency: .monthly,
+            nextDueDate: dueLater,
+            person: person
+        )
+        let noDueDateMole = Mole(
+            name: "No Due Date",
+            bodyPart: "Arm",
+            isReminderActive: false,
+            reminderFrequency: nil,
+            nextDueDate: nil,
+            person: person
+        )
+        let soonMole = Mole(
+            name: "Soon",
+            bodyPart: "Leg",
+            isReminderActive: true,
+            reminderFrequency: .weekly,
+            nextDueDate: dueSoon,
+            person: person
+        )
+
+        person.moles = [laterMole, noDueDateMole, soonMole]
+
+        let sorted = state.displayedMoles(
+            for: person,
+            selectedBodyParts: [],
+            sortOption: .nextDueDate
+        )
+
+        #expect(sorted.map(\.name) == ["Soon", "Later", "No Due Date"])
+    }
+
     @Test("displayed moles with multi-select body parts includes all selected parts")
     func displayedMolesFilterByMultipleBodyParts() {
         let state = makeState()
