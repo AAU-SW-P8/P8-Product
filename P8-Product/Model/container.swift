@@ -398,7 +398,7 @@ class DataController {
     /// - Returns: The newly created `Person` instance.
     func addPerson(name: String) -> Person {
         let context: ModelContext = container.mainContext
-        let person: Person = Person(name: name)
+        let person: Person = Person(name: name.trimmingCharacters(in: .whitespacesAndNewlines))
         context.insert(person)
         do {
             try context.save()
@@ -415,7 +415,7 @@ class DataController {
     ///   - newName: The new name to assign to the person.
     func rename(_ person: Person, to newName: String) {
         let context: ModelContext = container.mainContext
-        person.name = newName
+        person.name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
         do {
             try context.save()
         } catch {

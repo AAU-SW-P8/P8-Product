@@ -85,6 +85,24 @@ final class OverviewUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3), "Selection should remain on Alex when empty name is submitted")
     }
 
+    func testCreatePersonWithWhitespaceOnlyNameDoesNotCreatePerson() {
+        Helpers.openOverviewTab(in: app)
+
+        app.buttons["person.fill.badge.plus"].firstMatch.tap()
+
+        let addAlert = app.alerts["Add Person"]
+        XCTAssertTrue(addAlert.waitForExistence(timeout: 3))
+
+        let nameField = addAlert.textFields["Name"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: 3))
+        nameField.replaceText(with: "   ")
+
+        addAlert.buttons["Add"].tap()
+
+        XCTAssertFalse(addAlert.waitForExistence(timeout: 1), "Add alert should dismiss after attempting to add a whitespace-only name")
+        XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3), "Selection should remain on Alex when whitespace-only name is submitted")
+    }
+
     func testRenamePersonCancelDoesNotChangeName() {
         Helpers.openOverviewTab(in: app)
 
@@ -132,6 +150,29 @@ final class OverviewUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3), "Saving empty name should keep previous name")
     }
 
+    func testRenamePersonWithWhitespaceOnlyNameDoesNotChangeName() {
+        Helpers.openOverviewTab(in: app)
+
+        let currentPerson = app.staticTexts["Alex"]
+        XCTAssertTrue(currentPerson.waitForExistence(timeout: 3))
+        currentPerson.press(forDuration: 1.0)
+
+        let editButton = app.buttons["Edit Name"]
+        XCTAssertTrue(editButton.waitForExistence(timeout: 3))
+        editButton.tap()
+
+        let editAlert = app.alerts["Edit Person"]
+        XCTAssertTrue(editAlert.waitForExistence(timeout: 3))
+
+        let nameField = editAlert.textFields["Name"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: 3))
+        nameField.replaceText(with: "   ")
+
+        editAlert.buttons["Save"].tap()
+
+        XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3), "Saving whitespace-only name should keep previous name")
+    }
+
     func testDeletePersonCancelKeepsPerson() {
         Helpers.openOverviewTab(in: app)
         Helpers.movePersonSelection(to: "Taylor", in: app)
@@ -168,6 +209,51 @@ final class OverviewUITests: XCTestCase {
         deleteAlert.buttons["Delete"].tap()
 
         XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3), "Selection should fall back after deleting selected person")
+    }
+    
+    func testDeletePersonWithMolesDeletesPersonAndMoles() {
+        Helpers.openOverviewTab(in: app)
+        Helpers.movePersonSelection(to: "Jordan", in: app)
+
+        let taylor = app.staticTexts["Jordan"]
+        XCTAssertTrue(taylor.waitForExistence(timeout: 3))
+        taylor.press(forDuration: 1.0)
+
+        let deleteAction = app.buttons["Delete"]
+        XCTAssertTrue(deleteAction.waitForExistence(timeout: 3))
+        deleteAction.tap()
+
+        let deleteAlert = app.alerts["Delete Person"]
+        XCTAssertTrue(deleteAlert.waitForExistence(timeout: 3))
+        deleteAlert.buttons["Delete"].tap()
+
+        XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3), "Selection should fall back after deleting selected person")
+    }
+
+    func testNoPersonRegisteredTextShowsWhenNoPersonsExist() {
+        Helpers.openOverviewTab(in: app)
+
+        // Delete all existing people
+        let people = ["Alex", "Jordan", "Taylor"]
+        for person in people {
+            Helpers.movePersonSelection(to: person, in: app)
+            let personElement = app.staticTexts[person]
+            XCTAssertTrue(personElement.waitForExistence(timeout: 3))
+            personElement.press(forDuration: 1.0)
+
+            let deleteAction = app.buttons["Delete"]
+            XCTAssertTrue(deleteAction.waitForExistence(timeout: 3))
+            deleteAction.tap()
+
+            let deleteAlert = app.alerts["Delete Person"]
+            XCTAssertTrue(deleteAlert.waitForExistence(timeout: 3))
+            deleteAlert.buttons["Delete"].tap()
+        }
+
+        XCTAssertTrue(
+            app.staticTexts["No Person Registered"].waitForExistence(timeout: 3),
+            "Overview should show 'No Person Registered' when there are no people"
+        )
     }
     // MARK: - Mole Management
     

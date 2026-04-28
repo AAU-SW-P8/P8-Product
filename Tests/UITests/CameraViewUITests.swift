@@ -92,12 +92,11 @@ final class CameraViewUITests: XCTestCase {
     }
 
     // MARK: - Navigation to MoleSegmentationView
-    //
     // The production `-UITest_InjectCapturedImage <base64-PNG>` launch
     // argument is consumed by ContentView, which decodes the payload into a
     // UIImage and hands it to `CameraView(preloadedImage:)`. That triggers
     // the same `onChange` path a real capture would
-
+    
     func testSegmentationViewIsNotShownWithoutCapturedImage() {
         // Without an injected image on the simulator there's no way to
         // produce a capturedImage, so the navigation must stay on the placeholder.

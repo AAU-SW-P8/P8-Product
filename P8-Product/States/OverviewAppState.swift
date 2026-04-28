@@ -111,8 +111,13 @@ class OverviewAppState {
      Should be called when confirming the addition of a new person.
      */
     func confirmAddPerson() {
-        guard !newPersonName.isEmpty else { return }
-        let newPerson: Person = dataController.addPerson(name: newPersonName)
+        let trimmedName = newPersonName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else {
+            cancelAddPerson()
+            return
+        }
+
+        let newPerson: Person = dataController.addPerson(name: trimmedName)
         selectedPerson = newPerson
         newPersonName = ""
         showingAddPerson = false
@@ -142,8 +147,9 @@ class OverviewAppState {
      Should be called when confirming the edit of a person.
      */
     func confirmEdit() {
-        if let person: Person = personToEdit, !editingName.isEmpty {
-            dataController.rename(person, to: editingName)
+        let trimmedName = editingName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let person: Person = personToEdit, !trimmedName.isEmpty {
+            dataController.rename(person, to: trimmedName)
         }
         cancelEdit()
     }
@@ -170,8 +176,7 @@ class OverviewAppState {
      Deletes the pending person and clears delete alert state.
      Also clears the current selection if the deleted person was selected.
      */
-    func confirmDeletePerson() {
-
+    func confirmDeletePerson(from people: [Person]) {
         defer {
             personToDelete = nil
             showingDeleteAlert = false
@@ -179,12 +184,27 @@ class OverviewAppState {
 
         guard let person: Person = personToDelete else { return }
 
-        if selectedPerson == person { 
-            selectedPerson = nil 
+        if selectedPerson == person, let index = people.firstIndex(of: person) {
+            if people.count == 1 {
+                selectedPerson = nil
+            } else if index == 0 {
+                selectedPerson = people[1]
+            } else {
+                selectedPerson = people.first
+            }
+            selectedMoleNavigationID = nil
         }
 
-        dataController.delete(person)
+        if selectedMole?.person == person {
+            selectedMole = nil
+            selectedMoleNavigationID = nil
+        }
 
+        let personToRemove: Person = person
+        Task { @MainActor in
+            await Task.yield()
+            dataController.delete(personToRemove)
+        }
     }
     
     // MARK: - Mole Actions

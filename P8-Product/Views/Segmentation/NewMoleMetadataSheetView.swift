@@ -18,10 +18,12 @@ struct NewMoleMetadataSheetView: View {
                         }
                     }
                     .pickerStyle(.menu)
+                    .accessibilityIdentifier("segmentationNewMoleBodyPartPicker")
                 }
 
                 Section("Mole Name") {
                     TextField("Mole name", text: $newMoleName)
+                        .accessibilityIdentifier("segmentationNewMoleNameField")
                     if let validationMessage {
                         Text(validationMessage)
                             .font(.caption)
@@ -39,12 +41,14 @@ struct NewMoleMetadataSheetView: View {
                     Button("Cancel") {
                         showSheet = false
                     }
+                    .accessibilityIdentifier("segmentationNewMoleCancelButton")
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
                         onSave()
                     }
                     .disabled(!canSave)
+                    .accessibilityIdentifier("segmentationNewMoleSaveButton")
                 }
             }
         }

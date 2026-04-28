@@ -173,6 +173,12 @@ struct ReminderView: View {
                                 removal: .move(edge: appState.slideEdge == .leading ? .trailing : .leading).combined(with: .opacity)
                             ))
                     }
+                    else {
+                        Text("No Person Registered")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.secondary)
+                    }
+                    
                 }
                 .frame(maxWidth: .infinity)
                 .clipped()

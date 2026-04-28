@@ -11,6 +11,21 @@ final class Helpers {
 		app.tabBars.buttons["Overview"].tap()
 		XCTAssertTrue(app.staticTexts["Mole Overview"].waitForExistence(timeout: 3), file: file, line: line)
 	}
+    
+    static func openOverviewTabWhenDetailOrEvolutionIsOpen(
+		in app: XCUIApplication,
+		file: StaticString = #filePath,
+		line: UInt = #line
+	) {
+		app.tabBars.buttons["Overview"].tap()
+		XCTAssertTrue(
+			app.staticTexts["Mole Overview"].waitForExistence(timeout: 3) ||
+			app.segmentedControls["moleDetailPagePicker"].waitForExistence(timeout: 3),
+			"Either overview headline or detail page picker should be visible after tapping overview tab",
+			file: file,
+			line: line
+		)
+	}
 
 	static func openReminderTab(
 		in app: XCUIApplication,

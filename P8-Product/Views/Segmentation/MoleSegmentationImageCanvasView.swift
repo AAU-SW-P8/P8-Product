@@ -6,6 +6,10 @@ struct MoleSegmentationImageCanvasView: View {
     let detectedBoxes: [CGRect]
     let onLongPressDetectedBox: (CGRect) -> Void
 
+    private var allowsUITestImageLongPress: Bool {
+        ProcessInfo.processInfo.arguments.contains("-UITest_MockSegmentationResult")
+    }
+
     @State private var currentZoom: Double = 0.0
     @State private var totalZoom: Double = 1.0
     @State private var currentPan: CGSize = .zero
@@ -34,7 +38,7 @@ struct MoleSegmentationImageCanvasView: View {
                                 let scaleX: Double = viewportWidth / mask.size.width
                                 let scaleY: Double = viewportHeight / mask.size.height
 
-                                ForEach(Array(detectedBoxes.enumerated()), id: \.offset) { _, box in
+                                ForEach(Array(detectedBoxes.enumerated()), id: \.offset) { index, box in
                                     let rect: CGRect = CGRect(
                                         x: box.minX * scaleX,
                                         y: box.minY * scaleY,
@@ -47,6 +51,8 @@ struct MoleSegmentationImageCanvasView: View {
                                         .contentShape(Rectangle())
                                         .frame(width: rect.width, height: rect.height)
                                         .position(x: rect.midX, y: rect.midY)
+                                        .accessibilityIdentifier("segmentationDetectedBox_\(index)")
+                                        .accessibilityLabel("Detected Mole \(index + 1)")
                                         .onLongPressGesture {
                                             onLongPressDetectedBox(box)
                                         }
@@ -60,6 +66,14 @@ struct MoleSegmentationImageCanvasView: View {
                     }
                 }
                 .frame(width: viewportWidth, height: viewportHeight, alignment: .center)
+                .accessibilityIdentifier("segmentationCanvasImage")
+                .accessibilityLabel("Segmentation Canvas")
+                .contentShape(Rectangle())
+                .onLongPressGesture {
+                    guard allowsUITestImageLongPress,
+                          let firstBox = detectedBoxes.first else { return }
+                    onLongPressDetectedBox(firstBox)
+                }
                 .scaleEffect(zoom, anchor: .center)
                 .offset(pan)
                 .clipped()

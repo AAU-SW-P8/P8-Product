@@ -10,6 +10,7 @@ import SwiftUI
 /// It binds to the OverviewAppState to control the visibility and content of each alert based on user interactions.
 struct OverviewAlertsModifier: ViewModifier {
     @Bindable var appState: OverviewAppState
+    let people: [Person]
     
     /// Configures the view to present alerts for adding, editing, and deleting people and moles.
     /// With appropriate titles, messages, and actions based on the current state of the app.
@@ -26,7 +27,7 @@ struct OverviewAlertsModifier: ViewModifier {
                 Button("Cancel", role: .cancel) { appState.cancelEdit() }
             }
             .alert("Delete Person", isPresented: $appState.showingDeleteAlert) {
-                Button("Delete", role: .destructive) { appState.confirmDeletePerson() }
+                Button("Delete", role: .destructive) { appState.confirmDeletePerson(from: people) }
                 Button("Cancel", role: .cancel) {
                     appState.personToDelete = nil
                 }
