@@ -1,3 +1,4 @@
+import UIKit
 import SwiftUI
 import SwiftData
 import simd
@@ -56,6 +57,7 @@ class MoleSegmentationAppState {
     private let dataController: DataController
     private let modelLoader: SAM3ModelLoader = SAM3ModelLoader.shared
     private let calculator = Calculator()
+    private let calclinear = CalculatorLinear()
     
     init(dataController: DataController) {
         self.dataController = dataController
@@ -286,7 +288,8 @@ class MoleSegmentationAppState {
             depthMap: depthMap,
             confidenceMap: confidenceMap,
             cameraIntrinsics: cameraIntrinsics,
-            imageOrientation: capturedImageOrientation
+            imageOrientation: capturedImageOrientation,
+            model: .projection
         )
 
         let area = measurement.areaMM2.isFinite && measurement.areaMM2 > 0 ? Float(measurement.areaMM2) : 0
