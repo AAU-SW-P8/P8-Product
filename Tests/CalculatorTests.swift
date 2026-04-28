@@ -21,7 +21,8 @@ struct CalculatorTests {
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .projection
         ).areaMM2
 
         #expect(abs(Double(area) - 1.0) < 1e-6)
@@ -39,7 +40,8 @@ struct CalculatorTests {
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .projection
         ).areaMM2
 
         #expect(abs(Double(area) - 1.0) < 1e-6)
@@ -56,7 +58,8 @@ struct CalculatorTests {
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .projection
         ).areaMM2
 
         // Both pixels contribute proportionally: prob = alpha / (0.5 * 255)
@@ -78,7 +81,8 @@ struct CalculatorTests {
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .projection
         ).areaMM2
 
         // prob = 64 / 127.5 ≈ 0.502
@@ -101,7 +105,8 @@ struct CalculatorTests {
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .projection
         ).areaMM2
 
         // prob = 127 / 127.5 ≈ 0.996, 4 pixels
@@ -121,7 +126,8 @@ struct CalculatorTests {
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .projection
         ).areaMM2
 
         // 3 pixels (alpha 255 clamps to prob 1.0), median depth = 0.20
@@ -142,7 +148,8 @@ struct CalculatorTests {
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .projection
         ).areaMM2
 
         #expect(area == 0.0)
@@ -160,7 +167,8 @@ struct CalculatorTests {
             depthMap: depth,
             confidenceMap: confidence,
             cameraIntrinsics: intrinsics,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .projection
         ).areaMM2
 
         // Both pixels count for area (prob clamped to 1.0 each),
@@ -182,7 +190,8 @@ struct CalculatorTests {
             depthMap: nil,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .projection
         ).areaMM2
 
         #expect(area == 0.0)
@@ -198,7 +207,8 @@ struct CalculatorTests {
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: nil,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .projection
         ).areaMM2
 
         #expect(area == 0.0)
@@ -215,7 +225,8 @@ struct CalculatorTests {
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .projection
         ).areaMM2
 
         #expect(area == 0.0)
@@ -232,7 +243,8 @@ struct CalculatorTests {
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .projection
         ).areaMM2
 
         #expect(area == 0.0)
@@ -251,7 +263,8 @@ struct CalculatorTests {
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .projection
         ).diameterMM
 
         // pdx = 1 / fx = 1e-3, depth = 1m → diameter = 1mm
@@ -269,7 +282,8 @@ struct CalculatorTests {
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .projection
         ).diameterMM
 
         // Only one masked point → below minimumDiameterPointCount.
@@ -287,7 +301,8 @@ struct CalculatorTests {
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .projection
         ).diameterMM
 
         #expect(diameter == 0.0)
@@ -303,7 +318,8 @@ struct CalculatorTests {
             depthMap: nil,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .projection
         ).diameterMM
 
         #expect(diameter == 0.0)
@@ -322,7 +338,8 @@ struct CalculatorTests {
             depthMap: depth,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .projection
         )
 
         // 2 pixels at depth 1m with fx=fy=1000 → 2 mm², 1 mm across.
@@ -340,7 +357,8 @@ struct CalculatorTests {
             depthMap: nil,
             confidenceMap: nil,
             cameraIntrinsics: intrinsics,
-            imageOrientation: .up
+            imageOrientation: .up,
+            model: .projection
         )
 
         #expect(metrics.areaMM2 == 0.0)

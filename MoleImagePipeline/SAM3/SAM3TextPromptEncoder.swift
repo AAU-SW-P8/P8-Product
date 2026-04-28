@@ -20,6 +20,7 @@ final class SAM3TextPromptEncoder {
     // CLIP tokenizer vocabulary IDs.
     private static let startOfTextToken: Int32 = 49406  // <|startoftext|>
     private static let moleToken:        Int32 = 23529  // "mole"
+    //private static let moleToken:        Int32 = 4170  // "coin"
     private static let endOfTextToken:   Int32 = 49407  // <|endoftext|>
     private static let paddingToken:     Int32 = 0
     private static let sequenceLength:   Int = 32
