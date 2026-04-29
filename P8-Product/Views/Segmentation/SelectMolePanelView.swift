@@ -78,7 +78,6 @@ struct SelectMolePanelView: View {
             Text(personName)
                 .font(.headline)
                 .fontWeight(.semibold)
-                .foregroundStyle(.white)
 
             Spacer(minLength: 8)
 
@@ -94,7 +93,6 @@ struct SelectMolePanelView: View {
                     }
                 }
                 .labelsHidden()
-                .tint(.white)
                 .font(.subheadline)
             }
             .pickerStyle(.menu)
@@ -145,7 +143,6 @@ struct SelectMolePanelView: View {
                 Text("Add to an existing mole")
                     .font(.subheadline)
                     .fontWeight(.semibold)
-                    .foregroundStyle(.white)
                 Spacer()
                 Text("→")
                     .font(.headline)
@@ -169,8 +166,7 @@ struct SelectMolePanelView: View {
             HStack {
                 Text("Start tracking as a new mole")
                     .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.8))
-
+                
                 Spacer()
 
                 Text("+")
@@ -184,7 +180,6 @@ struct SelectMolePanelView: View {
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(
-                        .white.opacity(0.35),
                         style: StrokeStyle(lineWidth: 1, dash: [6])
                     )
             )
@@ -220,7 +215,6 @@ struct SelectMolePanelView: View {
                     Text(mole.name)
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                        .foregroundStyle(.white)
                     Text(moleSubtitle(mole))
                         .font(.caption)
                         .foregroundStyle(.secondary)

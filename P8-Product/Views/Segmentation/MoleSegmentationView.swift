@@ -67,6 +67,10 @@ struct MoleSegmentationView: View {
         appState.maskOverlay != nil || !appState.detectedBoxes.isEmpty
     }
 
+    private var isChooseActionPanelPresented: Bool {
+        appState.showSelectMolePanel && selectMolePanelStep == .chooseAction
+    }
+
     // MARK: - View Body
     var body: some View {
         ZStack {
@@ -110,6 +114,7 @@ struct MoleSegmentationView: View {
         }
         .navigationTitle("Mole Segmentation")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(isChooseActionPanelPresented)
         .accessibilityIdentifier("moleSegmentationView")
         .toolbar { toolbarContent }
         .safeAreaInset(edge: .top) {
@@ -314,13 +319,15 @@ struct MoleSegmentationView: View {
      */
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .navigationBarTrailing) {
-            Button {
-                appState.showSettings = true
-            } label: {
-                Label("Settings", systemImage: "slider.horizontal.3")
+        if !isChooseActionPanelPresented {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    appState.showSettings = true
+                } label: {
+                    Label("Settings", systemImage: "slider.horizontal.3")
+                }
+                .disabled(appState.isProcessing)
             }
-            .disabled(appState.isProcessing)
         }
     }
 
