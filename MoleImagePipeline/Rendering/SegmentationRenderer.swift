@@ -22,15 +22,15 @@ final class SegmentationRenderer {
 
     /// Distinct colors used to tint successive detections (RGB, 0–255).
     private static let palette: [(UInt8, UInt8, UInt8)] = [
-        (230,  25,  75), // red
-        ( 60, 180,  75), // green
+        (230, 25, 75), // red
+        ( 60, 180, 75), // green
         (  0, 130, 200), // blue
-        (255, 225,  25), // yellow
-        (245, 130,  48), // orange
-        (145,  30, 180), // purple
+        (255, 225, 25), // yellow
+        (245, 130, 48), // orange
+        (145, 30, 180), // purple
         ( 70, 240, 240), // cyan
-        (240,  50, 230), // magenta
-        (210, 245,  60), // lime
+        (240, 50, 230), // magenta
+        (210, 245, 60), // lime
         (250, 190, 212), // pink
     ]
 
@@ -224,9 +224,9 @@ final class SegmentationRenderer {
     /// image so boxes don't look chunky on high-resolution photos.
     private func drawBoundingBox(_ rect: CGRect, color: (UInt8, UInt8, UInt8), imageSize: CGSize, in ctx: CGContext) {
         ctx.setStrokeColor(
-            red:   CGFloat(color.0) / 255.0,
+            red: CGFloat(color.0) / 255.0,
             green: CGFloat(color.1) / 255.0,
-            blue:  CGFloat(color.2) / 255.0,
+            blue: CGFloat(color.2) / 255.0,
             alpha: 1.0
         )
         ctx.setLineWidth(max(imageSize.width / 2000, 1.0))
@@ -247,9 +247,9 @@ final class SegmentationRenderer {
         let attrs: [NSAttributedString.Key: Any] = [
             .font: UIFont.boldSystemFont(ofSize: max(imageSize.width / 60, 10)),
             .foregroundColor: UIColor(
-                red:   CGFloat(color.0) / 255.0,
+                red: CGFloat(color.0) / 255.0,
                 green: CGFloat(color.1) / 255.0,
-                blue:  CGFloat(color.2) / 255.0,
+                blue: CGFloat(color.2) / 255.0,
                 alpha: 1.0
             ),
             .backgroundColor: UIColor(white: 1.0, alpha: 0.75),

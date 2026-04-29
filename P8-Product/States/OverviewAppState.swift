@@ -31,7 +31,7 @@ class OverviewAppState {
 
     // Keeps list-driven navigation stable while detail view is open.
     var selectedMoleNavigationID: UUID?
-    
+
     // MARK: - UI Flow State
     var showingAddPerson: Bool = false
     var showingEditPerson: Bool = false
@@ -51,9 +51,9 @@ class OverviewAppState {
     var capturedDepthMap: CVPixelBuffer?
     var capturedConfidenceMap: CVPixelBuffer?
     var capturedIntrinsics: simd_float3x3?
-    
+
     private let dataController: DataController
-    
+
     /**
      Creates overview state with the shared data controller dependency.
      - Parameter dataController: The controller used for person and mole persistence actions.
@@ -61,9 +61,9 @@ class OverviewAppState {
     init(dataController: DataController) {
         self.dataController = dataController
     }
-    
+
     // MARK: - Person Initialization & Navigation
-    
+
     /**
      Initializes the selected person if none is currently selected.
      Should be called when the list of people is loaded or changes.
@@ -73,7 +73,7 @@ class OverviewAppState {
             selectedPerson = firstPerson
         }
     }
-    
+
     /**
      Selects the previous person in the list, if possible, and sets the slide animation direction.
      - Parameter people: The current list of people to determine the index of the selected person.
@@ -82,13 +82,13 @@ class OverviewAppState {
         guard let current: Person = selectedPerson,
               let index: Array<Person>.Index = people.firstIndex(of: current),
               index > 0 else { return }
-        
+
         slideEdge = .leading
         withAnimation {
             selectedPerson = people[index - 1]
         }
     }
-    
+
     /**
      Selects the next person in the list, if possible, and sets the slide animation direction.
      - Parameter people: The current list of people to determine the index of the selected person.
@@ -97,15 +97,15 @@ class OverviewAppState {
         guard let current: Person = selectedPerson,
               let index: Array<Person>.Index = people.firstIndex(of: current),
               index < people.count - 1 else { return }
-        
+
         slideEdge = .trailing
         withAnimation {
             selectedPerson = people[index + 1]
         }
     }
-    
+
     // MARK: - Person CRUD Actions
-    
+
     /** 
      Validates and creates a new person, then selects them and resets the add person state.
      Should be called when confirming the addition of a new person.
@@ -122,7 +122,7 @@ class OverviewAppState {
         newPersonName = ""
         showingAddPerson = false
     }
-    
+
     /**
      Resets the add person state without creating a new person.
      Should be called when cancelling the addition of a new person.
@@ -131,7 +131,7 @@ class OverviewAppState {
         newPersonName = ""
         showingAddPerson = false
     }
-    
+
     /**
      Starts the editing process for a person.
      - Parameter person: The person to edit.
@@ -141,7 +141,7 @@ class OverviewAppState {
         editingName = person.name
         showingEditPerson = true
     }
-    
+
     /**
      Validates and saves the edited person's name, then resets the edit state.
      Should be called when confirming the edit of a person.
@@ -153,7 +153,7 @@ class OverviewAppState {
         }
         cancelEdit()
     }
-    
+
     /**
      Resets edit-related temporary state and dismisses the edit sheet.
      */
@@ -162,7 +162,7 @@ class OverviewAppState {
         editingName = ""
         showingEditPerson = false
     }
-    
+
     /**
      Stores the person pending deletion and presents the delete confirmation alert.
      - Parameter person: The person targeted for deletion.
@@ -206,9 +206,9 @@ class OverviewAppState {
             dataController.delete(personToRemove)
         }
     }
-    
+
     // MARK: - Mole Actions
-    
+
     /**
      Stores the mole pending deletion and presents the delete confirmation alert.
      - Parameter mole: The mole targeted for deletion.
@@ -226,7 +226,7 @@ class OverviewAppState {
         selectedMole = mole
         selectedMoleNavigationID = mole?.id
     }
-    
+
     /**
      Deletes the pending mole and clears mole delete alert state.
      */
@@ -240,7 +240,7 @@ class OverviewAppState {
         guard let mole: Mole = moleToDelete else { return}
 
         dataController.delete(mole)
-        
+
     }
 
     // MARK: - Overview Filtering & Sorting

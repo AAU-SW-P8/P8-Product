@@ -8,7 +8,6 @@
 
 import XCTest
 
-
 final class MoleDetailFlowUITests: XCTestCase {
 
     private var app: XCUIApplication!
@@ -135,7 +134,7 @@ final class MoleDetailFlowUITests: XCTestCase {
         Helpers.movePersonSelection(to: "Jordan", in: app)
         XCTAssertTrue(app.staticTexts["Jordan"].waitForExistence(timeout: 3),
                       "Overview navigation should reach Jordan from mock data")
-        
+
         Helpers.movePersonSelection(to: "Taylor", in: app)
         XCTAssertTrue(app.staticTexts["Taylor"].waitForExistence(timeout: 3),
                       "Overview navigation should reach Taylor from mock data")

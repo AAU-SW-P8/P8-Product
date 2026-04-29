@@ -135,12 +135,12 @@ struct ChartView: View {
             let padding = max(abs(minValue) * 0.05, 1)
             return (minValue - padding)...(maxValue + padding)
         }
-        
+
         let spread = maxValue - minValue
         let padding = max(spread * 0.1, 1)
         return (minValue - padding)...(maxValue + padding)
     }
-    
+
     private var dateRange: ClosedRange<Date> {
         Self.dateRange(for: chartData)
     }
@@ -207,7 +207,7 @@ struct ChartView: View {
             return nil
         }
     }
-    
+
     /// Determines which marker shape should be shown for a point based on selected indices.
     /// - Parameters:
     ///   - pointIndex: Index of the plotted point.
@@ -315,7 +315,7 @@ struct ChartView: View {
             .chartYScale(domain: yScaleDomain)
             .chartXScale(domain: dateRange)
             .padding()
-            
+
         }
     }
 }

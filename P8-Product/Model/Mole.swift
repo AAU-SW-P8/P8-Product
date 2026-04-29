@@ -13,7 +13,7 @@ enum Frequency: String, Codable {
 @Model
 final class Mole {
     @Attribute(.unique) var id: UUID = UUID()
-    
+
     var name: String
     var bodyPart: String
     var isReminderActive: Bool
@@ -21,14 +21,14 @@ final class Mole {
     var followDefault: Bool?
     var reminderFrequency: Frequency?
     var nextDueDate: Date?
-    
+
     // The inverse relationships back to the parents
     var person: Person?
-    
+
     // If this Mole is deleted, all its instances are deleted
     @Relationship(deleteRule: .cascade, inverse: \MoleScan.mole)
     var scans: [MoleScan] = []
-    
+
     /// Creates a new Mole record.
     /// - Parameters:
     ///   - name: The display name for the mole.

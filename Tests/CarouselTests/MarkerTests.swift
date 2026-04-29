@@ -12,7 +12,7 @@ struct ChartViewTests {
             safeTopIndex: 2,
             safeBottomIndex: 5
         )
-        
+
         // Assert
         #expect(result == .left)
     }
@@ -24,7 +24,7 @@ struct ChartViewTests {
             safeTopIndex: 2,
             safeBottomIndex: 5
         )
-        
+
         #expect(result == .right)
     }
 
@@ -35,7 +35,7 @@ struct ChartViewTests {
             safeTopIndex: 3,
             safeBottomIndex: 3
         )
-        
+
         #expect(result == .both)
     }
 
@@ -46,7 +46,7 @@ struct ChartViewTests {
             safeTopIndex: 2,
             safeBottomIndex: 5
         )
-        
+
         #expect(result == nil)
     }
 }

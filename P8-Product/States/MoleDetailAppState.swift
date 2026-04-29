@@ -163,8 +163,6 @@ final class MoleDetailAppState {
 		showingDeleteDetailInstanceAlert = false
 	}
 
-
-
 	/// Sets evolution comparison defaults to oldest (top) and newest (bottom) valid scan indices.
 	private func setDefaultEvolutionIndices() {
 		let maxIndex = max(0, scans.count - 1)

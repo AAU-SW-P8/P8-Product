@@ -5,7 +5,7 @@ import Testing
 @Suite("SAM3Models")
 struct SAM3ModelsTests {
 
-    @Test @MainActor 
+    @Test @MainActor
     func load_returnsAllThreeModels() async throws {
         // The test host (the app bundle) includes the ML models,
         // so loading should succeed and return all three models.

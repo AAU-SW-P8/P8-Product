@@ -12,9 +12,9 @@ import UIKit
 /// initialization failures.
 @MainActor
 class DataController {
-    
+
     static let shared: DataController = DataController()
-    
+
     /// The managed container that holds the schema and storage configuration.
     let container: ModelContainer
 
@@ -52,7 +52,7 @@ class DataController {
             print("Failed to erase all data: \(error)")
         }
     }
-    
+
     // Checks if the database is empty and populates it with sample data if necessary.
     // This is typically called only once during the first launch or after a store reset.
     private func checkAndSeed() {
@@ -165,7 +165,7 @@ class DataController {
     }
 
     // MARK: - Business Logic & Persistence
-    
+
     /// Creates a new scan, a new mole, and links them together for a specific person.
     /// Returns `false` when a duplicate mole name is detected for that person.
     @discardableResult
@@ -174,7 +174,7 @@ class DataController {
         image: UIImage,
         name: String? = nil,
         bodyPart: String = BodyPart.unassigned.rawValue,
-        area: Float = 0, 
+        area: Float = 0,
         diameter: Float = 0) -> Bool {
         let context: ModelContext = container.mainContext
         let trimmedName: String = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -193,17 +193,17 @@ class DataController {
             nextDueDate: nil,
             person: person
         )
-        
+
         let scan: MoleScan = MoleScan(imageData: image.jpegData(compressionQuality: 0.9), diameter: diameter, area: area, mole: mole)
         mole.nextDueDate = nextDueDate(
             for: person.defaultReminderFrequency,
             referenceDate: scan.captureDate,
             isEnabled: person.defaultReminderEnabled
         )
-        
+
         context.insert(mole)
         context.insert(scan)
-        
+
         do {
             try context.save()
             return true
@@ -240,7 +240,7 @@ class DataController {
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
     }
-    
+
     /**
         Adds a new scan to an existing mole by creating a new `MoleScan`.
         - Parameters:
@@ -255,7 +255,6 @@ class DataController {
                                         diameter: diameter,
                                         area: area,
                                         mole: mole)
-        
 
         context.insert(scan)
         recalculateNextDueDate(for: mole)
@@ -354,7 +353,7 @@ class DataController {
             context.delete(person)
         }
     }
-    
+
     /// Removes a `Mole` from the container.
     ///
     /// - Parameter mole: The `Mole` instance to delete.
@@ -391,7 +390,7 @@ class DataController {
             print("\(errorMessage): \(error)")
         }
     }
-    
+
     /// Adds a new `Person` to the container using the provided name.
     ///
     /// - Parameter name: The name to assign to the newly created person.

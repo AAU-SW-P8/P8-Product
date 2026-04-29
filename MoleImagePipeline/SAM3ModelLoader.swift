@@ -16,17 +16,17 @@ class SAM3ModelLoader: ObservableObject {
     @Published var segmentor: MoleSegmentor?
     @Published var isLoading = false
     @Published var error: Error?
-    
+
     static let shared = SAM3ModelLoader()
-    
+
     private init() {}
-    
+
     func loadModel() async {
         guard segmentor == nil, !isLoading else { return }
-        
+
         isLoading = true
         error = nil
-        
+
         let clock = ContinuousClock()
         let result = await clock.measure {
             do {
@@ -37,7 +37,7 @@ class SAM3ModelLoader: ObservableObject {
                 print("SAM3 Model Loading Failed: \(error.localizedDescription)")
             }
         }
-        
+
         isLoading = false
         if error == nil {
             print("Total SAM3 loading time: \(result)")

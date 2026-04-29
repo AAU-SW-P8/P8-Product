@@ -12,7 +12,7 @@ enum PipelineError: LocalizedError {
     case invalidImage
     case renderFailed
     case unexpectedModelOutput
-    
+
     var errorDescription: String? {
         switch self {
         case .modelNotFound(let name):

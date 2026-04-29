@@ -17,7 +17,6 @@
 
 import XCTest
 
-
 final class ImageCarouselUITests: XCTestCase {
 
     private var app: XCUIApplication!

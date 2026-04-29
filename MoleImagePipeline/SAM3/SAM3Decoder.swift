@@ -87,7 +87,7 @@ final class SAM3Decoder {
             SAM3FeatureNames.Decoder.fpnFeat0Input: fpnFeat0,
             SAM3FeatureNames.Decoder.fpnFeat1Input: fpnFeat1,
             SAM3FeatureNames.Decoder.fpnFeat2Input: fpnFeat2,
-            SAM3FeatureNames.Decoder.visPosInput:   visPos,
+            SAM3FeatureNames.Decoder.visPosInput: visPos,
             SAM3FeatureNames.Decoder.textFeatInput: textFeat,
             SAM3FeatureNames.Decoder.textMaskInput: textMask
         ])

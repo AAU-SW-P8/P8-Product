@@ -12,11 +12,11 @@ import UIKit
  */
 public struct OverviewView: View {
     @Query(sort: \Person.createdAt) private var people: [Person]
-    
+
     @State private var appState = OverviewAppState(dataController: .shared)
-    
+
     public init() {}
-    
+
     public var body: some View {
         OverviewContentView(appState: appState, people: people)
     }
@@ -40,7 +40,7 @@ private struct OverviewContentView: View {
     @State private var sortOption: OverviewAppState.MoleSortOption = .recent
     @State private var showingFilters: Bool = false
     @State private var showingBodyPartDropdown: Bool = false
-    
+
     // MARK: - View Body
     var body: some View {
         navigationContent
@@ -64,11 +64,11 @@ private struct OverviewContentView: View {
                 onFilterTap: { showingFilters = true }, // Simply trigger the sheet
                 onAddPersonTap: { appState.showingAddPerson = true }
             )
-            
+
             OverviewPersonSelectorView(appState: appState, people: people)
-            
+
             Divider()
-            
+
             if let person = appState.selectedPerson {
                 OverviewMoleListView(
                     appState: appState,
@@ -80,7 +80,7 @@ private struct OverviewContentView: View {
         }
         // RESET LOGIC: Reset filters to "All" when switching person
         .onChange(of: appState.selectedPerson?.id) { _, _ in
-            selectedBodyParts = [] 
+            selectedBodyParts = []
             sortOption = .recent
         }
         // NATIVE FILTER SHEET
@@ -107,7 +107,7 @@ private struct OverviewContentView: View {
         } else {
             selectedBodyParts.insert(bodyPart)
         }
-        
+
         // "ALL" LOGIC: If all parts are selected, reset to "All" (empty set)
         if !availableBodyParts.isEmpty && selectedBodyParts.count == availableBodyParts.count {
             selectedBodyParts = []

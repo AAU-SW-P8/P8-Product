@@ -17,7 +17,7 @@ struct CameraView: View {
 
     /// Optional caller-supplied photo. When provided, the view skips camera
     /// capture entirely and navigates straight to segmentation using this image.
-    var preloadedImage: UIImage? = nil
+    var preloadedImage: UIImage?
 
     /// The photo returned by the camera after the user confirms it.
     @State private var capturedImage: UIImage?

@@ -7,7 +7,7 @@ import SwiftUI
 import SwiftData
 
 struct ReminderView: View {
-    
+
     @State private var appState = ReminderAppState()
     @Query(sort: \Person.createdAt) var people: [Person]
 
@@ -18,9 +18,9 @@ struct ReminderView: View {
         guard let selectedPerson = appState.selectedPerson else { return [] }
         return selectedPerson.moles.sorted { $0.nextDueDate ?? Date.distantFuture < $1.nextDueDate ?? Date.distantFuture }
     }
-    
+
     var body: some View {
-        NavigationStack { 
+        NavigationStack {
             VStack(spacing: 0) {
                 personSelectorView
                 Divider()
@@ -131,9 +131,9 @@ struct ReminderView: View {
             }
         }
     }
-    
-    // MARK: -Subviews
-    
+
+    // MARK: - Subviews
+
     /**
      A custom person selector that allows navigating between different people in the database.
      It shows the name of the currently selected person and has left/right buttons to switch between them.
@@ -149,7 +149,7 @@ struct ReminderView: View {
             .padding(.horizontal)
             .padding(.top)
             .background(Color(.systemGray6))
-            
+
             HStack {
                 Button(action: { appState.selectPreviousPerson(from: people) }) {
                     Image(systemName: "chevron.left")
@@ -172,17 +172,16 @@ struct ReminderView: View {
                                 insertion: .move(edge: appState.slideEdge).combined(with: .opacity),
                                 removal: .move(edge: appState.slideEdge == .leading ? .trailing : .leading).combined(with: .opacity)
                             ))
-                    }
-                    else {
+                    } else {
                         Text("No Person Registered")
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(.secondary)
                     }
-                    
+
                 }
                 .frame(maxWidth: .infinity)
                 .clipped()
-                
+
                 Button(action: { appState.selectNextPerson(from: people) }) {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 30, weight: .bold))
@@ -198,8 +197,6 @@ struct ReminderView: View {
         }
     }
 
-
-
     private func sectionContainer<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
@@ -211,8 +208,8 @@ struct ReminderView: View {
         .background(Color(.systemGray6))
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
-    
-    // MARK: -Helper Functions
+
+    // MARK: - Helper Functions
 
     /**
      Creates a two-way binding between a mole and the frequency label used by the picker.

@@ -52,7 +52,7 @@ struct MockData {
             nextDueDate: calendar.date(byAdding: .month, value: 3, to: today),
             person: person2
         )
-        
+
         let jordanBackMole = Mole(
             name: "Back Mole",
             bodyPart: "Back",
@@ -92,7 +92,7 @@ struct MockData {
             area: 16.0,
             mole: alexLeftArmMole
         )
-        
+
         let jordanScan1 = MoleScan(
             captureDate: daysAgo(30, from: today),
             imageData: UIImage(systemName: "face.smiling")?.pngData(),
@@ -100,7 +100,7 @@ struct MockData {
             area: 6.6,
             mole: jordanFaceMole
         )
-        
+
         let jordanScan2 = MoleScan(
             captureDate: daysAgo(100, from: today),
             imageData: UIImage(systemName: "1.circle.fill")?.pngData(),
@@ -130,7 +130,7 @@ struct MockData {
             area: 11,
             mole: jordanBackMole
         )
-        
+
         let jordanScan6 = MoleScan(
             captureDate: daysAgo(60, from: today),
             imageData: UIImage(systemName: "5.circle.fill")?.pngData(),
@@ -138,7 +138,7 @@ struct MockData {
             area: 5.1,
             mole: jordanBackMole
         )
-        
+
         let jordanScan7 = MoleScan(
             captureDate: daysAgo(50, from: today),
             imageData: UIImage(systemName: "6.circle.fill")?.pngData(),
@@ -154,7 +154,7 @@ struct MockData {
             area: 14.3,
             mole: jordanBackMole
         )
-        
+
         // Insert Objects
         context.insert(person1)
         context.insert(person2)
@@ -176,7 +176,7 @@ struct MockData {
         context.insert(jordanScan7)
         context.insert(jordanScan8)
     }
-    
+
     /// Helper to calculate a date in the past.
     /// - Parameters:
     ///   - days: Number of days to subtract.

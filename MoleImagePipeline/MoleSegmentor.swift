@@ -37,9 +37,9 @@ class MoleSegmentor {
     ///     or any error CoreML raises while loading or running the text encoder.
     init() async throws {
         let models = try await SAM3Models.load()
-        
+
         let preprocessor = SAM3ImagePreprocessor()
-        
+
         // Encode image into tensor and cache result
         self.visionEncoder = SAM3VisionEncoder(model: models.visionEncoder, preprocessor: preprocessor)
         self.decoder = SAM3Decoder(model: models.decoder)

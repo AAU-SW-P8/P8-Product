@@ -149,7 +149,6 @@ enum CalculatorHelper {
             a.x != b.x ? a.x < b.x : a.y < b.y
         }
 
-
         /// Calculates the 2D cross product of three points to determine the geometric turn direction.  
         ///  
         /// This function acts as a mathematical "steering wheel." By evaluating the vectors formed  

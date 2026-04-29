@@ -1,4 +1,3 @@
-
 import XCTest
 
 final class Helpers {
@@ -11,7 +10,7 @@ final class Helpers {
 		app.tabBars.buttons["Overview"].tap()
 		XCTAssertTrue(app.staticTexts["Mole Overview"].waitForExistence(timeout: 3), file: file, line: line)
 	}
-    
+
     static func openOverviewTabWhenDetailOrEvolutionIsOpen(
 		in app: XCUIApplication,
 		file: StaticString = #filePath,
@@ -34,7 +33,7 @@ final class Helpers {
 	) {
 		app.tabBars.buttons["Reminder"].tap()
 		XCTAssertTrue(app.staticTexts["Default Reminder Enabled"].waitForExistence(timeout: 3), "Default reminder text should be visible", file: file, line: line)
-		
+
 	}
 	static func openCaptureTab(
 		in app: XCUIApplication,
@@ -60,7 +59,7 @@ final class Helpers {
 		let placeholderHeadline = app.staticTexts["Opening camera..."].firstMatch
 		let segmentationRoot = app.otherElements["moleSegmentationView"].firstMatch
 		let settingsButton = app.buttons["segmentationSettingsButton"].firstMatch
-	
+
 		XCTAssertTrue(
 			placeholderHeadline.waitForExistence(timeout: 3) || segmentationRoot.waitForExistence(timeout: 3) || settingsButton.waitForExistence(timeout: 3),
 			"Capture tab should show either the placeholder headline or the segmentation screen",
@@ -68,8 +67,6 @@ final class Helpers {
 			line: line
 		)
 	}
-
-
 
 	static func openMoleDetail(
 		person personName: String,
@@ -148,7 +145,7 @@ final class Helpers {
 		app.buttons["Delete"].tap()
 		app.alerts.buttons["Delete"].tap()
 	}
-    
+
     static func switchNameOfPerson(from oldName: String, to newName: String, in app: XCUIApplication) {
 		let personCell = app.staticTexts[oldName]
 		XCTAssertTrue(personCell.waitForExistence(timeout: 3), "Person \(oldName) should exist before renaming")

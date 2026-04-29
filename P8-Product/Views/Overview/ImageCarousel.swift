@@ -20,14 +20,14 @@ import SwiftUI
  */
 struct ImageCarousel: View {
     let scans: [MoleScan]
-    var mole: Mole? = nil
+    var mole: Mole?
     @Binding var selectedIndex: Int
     @State private var scrollPositionID: UUID?
-    var onDeleteSelectedScan: (() -> Void)? = nil
+    var onDeleteSelectedScan: (() -> Void)?
     var height: CGFloat = 200
 
     var side: CarouselSide = .both
-    var otherSelectedIndex: Int? = nil
+    var otherSelectedIndex: Int?
 
     private var safeIndex: Int {
         Self.safeIndex(for: scans, requested: selectedIndex)
@@ -241,9 +241,9 @@ struct ImageCarousel: View {
     // 3. Add this pure function to your Selection helpers
     static func calculateDotItems(count: Int, safeIndex: Int, side: CarouselSide) -> [DotItem] {
         guard count > 0 else { return [] }
-        
+
         let items: [DotItem]
-        
+
         if count <= 5 {
             items = (0..<count).map { .index($0) }
         } else {
@@ -262,7 +262,7 @@ struct ImageCarousel: View {
                 items = [.index(0), .ellipsis, .index(safeIndex - 1), .index(safeIndex), .index(safeIndex + 1), .ellipsis, .index(last)]
             }
         }
-        
+
         return (side == .left || side == .right) ? items.reversed() : items
     }
 

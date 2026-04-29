@@ -206,7 +206,7 @@ struct PipelineTests {
         let bytes1 = Data([0xA1])
         let bytes2 = Data([0xA2])
 
-        let scan0 = MoleScan(captureDate: day0,  imageData: bytes0, diameter: 4.2, area: 13.8, mole: mole)
+        let scan0 = MoleScan(captureDate: day0, imageData: bytes0, diameter: 4.2, area: 13.8, mole: mole)
         let scan1 = MoleScan(captureDate: day10, imageData: bytes1, diameter: 4.8, area: 15.4, mole: mole)
         let scan2 = MoleScan(captureDate: day20, imageData: bytes2, diameter: 5.0, area: 16.0, mole: mole)
         [scan0, scan1, scan2].forEach(context.insert)

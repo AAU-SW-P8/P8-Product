@@ -68,7 +68,6 @@ class Calculator {
     }
 
     let distanceLookup: DistanceLookup = .default
-    
 
     // MARK: - Routing
 
@@ -95,7 +94,7 @@ class Calculator {
         imageOrientation: UIImage.Orientation = .up,
         model: Model
     ) -> MoleMeasurement {
-        
+
         guard let samples = gatherMoleSamples(
             from: segmentedImage,
             depthMap: depthMap,

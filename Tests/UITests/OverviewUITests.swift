@@ -210,7 +210,7 @@ final class OverviewUITests: XCTestCase {
 
         XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3), "Selection should fall back after deleting selected person")
     }
-    
+
     func testDeletePersonWithMolesDeletesPersonAndMoles() {
         Helpers.openOverviewTab(in: app)
         Helpers.movePersonSelection(to: "Jordan", in: app)
@@ -256,7 +256,7 @@ final class OverviewUITests: XCTestCase {
         )
     }
     // MARK: - Mole Management
-    
+
     func testCancelDeleteMoleFromOverviewKeepsMole() {
         Helpers.openOverviewTab(in: app)
 
@@ -319,7 +319,7 @@ final class OverviewUITests: XCTestCase {
     }
 
     // MARK: - Overview Filter & Sort   
-        
+
     // MARK: - Persistent Storage
     func testRenamedPersonPersistsAfterRelaunch() {
         app.terminate()

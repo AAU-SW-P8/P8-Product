@@ -11,7 +11,6 @@ import simd
 /// which is then applied to both area and diameter.
 class CalculatorLinear: Calculator {
 
-
     // MARK: - Measurement
 
     override func measure(from samples: Calculator.MoleSamples, cameraIntrinsics: simd_float3x3?) -> Calculator.MoleMeasurement {

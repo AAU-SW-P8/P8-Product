@@ -10,15 +10,15 @@ import SwiftData
 final class MoleScan {
     @Attribute(.unique) var id: UUID = UUID()
     @Attribute(.externalStorage) var imageData: Data?
-    
+
     var captureDate: Date = Date()
-    
+
     var diameter: Float
     var area: Float
-    
+
     // The inverse relationships back to the mole the scan belongs to
     var mole: Mole?
-    
+
     /// Creates a new MoleScan record.
     /// - Parameters:
     ///   - captureDate: The date of when the picture was taken.
