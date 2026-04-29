@@ -22,7 +22,6 @@ struct PersonPickerSheetView: View {
                                     Text(person.name)
                                         .font(.subheadline)
                                         .fontWeight(.semibold)
-                                        .foregroundStyle(.white)
                                     Spacer()
                                     Text("Select")
                                         .font(.caption)
