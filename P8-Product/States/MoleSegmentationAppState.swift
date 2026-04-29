@@ -77,7 +77,9 @@ class MoleSegmentationAppState {
             activeAlert = .error("Please add a person in the Overview first.")
         } else if people.count == 1, let onlyPerson: Person = people.first {
             selectedPersonForScan = onlyPerson
+            Task { @MainActor in
             resegment()
+            }
         } else {
             showPersonPicker = true
         }
