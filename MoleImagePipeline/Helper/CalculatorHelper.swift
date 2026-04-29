@@ -138,6 +138,7 @@ enum CalculatorHelper {
         return (minX, minY, maxX, maxY)
     }
 
+    /// Function is taken from: https://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain#Swift
     /// Builds the convex hull of the input points using Andrew's monotone chain.
     ///
     /// - Parameter points: Input points in image pixel space.
