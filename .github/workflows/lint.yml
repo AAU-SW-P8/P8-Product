@@ -1,0 +1,41 @@
+name: Lint
+
+on:
+  pull_request:
+    branches: [ "main" ]
+    types: [ opened, synchronize, reopened ]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Code Linting
+    runs-on: macos-26
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+
+    - name: Install SwiftLint
+      run: brew install swiftlint
+
+    - name: Run SwiftLint (Auto-Fix)
+      run: swiftlint --fix --config .swiftlint.yml
+
+    - name: Run SwiftLint Check
+      if: always()
+      run: swiftlint --config .swiftlint.yml
+
+    - name: Commit and push changes
+      id: auto-commit
+      if: always()
+      uses: stefanzweifel/git-auto-commit-action@v7
+      with:
+        commit_message: "style: auto-fix swiftlint linting issues"
+        skip_dirty_check: false
+
+    - name: Fail if changes were committed
+      if: steps.auto-commit.outputs.changes_detected == 'true'
+      run: |
+        echo "SwiftLint applied auto-fixes and a new commit was pushed."
+        echo "Failing this run so the new commit doesn't bypass PR checks."
+        echo "Please pull the latest changes to trigger a new workflow run."
+        exit 1
