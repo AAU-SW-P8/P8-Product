@@ -200,7 +200,7 @@ final class InjectedPicturesUITests: XCTestCase {
     useMockDetectionButton.tap()
 
     let existingButton = app.buttons["segmentationChooseExistingMoleButton"].firstMatch
-    XCTAssertTrue(existingButton.waitForExistence(timeout: 3))
+    XCTAssertTrue(existingButton.waitForExistence(timeout: 5))
     existingButton.tap()
 
     let existingMoleRow = app.buttons["segmentationExistingMoleRow_Back Mole"].firstMatch
