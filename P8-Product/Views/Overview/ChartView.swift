@@ -39,10 +39,8 @@ enum ChartMetric: String, CaseIterable, Identifiable {
 /// - right carousel -> triangle
 /// - both carousels -> larger circle
 struct ChartView: View {
-  /**
-      DataPoint represents a single measurement of the mole at a specific date.
-      It conforms to Identifiable for use in ForEach and Equatable for testing purposes.
-  */
+  /// DataPoint represents a single measurement of the mole at a specific date.
+  /// It conforms to Identifiable for use in ForEach and Equatable for testing purposes.
   struct DataPoint: Identifiable, Equatable {
     let id = UUID()
     let index: Int
@@ -185,10 +183,8 @@ struct ChartView: View {
     "\(String(format: "%.1f", Self.roundedMetricValue(value)))"
   }
 
-  /**
-      Determines if a given data point index corresponds to the selected indices from the left and right carousels.
-      It returns the appropriate marker kind to indicate which carousel(s) have selected that data point.
-   */
+  /// Determines if a given data point index corresponds to the selected indices from the left and right carousels.
+  /// It returns the appropriate marker kind to indicate which carousel(s) have selected that data point.
   func markerKind(for pointIndex: Int) -> SelectedMarkerKind? {
     let isTopSelected = pointIndex == safeTopIndex
     let isBottomSelected = pointIndex == safeBottomIndex

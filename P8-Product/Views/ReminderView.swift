@@ -11,9 +11,7 @@ struct ReminderView: View {
   @State private var appState = ReminderAppState()
   @Query(sort: \Person.createdAt) var people: [Person]
 
-  /**
-   The list of moles for the currently selected person, sorted by the next due date with nils at the end.
-   */
+  /// The list of moles for the currently selected person, sorted by the next due date with nils at the end.
   private var selectedPersonMoles: [Mole] {
     guard let selectedPerson = appState.selectedPerson else { return [] }
     return selectedPerson.moles.sorted {
@@ -136,10 +134,8 @@ struct ReminderView: View {
 
   // MARK: - Subviews
 
-  /**
-   A custom person selector that allows navigating between different people in the database.
-   It shows the name of the currently selected person and has left/right buttons to switch between them.
-   */
+  /// A custom person selector that allows navigating between different people in the database.
+  /// It shows the name of the currently selected person and has left/right buttons to switch between them.
   private var personSelectorView: some View {
     VStack(spacing: 0) {
       HStack {
@@ -220,12 +216,10 @@ struct ReminderView: View {
 
   // MARK: - Helper Functions
 
-  /**
-   Creates a two-way binding between a mole and the frequency label used by the picker.
-
-   - Parameter mole: The mole whose frequency setting should be read and updated.
-   - Returns: A `Binding<String>` used by the per-mole frequency picker.
-   */
+  /// Creates a two-way binding between a mole and the frequency label used by the picker.
+  ///
+  /// - Parameter mole: The mole whose frequency setting should be read and updated.
+  /// - Returns: A `Binding<String>` used by the per-mole frequency picker.
   private func frequencyBinding(for mole: Mole) -> Binding<String> {
     Binding(
       get: { displayFrequency(for: mole) },
@@ -235,12 +229,10 @@ struct ReminderView: View {
     )
   }
 
-  /**
-   Builds the one-line reminder mode selector for a mole.
-
-   - Parameter mole: The mole for which the selector is rendered.
-   - Returns: A view containing the three reminder mode options.
-   */
+  /// Builds the one-line reminder mode selector for a mole.
+  ///
+  /// - Parameter mole: The mole for which the selector is rendered.
+  /// - Returns: A view containing the three reminder mode options.
   private func reminderModeSelector(for mole: Mole) -> some View {
     let selection = appState.reminderModeBinding(for: mole)
     let options = ["Default", "Enabled", "Disabled"]
@@ -266,12 +258,10 @@ struct ReminderView: View {
     }
   }
 
-  /**
-   Calculates whether reminders are effectively enabled for a mole.
-
-   - Parameter mole: The mole whose effective enabled state is needed.
-   - Returns: `true` if reminders are enabled after applying default/override logic.
-   */
+  /// Calculates whether reminders are effectively enabled for a mole.
+  ///
+  /// - Parameter mole: The mole whose effective enabled state is needed.
+  /// - Returns: `true` if reminders are enabled after applying default/override logic.
   private func effectiveReminderEnabled(for mole: Mole) -> Bool {
     if mole.followDefaultReminderEnabled ?? true {
       return appState.reminderEnabled
@@ -279,12 +269,10 @@ struct ReminderView: View {
     return mole.isReminderActive
   }
 
-  /**
-   Converts a mole's reminder frequency state to the picker label.
-
-   - Parameter mole: The mole whose frequency selection is displayed.
-   - Returns: `Default`, `Weekly`, `Monthly`, or `Quarterly`.
-   */
+  /// Converts a mole's reminder frequency state to the picker label.
+  ///
+  /// - Parameter mole: The mole whose frequency selection is displayed.
+  /// - Returns: `Default`, `Weekly`, `Monthly`, or `Quarterly`.
   private func displayFrequency(for mole: Mole) -> String {
     if mole.followDefault ?? true {
       return "Default"
@@ -303,9 +291,7 @@ struct ReminderView: View {
     return "Default"
   }
 
-  /**
-   Reapplies default frequency logic to all moles that follow defaults.
-   */
+  /// Reapplies default frequency logic to all moles that follow defaults.
   private func updateFrequencyFollowDefaultMoles() {
     for mole in selectedPersonMoles where mole.followDefault ?? true {
       appState.updateReminder(for: mole, frequencyLabel: "Default")

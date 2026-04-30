@@ -173,38 +173,32 @@ struct ImageCarousel: View {
 
   // MARK: - Selection helpers
 
-  /**
-      Returns a safe index within the bounds of the scans array.
-      If the requested index is out of bounds, it will return the nearest valid index (0 or scans.count - 1).
-      Parameters:
-      - scans: The array of MoleScan objects to check against.
-      - requested: The index that is being requested for selection.
-   */
+  /// Returns a safe index within the bounds of the scans array.
+  /// If the requested index is out of bounds, it will return the nearest valid index (0 or scans.count - 1).
+  /// Parameters:
+  /// - scans: The array of MoleScan objects to check against.
+  /// - requested: The index that is being requested for selection.
   static func safeIndex(for scans: [MoleScan], requested: Int) -> Int {
     guard !scans.isEmpty else { return 0 }
     return min(max(requested, 0), scans.count - 1)
   }
 
-  /**
-      Returns the MoleScan object corresponding to the given index, using safeIndex to ensure it's within bounds.
-      Parameters:
-      - scans: The array of MoleScan objects to select from.
-      - index: The requested index for selection.
-   */
+  /// Returns the MoleScan object corresponding to the given index, using safeIndex to ensure it's within bounds.
+  /// Parameters:
+  /// - scans: The array of MoleScan objects to select from.
+  /// - index: The requested index for selection.
   static func selectedScan(in scans: [MoleScan], at index: Int) -> MoleScan? {
     guard !scans.isEmpty else { return nil }
     return scans[safeIndex(for: scans, requested: index)]
   }
 
-  /**
-      Returns the MoleScan corresponding to the given index and mole filter, using selectedScan to find the correct scan first.
-      If a mole is provided, it will return the instance matching that mole's ID.
-      If no mole is provided, it will return the first instance in the selected scan.
-      Parameters:
-      - scans: The array of MoleScan objects to search through.
-      - index: The requested index for selection.
-      - mole: An optional Mole object to filter the instances by.
-   */
+  /// Returns the MoleScan corresponding to the given index and mole filter, using selectedScan to find the correct scan first.
+  /// If a mole is provided, it will return the instance matching that mole's ID.
+  /// If no mole is provided, it will return the first instance in the selected scan.
+  /// Parameters:
+  /// - scans: The array of MoleScan objects to search through.
+  /// - index: The requested index for selection.
+  /// - mole: An optional Mole object to filter the instances by.
   static func selectedScan(in scans: [MoleScan], at index: Int, for mole: Mole?) -> MoleScan? {
     guard let scan = selectedScan(in: scans, at: index) else { return nil }
 
@@ -267,11 +261,9 @@ struct ImageCarousel: View {
     return (side == .left || side == .right) ? items.reversed() : items
   }
 
-  /**
-      Renders the carousel's pagination indicators for the currently visible set of scans.
-      This view displays a tappable dot for each visible page index and an ellipsis indicator when
-      not all pages are shown at once. Tapping a dot animates the carousel selection to that index.
-  */
+  /// Renders the carousel's pagination indicators for the currently visible set of scans.
+  /// This view displays a tappable dot for each visible page index and an ellipsis indicator when
+  /// not all pages are shown at once. Tapping a dot animates the carousel selection to that index.
   private var dots: some View {
     HStack(spacing: 8) {
       ForEach(visibleDotItems, id: \.self) { item in
@@ -297,13 +289,11 @@ struct ImageCarousel: View {
     .padding(.top, 4)
   }
 
-  /**
-      Returns a safe index within the bounds of the scans array.
-      If the requested index is out of bounds, it will return the nearest valid index (0 or scans.count - 1).
-      Parameters:
-      - scans: The array of MoleScan objects to check against.
-      - requested: The index that is being requested for selection.
-   */
+  /// Returns a safe index within the bounds of the scans array.
+  /// If the requested index is out of bounds, it will return the nearest valid index (0 or scans.count - 1).
+  /// Parameters:
+  /// - scans: The array of MoleScan objects to check against.
+  /// - requested: The index that is being requested for selection.
   @ViewBuilder
   private func dotView(for index: Int) -> some View {
     let isActive = index == safeIndex
@@ -330,13 +320,11 @@ struct ImageCarousel: View {
     .animation(.spring(response: 0.3, dampingFraction: 0.7), value: safeOtherSelectedIndex)
   }
 
-  /**
-      Determines the appropriate shape and color for the pagination dot indicators based on which carousel is selecting the corresponding data point.
-      The primary selected carousel will have a more prominent shape and color, while the other carousel (if also selecting the same index) will have a subtler appearance.
-      Parameters:
-      - carouselSide: The side of the carousel (left, right, or both) that is currently selecting the data point.
-      - isPrimary: A boolean indicating whether this carousel is the primary one selecting the data point (true) or if it's the secondary one when both carousels select the same index (false).
-   */
+  /// Determines the appropriate shape and color for the pagination dot indicators based on which carousel is selecting the corresponding data point.
+  /// The primary selected carousel will have a more prominent shape and color, while the other carousel (if also selecting the same index) will have a subtler appearance.
+  /// Parameters:
+  /// - carouselSide: The side of the carousel (left, right, or both) that is currently selecting the data point.
+  /// - isPrimary: A boolean indicating whether this carousel is the primary one selecting the data point (true) or if it's the secondary one when both carousels select the same index (false).
   @ViewBuilder
   private func indicatorShape(for carouselSide: CarouselSide, isPrimary: Bool) -> some View {
     let color: Color = isPrimary ? .primary : .gray.opacity(0.4)

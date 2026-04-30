@@ -31,10 +31,8 @@ class ReminderAppState {
     set { selectionState.selectedPerson = newValue }
   }
 
-  /**
-   Selects the next person in the list, if possible, and sets the slide animation direction.
-   - Parameter people: The current list of people to determine the index of the selected person.
-   */
+  /// Selects the next person in the list, if possible, and sets the slide animation direction.
+  /// - Parameter people: The current list of people to determine the index of the selected person.
   func selectNextPerson(from people: [Person]) {
     guard let current: Person = selectedPerson,
       let index: Array<Person>.Index = people.firstIndex(of: current),
@@ -47,10 +45,8 @@ class ReminderAppState {
     }
   }
 
-  /**
-   Selects the previous person in the list, if possible, and sets the slide animation direction.
-   - Parameter people: The current list of people to determine the index of the selected person.
-   */
+  /// Selects the previous person in the list, if possible, and sets the slide animation direction.
+  /// - Parameter people: The current list of people to determine the index of the selected person.
   func selectPreviousPerson(from people: [Person]) {
     guard let current: Person = selectedPerson,
       let index: Array<Person>.Index = people.firstIndex(of: current),
@@ -63,21 +59,17 @@ class ReminderAppState {
     }
   }
 
-  /**
-   Syncs local UI state from the currently selected person.
-   */
+  /// Syncs local UI state from the currently selected person.
   func syncSelectionState() {
     guard let person = selectedPerson else { return }
     reminderEnabled = person.defaultReminderEnabled
     defaultFrequency = displayFrequency(for: person)
   }
 
-  /**
-   Converts a person's stored default frequency to a display label.
-
-   - Parameter person: The person whose default frequency is displayed.
-   - Returns: `Weekly`, `Monthly`, or `Quarterly`.
-   */
+  /// Converts a person's stored default frequency to a display label.
+  ///
+  /// - Parameter person: The person whose default frequency is displayed.
+  /// - Returns: `Weekly`, `Monthly`, or `Quarterly`.
   func displayFrequency(for person: Person) -> String {
     switch person.defaultReminderFrequency.lowercased() {
     case "weekly":
@@ -91,12 +83,10 @@ class ReminderAppState {
     }
   }
 
-  /**
-   Creates a two-way binding for the reminder mode segmented options.
-
-   - Parameter mole: The mole whose reminder mode should be read and updated.
-   - Returns: A `Binding<String>` for `Default`, `Enabled`, or `Disabled`.
-   */
+  /// Creates a two-way binding for the reminder mode segmented options.
+  ///
+  /// - Parameter mole: The mole whose reminder mode should be read and updated.
+  /// - Returns: A `Binding<String>` for `Default`, `Enabled`, or `Disabled`.
   func reminderModeBinding(for mole: Mole) -> Binding<String> {
     Binding(
       get: { self.reminderMode(for: mole) },
@@ -129,13 +119,11 @@ class ReminderAppState {
     dataController.recalculateNextDueDate(for: mole)
   }
 
-  /**
-  Updates a mole's reminder configuration and recalculates next due date.
-
-  - Parameters:
-      - mole: The mole being updated.
-      - frequencyLabel: The selected frequency label (`Default`, `Weekly`, `Monthly`, or `Quarterly`).
-  */
+  /// Updates a mole's reminder configuration and recalculates next due date.
+  ///
+  /// - Parameters:
+  /// - mole: The mole being updated.
+  /// - frequencyLabel: The selected frequency label (`Default`, `Weekly`, `Monthly`, or `Quarterly`).
   func updateReminder(for mole: Mole, frequencyLabel: String) {
     if frequencyLabel == "Default" {
       mole.followDefault = true
@@ -155,12 +143,10 @@ class ReminderAppState {
     persistChanges()
   }
 
-  /**
-   Resolves the current reminder mode label for a mole.
-
-   - Parameter mole: The mole whose reminder mode should be evaluated.
-   - Returns: `Default`, `Enabled`, or `Disabled`.
-   */
+  /// Resolves the current reminder mode label for a mole.
+  ///
+  /// - Parameter mole: The mole whose reminder mode should be evaluated.
+  /// - Returns: `Default`, `Enabled`, or `Disabled`.
   func reminderMode(for mole: Mole) -> String {
     if mole.followDefaultReminderEnabled ?? true {
       return "Default"
@@ -168,11 +154,9 @@ class ReminderAppState {
     return mole.isReminderActive ? "Enabled" : "Disabled"
   }
 
-  /**
-   Sets the default reminder enabled state for the selected person.
-
-   - Parameter newValue: The new value for the default reminder enabled state.
-   */
+  /// Sets the default reminder enabled state for the selected person.
+  ///
+  /// - Parameter newValue: The new value for the default reminder enabled state.
   func setDefaultReminderEnabled(_ newValue: Bool) {
     selectedPerson?.defaultReminderEnabled = newValue
     updateDueDatesForDefaultReminderEnabledChange(newValue)
@@ -192,21 +176,17 @@ class ReminderAppState {
     }
   }
 
-  /**
-   Sets the default reminder frequency for the selected person.
-
-   - Parameter newValue: The new value for the default reminder frequency.
-   */
+  /// Sets the default reminder frequency for the selected person.
+  ///
+  /// - Parameter newValue: The new value for the default reminder frequency.
   func setDefaultFrequency(_ newValue: String) {
     selectedPerson?.defaultReminderFrequency = newValue
     persistChanges()
   }
 
-  /**
-   Sets the selected person in the selection state.
-
-   - Parameter newValue: The new `Person` to be selected, or `nil` to clear the selection.
-   */
+  /// Sets the selected person in the selection state.
+  ///
+  /// - Parameter newValue: The new `Person` to be selected, or `nil` to clear the selection.
   func setSelectedPerson(_ newValue: Person?) {
     selectedPerson = newValue
   }

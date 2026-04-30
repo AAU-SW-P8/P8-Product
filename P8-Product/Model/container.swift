@@ -255,12 +255,10 @@ class DataController {
       .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
   }
 
-  /**
-      Adds a new scan to an existing mole by creating a new `MoleScan`.
-      - Parameters:
-          - mole: The existing `Mole` to which the new scan will be linked.
-          - image: The `UIImage` representing the new scan to be added.
-  */
+  /// Adds a new scan to an existing mole by creating a new `MoleScan`.
+  /// - Parameters:
+  /// - mole: The existing `Mole` to which the new scan will be linked.
+  /// - image: The `UIImage` representing the new scan to be added.
   func addToExistingMole(mole: Mole, image: UIImage, area: Float = 0, diameter: Float = 0) {
     let context: ModelContext = container.mainContext
 

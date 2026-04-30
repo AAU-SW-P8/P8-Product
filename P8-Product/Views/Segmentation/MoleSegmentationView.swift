@@ -364,13 +364,11 @@ struct MoleSegmentationView: View {
     appState.statusMessage = "Segmentation complete. Long press a mole to add it."
   }
 
-  /**
-   A view builder that renders the toolbar content for the navigation bar.
-   Provides buttons for opening settings, starting segmentation, and clearing results.
-   The buttons are disabled based on the processing state to prevent conflicting actions.
-   Should be included in the navigation bar of the main view.
-   - Returns: A view containing the toolbar items.
-   */
+  /// A view builder that renders the toolbar content for the navigation bar.
+  /// Provides buttons for opening settings, starting segmentation, and clearing results.
+  /// The buttons are disabled based on the processing state to prevent conflicting actions.
+  /// Should be included in the navigation bar of the main view.
+  /// - Returns: A view containing the toolbar items.
   @ToolbarContentBuilder
   private var toolbarContent: some ToolbarContent {
     if !isChooseActionPanelPresented {
