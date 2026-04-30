@@ -26,7 +26,7 @@ struct DistanceLookup {
     init(entries: [Entry]) {
         self.entries = entries.sorted { $0.distanceMeters < $1.distanceMeters }
     }
-    
+
     static let `default` = DistanceLookup(entries: [
         Entry(distanceMeters: 0.20, mmPerPixel: 0.1396),
         Entry(distanceMeters: 0.21, mmPerPixel: 0.1459),

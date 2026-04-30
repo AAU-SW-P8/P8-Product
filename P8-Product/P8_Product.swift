@@ -18,5 +18,5 @@ struct P8_Product: App {
         }
         .modelContainer(dataController.container) // Use the custom ModelContainer for the app
     }
-    
+
 }

@@ -11,7 +11,7 @@ struct CalculatorTests {
     @Test func calculateArea_singlePixelAtOneMeter_returnsOneSquareMillimeter() throws {
         let calculator = Calculator()
         let mask = makeMaskImage(width: 2, height: 2, alphaByPixel: [255, 0,
-                                                                      0,   0])
+                                                                      0, 0])
         let depth = try makeDepthPixelBuffer(width: 2, height: 2, values: [1, 1,
                                                                              1, 1])
         let intrinsics = makeIntrinsics(fx: 1000, fy: 1000)

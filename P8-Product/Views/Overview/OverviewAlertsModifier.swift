@@ -11,7 +11,7 @@ import SwiftUI
 struct OverviewAlertsModifier: ViewModifier {
     @Bindable var appState: OverviewAppState
     let people: [Person]
-    
+
     /// Configures the view to present alerts for adding, editing, and deleting people and moles.
     /// With appropriate titles, messages, and actions based on the current state of the app.
     func body(content: Content) -> some View {

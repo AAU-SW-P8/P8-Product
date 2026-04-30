@@ -17,11 +17,11 @@ import SwiftUI
 struct OverviewFilterPopupView: View {
     @Binding var sortOption: OverviewAppState.MoleSortOption
     @Binding var selectedBodyParts: Set<String>
-    
+
     let availableBodyParts: [String]
     let onToggleBodyPart: (String) -> Void
     let onReset: () -> Void
-    
+
     @Environment(\.dismiss) var dismiss
 
     var body: some View {

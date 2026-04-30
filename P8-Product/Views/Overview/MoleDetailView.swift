@@ -68,7 +68,7 @@ struct MoleDetailView: View {
                         )
                             .frame(maxWidth: 420)
                             .accessibilityIdentifier("detailCarousel")
-                        
+
                     }
                     .padding(.vertical, 12)
                     .background(
@@ -275,7 +275,7 @@ struct MoleDetailView: View {
     }
 
     // MARK: - Helpers
-    
+
     private func nextDueDateSummary(for mole: Mole) -> Text? {
         guard let nextDueDate = mole.nextDueDate else { return nil }
         let calendar = Calendar.current
@@ -290,5 +290,4 @@ struct MoleDetailView: View {
         return bellImage + Text(" Next due date: \(nextDueDate.formatted(.dateTime.year().month().day())) (in \(daysUntilDue) \(dayLabel))")
     }
 
-    
 }

@@ -40,7 +40,7 @@ final class Mole {
     /// All scans taken of this mole; deleted automatically when the mole is deleted.
     @Relationship(deleteRule: .cascade, inverse: \MoleScan.mole)
     var scans: [MoleScan] = []
-    
+
     /// Creates a new Mole record.
     /// - Parameters:
     ///   - name: The display name for the mole.

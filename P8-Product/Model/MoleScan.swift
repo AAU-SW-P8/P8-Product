@@ -21,7 +21,7 @@ final class MoleScan {
     var area: Float
     /// The mole this scan belongs to.
     var mole: Mole?
-    
+
     /// Creates a new MoleScan record.
     /// - Parameters:
     ///   - captureDate: The date of when the picture was taken.

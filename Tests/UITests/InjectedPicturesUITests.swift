@@ -15,16 +15,16 @@ final class InjectedPicturesUITests: XCTestCase {
     override func setUpWithError() throws {
     continueAfterFailure = false
     app = XCUIApplication()
-    
+
     // Define arguments in the correct Key-Value sequence
     app.launchArguments = [
-        "-SkipModelLoading", 
-        "-UITest_InMemoryStore", 
+        "-SkipModelLoading",
+        "-UITest_InMemoryStore",
         "-UITest_MockSegmentationResult",
-        "-UITest_InjectCapturedImage", 
+        "-UITest_InjectCapturedImage",
         Self.onePixelPNGBase64() // This must follow the key!
     ]
-    
+
     app.launch()
     Helpers.openCaptureTab(in: app)
 }
@@ -133,8 +133,7 @@ final class InjectedPicturesUITests: XCTestCase {
             "New mole that was cancelled should not appear in Overview"
         )
     }
-      
-    
+
     // MARK: - Persistence Tests
     /// Verifies a newly created mole persists in the overview after the app is relaunched.
     func testCapturedImageCanCreateNewMolePersistAfterAppRelaunch() {
@@ -203,7 +202,6 @@ final class InjectedPicturesUITests: XCTestCase {
             "Back Mole should still show metric picker after app relaunch"
         )
     }
-
 
     // MARK: - Helpers
     /// Builds a 1×1 solid-gray PNG and returns it base64-encoded for use as a launch argument.

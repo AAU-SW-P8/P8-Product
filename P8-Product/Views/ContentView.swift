@@ -44,7 +44,7 @@ struct ContentView: View {
             await modelLoader.loadModel()
         }
     }
-    
+
     private var mainTabView: some View {
         TabView {
             OverviewView()
@@ -56,27 +56,27 @@ struct ContentView: View {
                 .tabItem {
                     Label("Reminder", systemImage: "clock")
                 }
-                
+
             CameraView(preloadedImage: Self.preloadedCameraImage)
                 .tabItem {
                     Label("Capture", systemImage: "camera")
                 }
         }
     }
-    
+
     private var loadingView: some View {
         VStack(spacing: 20) {
             Image(systemName: "brain.head.profile")
                 .font(.system(size: 60))
                 .foregroundStyle(.blue)
                 .symbolEffect(.pulse)
-            
+
             Text("Initializing AI Models…")
                 .font(.headline)
-            
+
             ProgressView()
                 .controlSize(.large)
-            
+
             Text("This may take a moment on first launch.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -84,21 +84,21 @@ struct ContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemBackground))
     }
-    
+
     private func errorView(_ error: Error) -> some View {
         VStack(spacing: 20) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 60))
                 .foregroundStyle(.red)
-            
+
             Text("Failed to Load AI Models")
                 .font(.headline)
-            
+
             Text(error.localizedDescription)
                 .font(.subheadline)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
-            
+
             Button("Retry") {
                 Task {
                     await modelLoader.loadModel()
@@ -117,12 +117,12 @@ struct ContentView: View {
         MoleScan.self,
         configurations: config
     )
-    
+
     // Seed preview data
     Task { @MainActor in
         MockData.insertSampleData(into: container.mainContext)
     }
-    
+
     return ContentView()
         .modelContainer(container)
 }

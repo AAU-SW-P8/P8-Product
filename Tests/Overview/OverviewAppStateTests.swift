@@ -57,7 +57,7 @@ struct OverviewAppStateTests {
             Mole(name: "Back One", bodyPart: "Back", isReminderActive: false, reminderFrequency: nil, nextDueDate: nil, person: person),
             Mole(name: "Arm One", bodyPart: "Arm", isReminderActive: false, reminderFrequency: nil, nextDueDate: nil, person: person)
         ]
-        
+
         let filtered = state.displayedMoles(
             for: person,
             selectedBodyParts: ["Back"],

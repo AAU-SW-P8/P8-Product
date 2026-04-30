@@ -138,6 +138,7 @@ enum CalculatorHelper {
         return (minX, minY, maxX, maxY)
     }
 
+    /// Function is taken from: https://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain#Swift
     /// Builds the convex hull of the input points using Andrew's monotone chain.
     ///
     /// - Parameter points: Input points in image pixel space.
@@ -147,7 +148,6 @@ enum CalculatorHelper {
         let sorted = points.sorted { a, b in
             a.x != b.x ? a.x < b.x : a.y < b.y
         }
-
 
         /// Calculates the 2D cross product of three points to determine the geometric turn direction.  
         ///  

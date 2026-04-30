@@ -6,7 +6,7 @@ import Testing
 /// Tests for `SAM3Models`, verifying that all three Core ML models load successfully from the app bundle.
 struct SAM3ModelsTests {
 
-    @Test @MainActor 
+    @Test @MainActor
     func load_returnsAllThreeModels() async throws {
         // The test host (the app bundle) includes the ML models,
         // so loading should succeed and return all three models.

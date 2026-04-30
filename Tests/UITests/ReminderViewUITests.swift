@@ -140,7 +140,7 @@ final class ReminderViewUITests: XCTestCase {
 
 		return accessibilityLabel.trimmingCharacters(in: .whitespaces)
 	}
-    
+
 	// MARK: - Smoke
 
     /// Verifies the reminder tab shows the expected header labels and section titles.
@@ -211,9 +211,9 @@ final class ReminderViewUITests: XCTestCase {
 
         let enabledPicker = leftArmMoleEnabledControl
         XCTAssertTrue(enabledPicker.waitForExistence(timeout: 3), "The Reminder Enabled picker was not found.")
-            
+
         enabledPicker.tap()
-        
+
 		XCTAssertTrue(app.buttons["Default"].waitForExistence(timeout: 3))
 		XCTAssertTrue(app.buttons["Enabled"].exists)
 		XCTAssertTrue(app.buttons["Disabled"].exists)
@@ -226,12 +226,12 @@ final class ReminderViewUITests: XCTestCase {
 
         let enabledPicker = leftArmMoleEnabledControl
         let frequencyButton = leftArmMoleFrequencyControl
-        
+
         XCTAssertTrue(enabledPicker.waitForExistence(timeout: 3))
         XCTAssertTrue(frequencyButton.waitForExistence(timeout: 3))
 
         enabledPicker.tap()
-        
+
         try chooseFrequencyOption("Disabled")
         XCTAssertFalse(frequencyButton.isEnabled)
 
@@ -252,7 +252,7 @@ final class ReminderViewUITests: XCTestCase {
 		XCTAssertTrue(
 			initialReminderIcon.waitForExistence(timeout: 3),
 			"Expected overview reminder icon to be visible before disabling reminder"
-		)   
+		)
 
 		Helpers.openReminderTab(in: app)
 		let enabledPicker = try requireMoleEnabledButton()
@@ -512,11 +512,9 @@ final class ReminderViewUITests: XCTestCase {
 		try setDefaultReminderEnabled(false)
 
 		Helpers.openMoleDetail(person: "Alex", mole: "Back Mole", in: app)
-	
+
 		XCTAssertFalse(app.staticTexts["moleDetailNextDueDateSummary"].waitForExistence(timeout: 2), "Expected no due-date summary for mole without due date")
 	}
-
-
 
 	// MARK: - Empty Store
 

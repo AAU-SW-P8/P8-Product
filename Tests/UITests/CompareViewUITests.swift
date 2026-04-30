@@ -8,7 +8,6 @@
 
 import XCTest
 
-
 /// UI tests for the mole detail flow covering Detail/Evolution navigation, mole switching, and mock data verification.
 final class MoleDetailFlowUITests: XCTestCase {
 
@@ -144,7 +143,7 @@ final class MoleDetailFlowUITests: XCTestCase {
         Helpers.movePersonSelection(to: "Jordan", in: app)
         XCTAssertTrue(app.staticTexts["Jordan"].waitForExistence(timeout: 3),
                       "Overview navigation should reach Jordan from mock data")
-        
+
         Helpers.movePersonSelection(to: "Taylor", in: app)
         XCTAssertTrue(app.staticTexts["Taylor"].waitForExistence(timeout: 3),
                       "Overview navigation should reach Taylor from mock data")

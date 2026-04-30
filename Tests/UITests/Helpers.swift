@@ -1,4 +1,3 @@
-
 import XCTest
 
 /// Shared UI-test helper utilities for navigating the app and interacting with common UI elements.
@@ -38,7 +37,7 @@ final class Helpers {
 	) {
 		app.tabBars.buttons["Reminder"].tap()
 		XCTAssertTrue(app.staticTexts["Default Reminder Enabled"].waitForExistence(timeout: 3), "Default reminder text should be visible", file: file, line: line)
-		
+
 	}
     /// Opens the Capture tab and waits for either the placeholder headline or the segmentation view to appear.
 	static func openCaptureTab(
@@ -65,7 +64,7 @@ final class Helpers {
 		let placeholderHeadline = app.staticTexts["Opening camera..."].firstMatch
 		let segmentationRoot = app.otherElements["moleSegmentationView"].firstMatch
 		let settingsButton = app.buttons["segmentationSettingsButton"].firstMatch
-	
+
 		XCTAssertTrue(
 			placeholderHeadline.waitForExistence(timeout: 3) || segmentationRoot.waitForExistence(timeout: 3) || settingsButton.waitForExistence(timeout: 3),
 			"Capture tab should show either the placeholder headline or the segmentation screen",
@@ -74,9 +73,7 @@ final class Helpers {
 		)
 	}
 
-
-
-    /// Navigates to the mole detail page for the given person and mole name.
+  /// Navigates to the mole detail page for the given person and mole name.
 	static func openMoleDetail(
 		person personName: String,
 		mole moleName: String,

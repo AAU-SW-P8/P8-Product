@@ -43,7 +43,7 @@ final class ARCameraViewController: UIViewController, ARSessionDelegate {
     /// Most recent subject distance in meters, seeded to a large value so the
     /// capture button starts disabled.
     private var currentDistance: Float = ARCameraConstants.Measurement.initialDistance
-    private var currentConfidence: ARConfidenceLevel? = nil
+    private var currentConfidence: ARConfidenceLevel?
     private var isFlashlightOn: Bool = false
 
     // MARK: - Lifecycle
@@ -113,7 +113,7 @@ final class ARCameraViewController: UIViewController, ARSessionDelegate {
     private func setupLidarPointsLayer() {
         lidarPointsLayer = CAShapeLayer()
         lidarPointsLayer.frame = view.bounds
-        
+
         // Use a mask to only show dots inside the red box (80x80 centered)
         let maskSize = ARCameraConstants.UI.crosshairSize
         let maskRect = CGRect(x: view.bounds.midX - maskSize/2,
@@ -123,7 +123,7 @@ final class ARCameraViewController: UIViewController, ARSessionDelegate {
         let maskLayer = CAShapeLayer()
         maskLayer.path = UIBezierPath(rect: maskRect).cgPath
         lidarPointsLayer.mask = maskLayer
-        
+
         view.layer.addSublayer(lidarPointsLayer)
     }
 
@@ -301,7 +301,7 @@ final class ARCameraViewController: UIViewController, ARSessionDelegate {
         CVPixelBufferLockBaseAddress(depthMap, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(depthMap, .readOnly) }
 
-        var confidenceBaseAddress: UnsafeMutableRawPointer? = nil
+        var confidenceBaseAddress: UnsafeMutableRawPointer?
         var confidenceBytesPerRow = 0
         if let confMap = confidenceMap {
             CVPixelBufferLockBaseAddress(confMap, .readOnly)
@@ -325,7 +325,7 @@ final class ARCameraViewController: UIViewController, ARSessionDelegate {
         let viewSize = view.bounds.size
         let cropWidthRatio = ARCameraConstants.UI.crosshairSize / viewSize.width
         let cropHeightRatio = ARCameraConstants.UI.crosshairSize / viewSize.height
-        
+
         let xStart = Int(CGFloat(width) * (1.0 - cropWidthRatio) / 2.0)
         let xEnd = Int(CGFloat(width) * (1.0 + cropWidthRatio) / 2.0)
         let yStart = Int(CGFloat(height) * (1.0 - cropHeightRatio) / 2.0)
@@ -336,8 +336,8 @@ final class ARCameraViewController: UIViewController, ARSessionDelegate {
 
         for y in max(0, yStart)..<min(height, yEnd) {
             let rowPtr = baseAddress.advanced(by: y * bytesPerRow).assumingMemoryBound(to: Float32.self)
-            
-            var confRowPtr: UnsafeMutablePointer<UInt8>? = nil
+
+            var confRowPtr: UnsafeMutablePointer<UInt8>?
             if let confBase = confidenceBaseAddress {
                 confRowPtr = confBase.advanced(by: y * confidenceBytesPerRow).assumingMemoryBound(to: UInt8.self)
             }
@@ -469,21 +469,21 @@ final class ARCameraViewController: UIViewController, ARSessionDelegate {
         } else {
             deviceType = .builtInWideAngleCamera
         }
-        
+
         guard let device = AVCaptureDevice.default(deviceType, for: .video, position: .back),
               device.hasTorch else { return }
-        
+
         do {
             try device.lockForConfiguration()
-            
+
             isFlashlightOn.toggle()
             device.torchMode = isFlashlightOn ? .on : .off
-            
+
             let imageName = isFlashlightOn ? "bolt.fill" : "bolt.slash.fill"
             let imageColor = isFlashlightOn ? UIColor.systemYellow : UIColor.white
             flashlightButton.setImage(UIImage(systemName: imageName), for: .normal)
             flashlightButton.tintColor = imageColor
-            
+
             device.unlockForConfiguration()
         } catch {
             print("Failed to lock device for torch configuration: \(error)")

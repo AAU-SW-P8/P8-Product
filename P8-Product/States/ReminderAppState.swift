@@ -1,7 +1,6 @@
 import SwiftUI
 import SwiftData
 
-
 /**
     The `ReminderAppState` class manages the state for the Reminder view, including the selected person and their associated reminder settings. It provides methods to update the selected person while ensuring that dependent state is reset to prevent stale data from being displayed in the view.
  
@@ -36,7 +35,7 @@ class ReminderAppState {
         guard let current: Person = selectedPerson,
               let index: Array<Person>.Index = people.firstIndex(of: current),
               index < people.count - 1 else { return }
-        
+
         slideEdge = .trailing
         withAnimation {
             selectedPerson = people[index + 1]
@@ -51,7 +50,7 @@ class ReminderAppState {
         guard let current: Person = selectedPerson,
               let index: Array<Person>.Index = people.firstIndex(of: current),
               index > 0 else { return }
-        
+
         slideEdge = .leading
         withAnimation {
             selectedPerson = people[index - 1]
@@ -66,7 +65,6 @@ class ReminderAppState {
         reminderEnabled = person.defaultReminderEnabled
         defaultFrequency = displayFrequency(for: person)
     }
-
 
     /**
      Converts a person's stored default frequency to a display label.

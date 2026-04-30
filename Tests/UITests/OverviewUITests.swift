@@ -337,7 +337,7 @@ final class OverviewUITests: XCTestCase {
     }
 
     // MARK: - Overview Filter & Sort   
-        
+
     // MARK: - Persistent Storage
     /// Verifies that a renamed person persists in the overview after the app is relaunched.
     func testRenamedPersonPersistsAfterRelaunch() {

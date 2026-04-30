@@ -56,7 +56,7 @@ final class SAM3ImagePreprocessor {
             // Allows the CPU, GPU, and the NPU to all access the exact same memory bucket
             kCVPixelBufferIOSurfacePropertiesKey as String: [:]
         ]
-        
+
         // Allocate memory for the pixel buffer
         // Returns a pointer to the memory
         var pixelBuffer: CVPixelBuffer?
@@ -87,36 +87,36 @@ final class SAM3ImagePreprocessor {
     private func makeNormalizedTensor(from pixelBuffer: CVPixelBuffer, size: Int) throws -> MLMultiArray {
         // Create an empty tensor. Shape is [1 image, 3 colors, Height, Width]
         let array: MLMultiArray = try MLMultiArray(shape: [1, 3, size as NSNumber, size as NSNumber], dataType: .float16)
-        
+
         // Lock the physical memory so the CPU can read it safely (no interference from GPU)
         CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
-        
+
         // Guarantee that the memory unlocks when this function finishes, even if an error happens.
         defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
-        
+
         // Find the exact memory address where the very first pixel is stored.
         guard let baseAddress: UnsafeMutableRawPointer = CVPixelBufferGetBaseAddress(pixelBuffer) else {
             print("CVPixelBufferGetBaseAddress returned nil")
             throw PipelineError.renderFailed
         }
-        
+
         // Find out exactly how many bytes make up one horizontal row
         let bytesPerRow: Int = CVPixelBufferGetBytesPerRow(pixelBuffer)
-        
+
         // Tell Swift to treat that raw memory address as a list of 8-bit integers
         let bytes: UnsafeMutablePointer<UInt8> = baseAddress.assumingMemoryBound(to: UInt8.self)
         let hw: Int = size * size
 
         // Get a direct memory pointer to our empty tensor
         let dataPtr: UnsafeMutablePointer<Float16> = array.dataPointer.bindMemory(to: Float16.self, capacity: 3 * hw)
-        
+
         // Our math constants to convert [0 to 255] into [-1.0 to +1.0].
         let scaleFactor: Float = 127.5
         let offsetValue: Float = 1.0
-        
+
         // Format is BGRA (Blue, Green, Red, Alpha = 4 bytes per pixel)
         let bytesPerPixel: Int = 4
-        
+
         // Loop through every row (y)
         for y: Int in 0..<size {
             // and loop through every pixel (x) in that row.
@@ -129,10 +129,10 @@ final class SAM3ImagePreprocessor {
                 let b: Float = Float(bytes[pixelOffset])     / scaleFactor - offsetValue
                 let g: Float = Float(bytes[pixelOffset + 1]) / scaleFactor - offsetValue
                 let r: Float = Float(bytes[pixelOffset + 2]) / scaleFactor - offsetValue
-                
+
                 // Calculate the 1D position of this pixel inside the flat AI tensor
                 let spatial: Int = y * size + x
-                
+
                 // Write the Red, Green, and Blue numbers into their own separate color blocks
                 dataPtr[0 * hw + spatial] = Float16(r) // Block 0: All Reds
                 dataPtr[1 * hw + spatial] = Float16(g) // Block 1: All Greens
