@@ -1,8 +1,11 @@
 import XCTest
 
+/// UI tests for the Overview tab, covering person and mole management and persistent storage.
 final class OverviewUITests: XCTestCase {
 
+    /// The application instance under test.
     private var app: XCUIApplication!
+    /// Default launch arguments used for the in-memory test store.
     private let defaultLaunchArguments = ["-UITest_InMemoryStore", "-SkipModelLoading"]
 
     override func setUpWithError() throws {
@@ -11,6 +14,7 @@ final class OverviewUITests: XCTestCase {
     }
 
     // MARK: - Person Management
+    /// Verifies the user can rename an existing person via the long-press context menu.
     func testUserCanRenamePerson() {
         Helpers.openOverviewTab(in: app)
 
@@ -34,6 +38,7 @@ final class OverviewUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Alex Renamed"].waitForExistence(timeout: 3), "Person name should update after saving")
     }
 
+    /// Verifies the user can create a new person using the add-person button.
     func testUserCanCreateNewPerson() {
         Helpers.openOverviewTab(in: app)
 
@@ -53,6 +58,7 @@ final class OverviewUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Morgan"].waitForExistence(timeout: 3), "Newly created person should be selected")
     }
 
+    /// Verifies canceling the add-person alert does not create a person.
     func testCreatePersonCancelDoesNotAddPerson() {
         Helpers.openOverviewTab(in: app)
 
@@ -71,6 +77,7 @@ final class OverviewUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Alex"].exists, "Selection should remain unchanged after canceling add")
     }
 
+    /// Verifies submitting an empty name in the add-person alert dismisses it without creating a person.
     func testCreatePersonWithEmptyNameDismissesAlertAndDoesNotCreatePerson() {
         Helpers.openOverviewTab(in: app)
 
@@ -85,6 +92,7 @@ final class OverviewUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3), "Selection should remain on Alex when empty name is submitted")
     }
 
+    /// Verifies submitting a whitespace-only name in the add-person alert does not create a person.
     func testCreatePersonWithWhitespaceOnlyNameDoesNotCreatePerson() {
         Helpers.openOverviewTab(in: app)
 
@@ -103,6 +111,7 @@ final class OverviewUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3), "Selection should remain on Alex when whitespace-only name is submitted")
     }
 
+    /// Verifies canceling the rename alert leaves the person's name unchanged.
     func testRenamePersonCancelDoesNotChangeName() {
         Helpers.openOverviewTab(in: app)
 
@@ -127,6 +136,7 @@ final class OverviewUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["Alex Temp"].exists, "Canceled rename should not update person name")
     }
 
+    /// Verifies saving an empty name in the rename alert leaves the person's name unchanged.
     func testRenamePersonWithEmptyNameDoesNotChangeName() {
         Helpers.openOverviewTab(in: app)
 
@@ -150,6 +160,7 @@ final class OverviewUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3), "Saving empty name should keep previous name")
     }
 
+    /// Verifies saving a whitespace-only name in the rename alert leaves the person's name unchanged.
     func testRenamePersonWithWhitespaceOnlyNameDoesNotChangeName() {
         Helpers.openOverviewTab(in: app)
 
@@ -173,6 +184,7 @@ final class OverviewUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3), "Saving whitespace-only name should keep previous name")
     }
 
+    /// Verifies canceling the delete-person alert keeps the person in the list.
     func testDeletePersonCancelKeepsPerson() {
         Helpers.openOverviewTab(in: app)
         Helpers.movePersonSelection(to: "Taylor", in: app)
@@ -192,6 +204,7 @@ final class OverviewUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Taylor"].waitForExistence(timeout: 3), "Canceling delete should keep person")
     }
 
+    /// Verifies confirming the delete-person alert removes the person and falls back the selection.
     func testDeletePersonConfirmRemovesPersonAndFallsBackSelection() {
         Helpers.openOverviewTab(in: app)
         Helpers.movePersonSelection(to: "Taylor", in: app)
@@ -211,6 +224,7 @@ final class OverviewUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3), "Selection should fall back after deleting selected person")
     }
     
+    /// Verifies deleting a person also removes all of their associated moles.
     func testDeletePersonWithMolesDeletesPersonAndMoles() {
         Helpers.openOverviewTab(in: app)
         Helpers.movePersonSelection(to: "Jordan", in: app)
@@ -230,6 +244,7 @@ final class OverviewUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3), "Selection should fall back after deleting selected person")
     }
 
+    /// Verifies the "No Person Registered" message is shown when all persons have been deleted.
     func testNoPersonRegisteredTextShowsWhenNoPersonsExist() {
         Helpers.openOverviewTab(in: app)
 
@@ -257,6 +272,7 @@ final class OverviewUITests: XCTestCase {
     }
     // MARK: - Mole Management
     
+    /// Verifies canceling the delete-mole alert keeps the mole in the overview list.
     func testCancelDeleteMoleFromOverviewKeepsMole() {
         Helpers.openOverviewTab(in: app)
 
@@ -277,6 +293,7 @@ final class OverviewUITests: XCTestCase {
         )
     }
 
+    /// Verifies confirming the delete-mole alert removes the mole from the overview list.
     func testConfirmDeleteMoleFromOverviewRemovesMole() {
         Helpers.openOverviewTab(in: app)
 
@@ -298,6 +315,7 @@ final class OverviewUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Left Arm Mole"].exists)
     }
 
+    /// Verifies that changing the selected person in the Reminder tab dismisses any open detail or evolution page.
     func testChangingPersonInReminderDismissesOpenDetailOrEvolutionPage() {
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
         Helpers.switchToEvolution(in: app)
@@ -321,6 +339,7 @@ final class OverviewUITests: XCTestCase {
     // MARK: - Overview Filter & Sort   
         
     // MARK: - Persistent Storage
+    /// Verifies that a renamed person persists in the overview after the app is relaunched.
     func testRenamedPersonPersistsAfterRelaunch() {
         app.terminate()
         launchApp(arguments: ["-UITest_PersistentStore", "-UITest_ResetStore", "-SkipModelLoading"])
@@ -354,6 +373,7 @@ final class OverviewUITests: XCTestCase {
         )
     }
 
+    /// Verifies that a created person persists in the overview after the app is relaunched.
     func testCreatedPersonPersistsAfterRelaunch() {
         app.terminate()
         launchApp(arguments: ["-UITest_PersistentStore", "-UITest_ResetStore", "-SkipModelLoading"])
@@ -383,6 +403,7 @@ final class OverviewUITests: XCTestCase {
         )
     }
 
+    /// Verifies that a deleted person is no longer accessible in the overview after the app is relaunched.
     func testDeletedPersonPersistsAfterRelaunch() {
         app.terminate()
         launchApp(arguments: ["-UITest_PersistentStore", "-UITest_ResetStore", "-SkipModelLoading"])
@@ -419,6 +440,7 @@ final class OverviewUITests: XCTestCase {
         )
     }
 
+    /// Verifies that a deleted mole is no longer accessible in the overview after the app is relaunched.
     func testDeletedMolePersistsAfterRelaunch() {
         app.terminate()
         launchApp(arguments: ["-UITest_PersistentStore", "-UITest_ResetStore", "-SkipModelLoading"])
@@ -447,6 +469,7 @@ final class OverviewUITests: XCTestCase {
         )
     }
 
+    /// Initialises a new `XCUIApplication`, applies the given launch arguments, and launches it.
     private func launchApp(arguments: [String]) {
         app = XCUIApplication()
         app.launchArguments = arguments
@@ -454,7 +477,9 @@ final class OverviewUITests: XCTestCase {
     }
 }
 
+/// Extensions on `XCUIElement` used in overview UI tests.
 private extension XCUIElement {
+    /// Clears the element's current text and types the given replacement string.
     func replaceText(with text: String) {
         tap()
 

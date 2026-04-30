@@ -18,10 +18,13 @@
 import XCTest
 
 
+/// UI tests for the ImageCarousel view, verifying measurement labels and swipe navigation.
 final class ImageCarouselUITests: XCTestCase {
 
+    /// The application instance under test.
     private var app: XCUIApplication!
 
+    /// Asserts that the given carousel element displays the expected diameter and optional area labels.
     private func assertCarousel(
         _ carousel: XCUIElement,
         showsDiameter diameter: String,
@@ -52,6 +55,7 @@ final class ImageCarouselUITests: XCTestCase {
         }
     }
 
+    /// Returns the first candidate diameter string that is currently shown in the given carousel element.
     private func observedDiameter(
         in carousel: XCUIElement,
         candidates: [String]
@@ -73,6 +77,7 @@ final class ImageCarouselUITests: XCTestCase {
 
     // MARK: - Image Loading
 
+    /// Verifies the carousel displays the correct scan data when the detail view is first opened.
     func testCarouselShowsSelectedScanOnLoad() {
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
         Helpers.switchToEvolution(in: app)
@@ -83,6 +88,7 @@ final class ImageCarouselUITests: XCTestCase {
     }
 
     // MARK: - Swipe Navigation
+    /// Verifies that swiping through the carousel reveals each scan in sequence.
     func testSwipingThroughAllScansShowsEachOne() {
         // Left carousel starts at last index, so order while swiping left is:
         // 4.8 mm → 4.2 mm → 5.0 mm.
@@ -116,6 +122,7 @@ final class ImageCarouselUITests: XCTestCase {
         )
     }
 
+    /// Verifies the left and right carousels track their selected scan independently.
     func testLeftAndRightCarouselsTrackSelectionIndependently() {
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
         Helpers.switchToEvolution(in: app)
@@ -146,6 +153,7 @@ final class ImageCarouselUITests: XCTestCase {
 
     // MARK: - Delete Scan Flow
 
+    /// Verifies the detail carousel shows a delete button for the selected scan.
     func testDetailCarouselShowsDeleteButton() {
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
 
@@ -156,6 +164,7 @@ final class ImageCarouselUITests: XCTestCase {
         )
     }
 
+    /// Verifies that canceling the delete scan alert leaves the current scan unchanged.
     func testCancelDeleteScanKeepsCurrentScan() {
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
 
@@ -179,6 +188,7 @@ final class ImageCarouselUITests: XCTestCase {
         )
     }
 
+    /// Verifies that confirming a scan deletion removes it and advances the carousel to the next scan.
     func testConfirmDeleteScanRemovesSelectedInstanceAndShowsNextScan() {
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
 
@@ -204,6 +214,7 @@ final class ImageCarouselUITests: XCTestCase {
         XCTAssertFalse(app.alerts["Delete Scan"].exists)
     }
 
+    /// Verifies that deleting the only scan of a mole also deletes the mole and returns to the overview.
     func testDeletingLastScanDeletesMoleAndReturnsToOverview() {
         Helpers.openMoleDetail(person: "Alex", mole: "Back Mole", in: app)
 

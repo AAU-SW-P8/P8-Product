@@ -17,8 +17,10 @@
 import XCTest
 import UIKit
 
+/// UI tests for the Camera/Capture tab, covering placeholder UI and navigation on the simulator.
 final class CameraViewUITests: XCTestCase {
 
+    /// The application instance under test.
     private var app: XCUIApplication!
 
     override func setUpWithError() throws {
@@ -32,6 +34,7 @@ final class CameraViewUITests: XCTestCase {
 
     // MARK: - Tab Navigation
 
+    /// Verifies the Capture tab is reachable and selected after opening.
     func testCaptureTabIsReachable() {
         let captureTab = app.tabBars.buttons["Capture"]
         XCTAssertTrue(captureTab.waitForExistence(timeout: 3),
@@ -42,6 +45,7 @@ final class CameraViewUITests: XCTestCase {
 
     // MARK: - Placeholder UI
 
+    /// Verifies the placeholder headline is visible on the simulator where no camera is available.
     func testPlaceholderHeadlineIsVisible() {
         XCTAssertTrue(
             app.staticTexts["Opening camera..."].waitForExistence(timeout: 3),
@@ -49,6 +53,7 @@ final class CameraViewUITests: XCTestCase {
         )
     }
 
+    /// Verifies the tap-to-reopen subheadline is visible on the placeholder screen.
     func testPlaceholderSubheadlineIsVisible() {
         XCTAssertTrue(
             app.staticTexts["If camera is closed, tap anywhere to open again"]
@@ -57,6 +62,7 @@ final class CameraViewUITests: XCTestCase {
         )
     }
 
+    /// Verifies the segmentation view is not pushed when no image has been captured.
     func testPlaceholderDoesNotShowSegmentationViewByDefault() {
         // MoleSegmentationView is only pushed once an image has been captured,
         // which cannot happen on the simulator. The Capture tab should stay on
@@ -73,6 +79,7 @@ final class CameraViewUITests: XCTestCase {
 
     // MARK: - Tap-to-reopen
 
+    /// Verifies that tapping the placeholder does not crash or leave the Capture screen on the simulator.
     func testTappingPlaceholderDoesNotCrashOrLeaveScreen() {
         let headline = app.staticTexts["Opening camera..."]
         XCTAssertTrue(headline.waitForExistence(timeout: 3))
@@ -97,6 +104,7 @@ final class CameraViewUITests: XCTestCase {
     // UIImage and hands it to `CameraView(preloadedImage:)`. That triggers
     // the same `onChange` path a real capture would
     
+    /// Verifies the segmentation view is not shown when no image has been injected or captured.
     func testSegmentationViewIsNotShownWithoutCapturedImage() {
         // Without an injected image on the simulator there's no way to
         // produce a capturedImage, so the navigation must stay on the placeholder.

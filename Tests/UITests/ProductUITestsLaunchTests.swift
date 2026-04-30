@@ -7,9 +7,10 @@
 
 import XCTest
 
+/// UI tests that verify the app launches without crashing and captures a launch screenshot.
 final class ProductUITestsLaunchTests: XCTestCase {
 
-    override class var runsForEachTargetApplicationUIConfiguration: Bool {
+    override static var runsForEachTargetApplicationUIConfiguration: Bool {
         true
     }
 
@@ -17,6 +18,7 @@ final class ProductUITestsLaunchTests: XCTestCase {
         continueAfterFailure = false
     }
 
+    /// Verifies the app launches successfully and attaches a launch screen screenshot.
     @MainActor
     func testLaunch() throws {
         let app = XCUIApplication()

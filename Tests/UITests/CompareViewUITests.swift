@@ -9,8 +9,10 @@
 import XCTest
 
 
+/// UI tests for the mole detail flow covering Detail/Evolution navigation, mole switching, and mock data verification.
 final class MoleDetailFlowUITests: XCTestCase {
 
+    /// The application instance under test.
     private var app: XCUIApplication!
 
     override func setUpWithError() throws {
@@ -25,6 +27,7 @@ final class MoleDetailFlowUITests: XCTestCase {
 
     // MARK: - Detail Navigation
 
+    /// Verifies opening a mole shows the Detail/Evolution page picker.
     func testOpeningMoleShowsDetailPagePicker() {
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
 
@@ -36,6 +39,7 @@ final class MoleDetailFlowUITests: XCTestCase {
 
     // MARK: - Evolution Content
 
+    /// Verifies that a mole with multiple scans shows the dual carousel and metric picker in Evolution.
     func testSelectingMoleWithMultipleScansShowsDualCarouselAndMetricPicker() {
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
         Helpers.switchToEvolution(in: app)
@@ -47,6 +51,7 @@ final class MoleDetailFlowUITests: XCTestCase {
                        "Metric picker should appear when a mole has multiple scans")
     }
 
+    /// Verifies that a mole with only one scan shows the single carousel without a metric picker.
     func testSelectingMoleWithSingleScanShowsSingleCarousel() {
         Helpers.openMoleDetail(person: "Alex", mole: "Back Mole", in: app)
         Helpers.switchToEvolution(in: app)
@@ -65,6 +70,7 @@ final class MoleDetailFlowUITests: XCTestCase {
 
     // MARK: - Mole Dropdown In Title
 
+    /// Verifies the title dropdown in the detail view lists other moles belonging to the same person.
     func testDetailTitleDropdownShowsOtherMolesForPerson() {
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
 
@@ -76,6 +82,7 @@ final class MoleDetailFlowUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Back Mole"].waitForExistence(timeout: 3))
     }
 
+    /// Verifies that switching mole from the title dropdown keeps the user inside the detail flow.
     func testSwitchingMoleFromTitleKeepsUserInsideDetailFlow() {
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
         Helpers.switchToEvolution(in: app)
@@ -88,6 +95,7 @@ final class MoleDetailFlowUITests: XCTestCase {
                       "Evolution page should remain visible for the newly selected mole")
     }
 
+    /// Verifies the switched mole remains selected after switching tabs and returning.
     func testSwitchedMolePersistsAcrossTabSwitchesWhileDetailIsOpen() {
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
         Helpers.chooseMoleFromDetailTitle("Back Mole", in: app)
@@ -127,6 +135,7 @@ final class MoleDetailFlowUITests: XCTestCase {
     // so the first frame corresponds to the latest scan
     // (5 days ago: diameter 4.8 mm, area 15.4 mm²).
 
+    /// Verifies the overview contains all mocked people from the seeded data.
     func testOverviewContainsAllMockedPeople() {
         Helpers.openOverviewTab(in: app)
         XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3),
@@ -141,6 +150,7 @@ final class MoleDetailFlowUITests: XCTestCase {
                       "Overview navigation should reach Taylor from mock data")
     }
 
+    /// Verifies Alex's detail title menu lists all mocked moles.
     func testDetailTitleMenuContainsAllMockedMolesForAlex() {
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
 
@@ -153,6 +163,7 @@ final class MoleDetailFlowUITests: XCTestCase {
                        "Detail title menu should contain Back Mole")
     }
 
+    /// Verifies Jordan's detail title menu lists all mocked moles.
     func testDetailTitleMenuContainsAllMockedMolesForJordan() {
         Helpers.openMoleDetail(person: "Jordan", mole: "Face Mole", in: app)
 
@@ -163,6 +174,7 @@ final class MoleDetailFlowUITests: XCTestCase {
                        "Jordan's detail title menu should contain Face Mole")
     }
 
+    /// Verifies the carousel shows the correct diameter and area for the first scan of Left Arm Mole.
     func testLeftArmMoleShowsFirstScanDiameterAndArea() {
         // With latest-first ordering, the first scan for Left Arm Mole is alexScan4
         // (6 days ago) with diameter 5.0 mm and area 16.0 mm².
@@ -180,6 +192,7 @@ final class MoleDetailFlowUITests: XCTestCase {
         )
     }
 
+    /// Verifies the carousel shows the correct diameter and area for Back Mole.
     func testBackMoleShowsCorrectDiameterAndArea() {
         // Back Mole has a single scan with diameter 3.6 mm and area 10.1 mm².
         Helpers.openMoleDetail(person: "Alex", mole: "Back Mole", in: app)
@@ -196,6 +209,7 @@ final class MoleDetailFlowUITests: XCTestCase {
         )
     }
 
+    /// Verifies the carousel shows the correct diameter and area for Jordan's Face Mole.
     func testFaceMoleShowsCorrectDiameterAndAreaForJordan() {
         // Face Mole has a single scan with diameter 2.9 mm and area 6.6 mm².
         Helpers.openMoleDetail(person: "Jordan", mole: "Face Mole", in: app)
@@ -212,6 +226,7 @@ final class MoleDetailFlowUITests: XCTestCase {
         )
     }
 
+    /// Verifies the area trend evolution value matches the mock data for Left Arm Mole.
     func testLeftArmMoleAreaTrendEvolutionMatchesMockData() {
         // Areas sorted by date: 15.4 → 13.8 → 16.0 → evolution = 16.0 - 15.4 = +0.6 mm²
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
@@ -225,6 +240,7 @@ final class MoleDetailFlowUITests: XCTestCase {
         )
     }
 
+    /// Verifies the diameter trend evolution value matches the mock data for Left Arm Mole.
     func testLeftArmMoleDiameterTrendEvolutionMatchesMockData() {
         // Diameters sorted by date: 4.8 → 4.2 → 5.0 → evolution = 5 - 4.8 = +0.2 mm
         Helpers.openMoleDetail(person: "Alex", mole: "Left Arm Mole", in: app)
