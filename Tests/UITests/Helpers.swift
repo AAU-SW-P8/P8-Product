@@ -1,7 +1,9 @@
 import XCTest
 
+/// Shared UI-test helper utilities for navigating the app and interacting with common UI elements.
 final class Helpers {
 
+    /// Opens the Overview tab and waits for the "Mole Overview" headline to appear.
 	static func openOverviewTab(
 		in app: XCUIApplication,
 		file: StaticString = #filePath,
@@ -10,7 +12,8 @@ final class Helpers {
 		app.tabBars.buttons["Overview"].tap()
 		XCTAssertTrue(app.staticTexts["Mole Overview"].waitForExistence(timeout: 3), file: file, line: line)
 	}
-
+    
+    /// Opens the Overview tab when a detail or evolution page is already open, accepting either the overview headline or the detail page picker as success.
     static func openOverviewTabWhenDetailOrEvolutionIsOpen(
 		in app: XCUIApplication,
 		file: StaticString = #filePath,
@@ -26,6 +29,7 @@ final class Helpers {
 		)
 	}
 
+    /// Opens the Reminder tab and waits for the "Default Reminder Enabled" label to appear.
 	static func openReminderTab(
 		in app: XCUIApplication,
 		file: StaticString = #filePath,
@@ -35,6 +39,7 @@ final class Helpers {
 		XCTAssertTrue(app.staticTexts["Default Reminder Enabled"].waitForExistence(timeout: 3), "Default reminder text should be visible", file: file, line: line)
 
 	}
+    /// Opens the Capture tab and waits for either the placeholder headline or the segmentation view to appear.
 	static func openCaptureTab(
 		in app: XCUIApplication,
 		file: StaticString = #filePath,
@@ -68,6 +73,7 @@ final class Helpers {
 		)
 	}
 
+  /// Navigates to the mole detail page for the given person and mole name.
 	static func openMoleDetail(
 		person personName: String,
 		mole moleName: String,
@@ -90,18 +96,21 @@ final class Helpers {
 		)
 	}
 
+    /// Switches the mole detail page picker to the Evolution segment.
 	static func switchToEvolution(in app: XCUIApplication) {
 		let pagePicker = app.segmentedControls["moleDetailPagePicker"]
 		XCTAssertTrue(pagePicker.waitForExistence(timeout: 3))
 		pagePicker.buttons["Evolution"].tap()
 	}
 
+    /// Switches the mole detail page picker to the Detail segment.
 	static func switchToDetail(in app: XCUIApplication) {
 		let pagePicker = app.segmentedControls["moleDetailPagePicker"]
 		XCTAssertTrue(pagePicker.waitForExistence(timeout: 3))
 		pagePicker.buttons["Detail"].tap()
 	}
 
+    /// Taps the mole picker in the detail title bar and selects the specified mole.
 	static func chooseMoleFromDetailTitle(_ moleName: String, in app: XCUIApplication) {
 		let titleMenu = app.buttons["moleDetailMolePicker"]
 		XCTAssertTrue(titleMenu.waitForExistence(timeout: 3))
@@ -109,10 +118,12 @@ final class Helpers {
 		app.buttons[moleName].tap()
 	}
 
+    /// Selects the person with the given name in the overview person navigator.
 	static func selectPerson(_ name: String, in app: XCUIApplication) {
 		movePersonSelection(to: name, in: app)
 	}
 
+    /// Navigates forward or backward through the person list until the specified person is visible.
 	static func movePersonSelection(to name: String, in app: XCUIApplication) {
 		if app.staticTexts[name].exists { return }
 
@@ -137,6 +148,7 @@ final class Helpers {
 		XCTAssertTrue(app.staticTexts[name].waitForExistence(timeout: 1), "Expected selected person to be \(name)")
 	}
 
+    /// Long-presses a person cell to reveal the context menu and confirms the delete action.
 	static func deletePerson(_ name: String, in app: XCUIApplication) {
 		let personCell = app.staticTexts[name]
 		XCTAssertTrue(personCell.waitForExistence(timeout: 3), "Person \(name) should exist before deletion")
@@ -145,7 +157,8 @@ final class Helpers {
 		app.buttons["Delete"].tap()
 		app.alerts.buttons["Delete"].tap()
 	}
-
+    
+    /// Long-presses a person cell and renames the person from `oldName` to `newName` via the Edit Name alert.
     static func switchNameOfPerson(from oldName: String, to newName: String, in app: XCUIApplication) {
 		let personCell = app.staticTexts[oldName]
 		XCTAssertTrue(personCell.waitForExistence(timeout: 3), "Person \(oldName) should exist before renaming")
@@ -169,6 +182,7 @@ final class Helpers {
 		editAlert.buttons["Save"].tap()
 	}
 
+    /// Swipes left on a mole row to reveal the delete swipe action button.
 	static func revealDeleteMoleSwipeAction(for moleName: String, in app: XCUIApplication) {
         let moleRowLabel = app.staticTexts[moleName].firstMatch
         XCTAssertTrue(moleRowLabel.waitForExistence(timeout: 3), "Mole row should exist before swipe: \(moleName)")

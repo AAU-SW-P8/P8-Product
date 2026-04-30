@@ -3,6 +3,7 @@ import Testing
 @testable import P8_Product
 
 @Suite("SAM3Models")
+/// Tests for `SAM3Models`, verifying that all three Core ML models load successfully from the app bundle.
 struct SAM3ModelsTests {
 
     @Test @MainActor

@@ -5,8 +5,10 @@
 
 import XCTest
 
+/// UI tests verifying that selected-person state persists correctly when switching between tabs.
 final class TabStateUITests: XCTestCase {
 
+    /// The application instance under test.
     private var app: XCUIApplication!
 
     override func setUpWithError() throws {
@@ -17,6 +19,7 @@ final class TabStateUITests: XCTestCase {
         app.launch()
     }
 
+    /// Verifies the selected person is preserved when switching between the Overview and Reminder tabs.
     func testSelectedPersonPersistsBetweenTabs() {
         Helpers.openOverviewTab(in: app)
 
@@ -38,6 +41,7 @@ final class TabStateUITests: XCTestCase {
         )
     }
 
+    /// Verifies the selected person is preserved in the overview after opening a mole detail and returning.
     func testChangingPersonInOverviewPersistsAfterOpeningDetail() {
         Helpers.openOverviewTab(in: app)
 
@@ -55,6 +59,7 @@ final class TabStateUITests: XCTestCase {
         )
     }
 
+    /// Verifies that deleting the selected person falls back the selection to the first available person across tabs.
     func testDeletingTaylorFallsBackToAlexAcrossTabs() {
         Helpers.openOverviewTab(in: app)
 

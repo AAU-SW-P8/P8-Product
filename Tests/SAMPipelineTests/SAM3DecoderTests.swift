@@ -3,6 +3,7 @@ import Testing
 @testable import P8_Product
 
 @Suite("SAM3DecoderOutput")
+/// Tests for `SAM3DecoderOutput`, verifying that the detection count is read correctly from the scores tensor shape.
 struct SAM3DecoderOutputTests {
 
     @Test func detectionCount_readsFromScoresShape() throws {

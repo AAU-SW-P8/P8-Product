@@ -4,6 +4,7 @@ import Testing
 @testable import P8_Product
 
 @Suite("SAM3Detection")
+/// Tests for `SAM3Detection`, covering IoU calculation, NMS, and confidence-based filtering.
 struct SAM3DetectionTests {
 
     // MARK: - Intersection Over Union

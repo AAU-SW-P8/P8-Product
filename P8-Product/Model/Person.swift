@@ -6,15 +6,20 @@
 import Foundation
 import SwiftData
 
+/// A SwiftData model representing a person who owns one or more moles.
 @Model
 final class Person {
+    /// Unique identifier for the person.
     @Attribute(.unique) var id: UUID = UUID()
+    /// The display name of the person.
     var name: String
+    /// The date the person record was created.
     var createdAt: Date
+    /// The default reminder frequency string (e.g., "Weekly", "Monthly", "Quarterly").
     var defaultReminderFrequency: String
+    /// Whether the default reminder is enabled for this person.
     var defaultReminderEnabled: Bool
-
-    // If this Person is deleted, all its instances are deleted
+    /// All moles belonging to this person; deleted automatically when the person is deleted.
     @Relationship(deleteRule: .cascade, inverse: \Mole.person)
     var moles: [Mole] = []
 

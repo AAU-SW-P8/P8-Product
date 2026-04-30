@@ -6,26 +6,38 @@
 import Foundation
 import SwiftData
 
+/// Represents how often a mole should be checked.
 enum Frequency: String, Codable {
-    case weekly, monthly, quarterly
+    /// Check the mole once per week.
+    case weekly
+    /// Check the mole once per month.
+    case monthly
+    /// Check the mole once every three months.
+    case quarterly
 }
 
+/// A SwiftData model representing a single mole belonging to a person.
 @Model
 final class Mole {
+    /// Unique identifier for the mole.
     @Attribute(.unique) var id: UUID = UUID()
-
+    /// Display name for the mole.
     var name: String
+    /// The body area where the mole is located.
     var bodyPart: String
+    /// Whether reminders are active for this mole.
     var isReminderActive: Bool
+    /// When `true`, the mole inherits the person's default reminder-enabled setting.
     var followDefaultReminderEnabled: Bool?
+    /// When `true`, the mole inherits the person's default reminder frequency.
     var followDefault: Bool?
+    /// The per-mole reminder frequency override; `nil` means follow the default.
     var reminderFrequency: Frequency?
+    /// The date by which the next scan should be taken.
     var nextDueDate: Date?
-
-    // The inverse relationships back to the parents
+    /// The person this mole belongs to.
     var person: Person?
-
-    // If this Mole is deleted, all its instances are deleted
+    /// All scans taken of this mole; deleted automatically when the mole is deleted.
     @Relationship(deleteRule: .cascade, inverse: \MoleScan.mole)
     var scans: [MoleScan] = []
 

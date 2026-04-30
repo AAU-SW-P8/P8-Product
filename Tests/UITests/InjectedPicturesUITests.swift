@@ -6,9 +6,10 @@
 import XCTest
 import UIKit
 
+/// UI tests for the injected-image segmentation flow, covering new-mole creation, existing-mole scan addition, cancellation, and persistence.
 final class InjectedPicturesUITests: XCTestCase {
 
-    // Launches directly into the Capture tab with mocked segmentation data
+    /// The application instance under test.
     private var app: XCUIApplication!
 
     override func setUpWithError() throws {
@@ -29,6 +30,7 @@ final class InjectedPicturesUITests: XCTestCase {
 }
 
     // MARK: - Segmentation Flow Tests
+    /// Verifies a captured image can be used to create a new mole through the segmentation flow.
     func testCapturedImageCanCreateNewMoleFromSegmentationFlow() {
 
         let useMockDetectionButton = app.buttons["segmentationUseMockDetectionButton"].firstMatch
@@ -55,6 +57,7 @@ final class InjectedPicturesUITests: XCTestCase {
         )
     }
 
+    /// Verifies a captured image can be added as a new scan to an existing mole.
     func testCapturedImageCanAddScanToExistingMoleFromSegmentationFlow() {
 
         let useMockDetectionButton = app.buttons["segmentationUseMockDetectionButton"].firstMatch
@@ -83,6 +86,7 @@ final class InjectedPicturesUITests: XCTestCase {
         )
     }
 
+    /// Verifies canceling the existing-mole selection returns to the segmentation view without changes.
     func testCapturedImageAddedToExistingMoleCanCancelAndNotAppearInOverview() {
 
         let useMockDetectionButton = app.buttons["segmentationUseMockDetectionButton"].firstMatch
@@ -101,6 +105,7 @@ final class InjectedPicturesUITests: XCTestCase {
 
     }
 
+    /// Verifies canceling new-mole creation returns to the segmentation view and does not add the mole to the overview.
     func testCapturedImageCreateNewMoleCanCancelAndNotAppearInOverview() {
 
         let useMockDetectionButton = app.buttons["segmentationUseMockDetectionButton"].firstMatch
@@ -130,6 +135,7 @@ final class InjectedPicturesUITests: XCTestCase {
     }
 
     // MARK: - Persistence Tests
+    /// Verifies a newly created mole persists in the overview after the app is relaunched.
     func testCapturedImageCanCreateNewMolePersistAfterAppRelaunch() {
         app.terminate()
         launchApp(arguments: ["-UITest_PersistentStore", "-SkipModelLoading", "-UITest_InjectCapturedImage", Self.onePixelPNGBase64(), "-UITest_MockSegmentationResult"])
@@ -162,6 +168,7 @@ final class InjectedPicturesUITests: XCTestCase {
         )
     }
 
+    /// Verifies an added scan persists in the mole detail view after the app is relaunched.
     func testCapturedImageCanAddScanToExistingMolePersistAfterAppRelaunch() {
         app.terminate()
         launchApp(arguments: ["-UITest_PersistentStore", "-SkipModelLoading", "-UITest_MockSegmentationResult", "-UITest_InjectCapturedImage", Self.onePixelPNGBase64()])
@@ -197,6 +204,7 @@ final class InjectedPicturesUITests: XCTestCase {
     }
 
     // MARK: - Helpers
+    /// Builds a 1×1 solid-gray PNG and returns it base64-encoded for use as a launch argument.
       private static func onePixelPNGBase64() -> String {
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: 1, height: 1))
         let image = renderer.image { ctx in
@@ -206,6 +214,7 @@ final class InjectedPicturesUITests: XCTestCase {
         return image.pngData()!.base64EncodedString()
     }
 
+    /// Terminates the app, applies the given launch arguments, and relaunches.
     private func launchApp(arguments: [String]) {
         app.terminate()
         app.launchArguments = arguments

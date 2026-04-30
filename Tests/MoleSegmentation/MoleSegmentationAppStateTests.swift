@@ -4,8 +4,10 @@ import UIKit
 
 @MainActor
 @Suite("Mole segmentation duplicate-name validation")
+/// Tests for mole segmentation app state, covering duplicate-name validation logic.
 struct MoleSegmentationAppStateTests {
 
+    /// Creates a `Person` with a single mole using the given name.
     private func makePersonWithMole(named moleName: String) -> Person {
         let person = Person(name: "Alex")
         let mole = Mole(

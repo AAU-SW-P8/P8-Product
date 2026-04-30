@@ -3,6 +3,7 @@ import Testing
 @testable import P8_Product
 
 @Suite("ReminderView behavior")
+/// Tests for reminder-view business logic, covering frequency updates, due-date computation, and person navigation.
 struct ReminderOverviewTest {
     @Test("Default frequency keeps followDefault and uses person's frequency")
     func updateReminderWithDefaultFrequencyUsesPersonSetting() {
@@ -369,6 +370,7 @@ struct ReminderOverviewTest {
         #expect(displayFrequency(for: quarterly) == "Quarterly")
     }
 
+    /// Creates a `Mole` with a single scan dated at `lastCheckIn`.
     private func makeMole(lastCheckIn: Date) -> Mole {
         let mole = Mole(
             name: "Mole 1",
@@ -484,6 +486,7 @@ struct ReminderOverviewTest {
         return (person.defaultReminderEnabled, displayFrequency(for: person))
     }
 
+    /// Returns the display string for the given person's default reminder frequency.
     private func displayFrequency(for person: Person) -> String {
         switch person.defaultReminderFrequency.lowercased() {
         case "weekly":
@@ -497,6 +500,7 @@ struct ReminderOverviewTest {
         }
     }
 
+    /// Returns the display string for the given mole's effective reminder frequency.
     private func displayFrequency(for mole: Mole) -> String {
         if mole.followDefault ?? true {
             return "Default"
@@ -515,6 +519,7 @@ struct ReminderOverviewTest {
         return "Default"
     }
 
+    /// Returns `true` when two dates are within the same minute (within 60 seconds of each other).
     private func isSameMinute(_ lhs: Date, _ rhs: Date) -> Bool {
         abs(lhs.timeIntervalSince(rhs)) < 60
     }

@@ -4,12 +4,15 @@ import Testing
 
 @MainActor
 @Suite("OverviewAppState filtering and navigation")
+/// Tests for `OverviewAppState`, covering body-part filtering, sort options, scan lookup, and person navigation.
 struct OverviewAppStateTests {
 
+    /// Creates a fresh `OverviewAppState` backed by the shared data controller.
     private func makeState() -> OverviewAppState {
         OverviewAppState(dataController: .shared)
     }
 
+    /// Creates a `Mole` with scans at the specified `captureDates`, attached to `person`.
     private func makeMole(
         name: String,
         bodyPart: String,
