@@ -8,6 +8,10 @@ final class OverviewUITests: XCTestCase {
   /// Default launch arguments used for the in-memory test store.
   private let defaultLaunchArguments = ["-UITest_InMemoryStore", "-SkipModelLoading"]
 
+  /// Sets up the test environment by launching the app and navigating to the Overview tab.
+  ///
+  /// - Parameter error: An optional error that may have occurred during setup.
+  /// - Throws: An error if the setup fails.
   override func setUpWithError() throws {
     continueAfterFailure = false
     launchApp(arguments: defaultLaunchArguments)

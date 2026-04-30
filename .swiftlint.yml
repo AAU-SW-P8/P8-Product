@@ -14,6 +14,9 @@ opt_in_rules:
 - missing_docs
 
 missing_docs:
+  excludes_extensions: false
+  excludes_inherited_types: false
+  excludes_trivial_init: false
   error:    
   - open    
   - public    

@@ -12,7 +12,9 @@ final class TabStateUITests: XCTestCase {
   private var app: XCUIApplication!
 
   /// Sets up a fresh in-memory store for each test, skipping automatic model loading to ensure a clean state.
-  /// This is necessary to prevent data from previous test runs from affecting subsequent tests.
+  ///
+  /// - Parameter error: An optional error that may have occurred during setup.
+  /// - Throws: An error if the setup fails.
   override func setUpWithError() throws {
     continueAfterFailure = false
     app = XCUIApplication()

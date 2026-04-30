@@ -13,6 +13,13 @@ class CalculatorLinear: Calculator {
 
   // MARK: - Measurement
 
+  /// Computes physical mole measurements using a linear distance→mm/pixel model.
+  ///
+  /// - Parameters:
+  ///   - samples: The mole samples containing depth and weight data.
+  ///   - cameraIntrinsics: The camera intrinsics matrix (not used in this linear model).
+  /// - Returns:
+  ///   A `Calculator.MoleMeasurement` containing the computed area and diameter.
   override func measure(from samples: Calculator.MoleSamples, cameraIntrinsics: simd_float3x3?)
     -> Calculator.MoleMeasurement
   {

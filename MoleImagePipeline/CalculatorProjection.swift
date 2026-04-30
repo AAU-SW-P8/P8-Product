@@ -16,6 +16,12 @@ class CalculatorProjection: Calculator {
 
   /// Converts sampled points and depths into a physical measurement using the
   /// pinhole projection defined by the camera intrinsics.
+  ///
+  /// - Parameters:
+  ///   - samples: The mole samples containing depth and weight data.
+  ///   - cameraIntrinsics: The camera intrinsics matrix.
+  /// - Returns:
+  ///   A `Calculator.MoleMeasurement` containing the computed area and diameter.
   override func measure(from samples: Calculator.MoleSamples, cameraIntrinsics: simd_float3x3?)
     -> Calculator.MoleMeasurement
   {

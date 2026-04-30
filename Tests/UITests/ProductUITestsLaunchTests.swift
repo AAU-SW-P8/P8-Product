@@ -12,6 +12,10 @@ final class ProductUITestsLaunchTests: XCTestCase {
     true
   }
 
+  /// Sets up the test environment by launching the app and navigating to the Capture tab.
+  ///
+  /// - Parameter error: An optional error that may have occurred during setup.
+  /// - Throws: An error if the setup fails.
   override func setUpWithError() throws {
     continueAfterFailure = false
   }
