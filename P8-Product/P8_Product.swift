@@ -6,11 +6,12 @@
 import SwiftUI
 import SwiftData
 
+/// The application entry point.
 @main
 struct P8_Product: App {
-    
+    /// The shared data controller that owns the SwiftData model container.
     let dataController = DataController.shared
-    
+    /// The root scene containing the main content view.
     var body: some Scene {
         WindowGroup {
             ContentView()

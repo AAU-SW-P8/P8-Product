@@ -2,29 +2,43 @@ import SwiftUI
 import Foundation
 import SwiftData
 
+/// Observable state object that drives the mole detail and evolution screens.
 @MainActor
 @Observable
 final class MoleDetailAppState {
+	/// The pages available in the mole detail navigation.
 	enum Page: String, CaseIterable, Identifiable {
+		/// Shows detailed scan information for the selected mole.
 		case detail = "Detail"
+		/// Shows the evolution chart comparing two scans.
 		case evolution = "Evolution"
-
+		/// The stable identifier for the page.
 		var id: Self { self }
 	}
 
+	/// Shared selection state used to synchronise the active mole across screens.
 	@ObservationIgnored private let selectionState: SelectionState
+	/// Data layer used for persistence and deletion operations.
 	@ObservationIgnored private let dataController: DataController
-
+	/// The mole used as the fallback when no global mole selection exists.
 	private let initialMole: Mole
 
 	// MARK: - UI State
+	/// The currently visible page in the detail navigation.
 	var selectedPage: Page = .detail
+	/// Index of the currently displayed scan in the image carousel.
 	var selectedIndex: Int = 0
+	/// The metric (area or diameter) shown in the evolution chart.
 	var selectedMetric: ChartMetric = .area
+	/// Index of the older scan selected for evolution comparison.
 	var selectedEvolutionTopIndex: Int = 0
+	/// Index of the newer scan selected for evolution comparison.
 	var selectedEvolutionBottomIndex: Int = 0
+	/// When `true`, the detail view should be dismissed.
 	var shouldDismissDetailView: Bool = false
+	/// Whether the delete confirmation alert for a specific scan is visible.
 	var showingDeleteDetailInstanceAlert: Bool = false
+	/// The scan pending deletion confirmation.
 	var detailScanToDelete: MoleScan?
 
 	/// Creates state and dependencies for a mole detail flow.

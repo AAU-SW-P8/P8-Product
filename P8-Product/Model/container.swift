@@ -13,6 +13,7 @@ import UIKit
 @MainActor
 class DataController {
     
+    /// The singleton shared instance of `DataController`.
     static let shared: DataController = DataController()
     
     /// The managed container that holds the schema and storage configuration.
@@ -44,7 +45,7 @@ class DataController {
         }
     }
 
-    // Wipes all data from the persistent container (iOS 18)
+    /// Wipes all data from the persistent container (iOS 18).
     func eraseAllData() {
         do {
             try container.erase()
@@ -53,8 +54,8 @@ class DataController {
         }
     }
     
-    // Checks if the database is empty and populates it with sample data if necessary.
-    // This is typically called only once during the first launch or after a store reset.
+    /// Checks if the database is empty and populates it with sample data if necessary.
+    /// Typically called only once during the first launch or after a store reset.
     private func checkAndSeed() {
         // Allow UI tests to start with an empty store
         if ProcessInfo.processInfo.arguments.contains("-UITest_EmptyStore") {
@@ -213,6 +214,11 @@ class DataController {
         }
     }
 
+    /// Returns `true` when the given person already has a mole with a normalised name equal to `candidateName`.
+    /// - Parameters:
+    ///   - candidateName: The name to check for duplicates.
+    ///   - person: The person whose mole list is searched.
+    ///   - excludedMole: An optional mole to skip during the check (useful when renaming).
     func hasMole(named candidateName: String, for person: Person, excluding excludedMole: Mole? = nil) -> Bool {
         let normalizedCandidate: String = normalizedMoleName(candidateName)
         guard !normalizedCandidate.isEmpty else { return false }
@@ -223,6 +229,7 @@ class DataController {
         }
     }
 
+    /// Returns the next unused auto-generated mole name (e.g., "Mole 3") for the given person.
     private func nextAvailableAutoMoleName(for person: Person) -> String {
         var index: Int = max(1, person.moles.count + 1)
         var candidate = "Mole \(index)"
@@ -235,6 +242,7 @@ class DataController {
         return candidate
     }
 
+    /// Returns a trimmed, case- and diacritic-insensitive version of the mole name for deduplication.
     private func normalizedMoleName(_ name: String) -> String {
         name
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -267,6 +275,7 @@ class DataController {
         }
     }
 
+    /// Returns whether reminders are effectively enabled for a mole, respecting any per-mole overrides.
     func effectiveReminderEnabled(for mole: Mole) -> Bool {
         if mole.followDefaultReminderEnabled ?? true {
             return mole.person?.defaultReminderEnabled ?? mole.isReminderActive
@@ -274,6 +283,7 @@ class DataController {
         return mole.isReminderActive
     }
 
+    /// Returns the effective reminder frequency label for a mole, falling back to the person's default.
     func effectiveFrequencyLabel(for mole: Mole) -> String? {
         if mole.followDefault ?? true {
             return mole.person?.defaultReminderFrequency
@@ -281,6 +291,12 @@ class DataController {
         return mole.reminderFrequency?.rawValue
     }
 
+    /// Calculates the next due date based on a frequency label and a reference date.
+    /// - Parameters:
+    ///   - frequencyLabel: A string such as "Weekly", "Monthly", or "Quarterly".
+    ///   - referenceDate: The date from which the interval is calculated.
+    ///   - isEnabled: When `false`, returns `nil` immediately.
+    /// - Returns: The computed next due date, or `nil` if reminders are disabled or frequency is unknown.
     func nextDueDate(for frequencyLabel: String?, referenceDate: Date, isEnabled: Bool) -> Date? {
         guard isEnabled, let frequencyLabel else { return nil }
 

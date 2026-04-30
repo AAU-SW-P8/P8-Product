@@ -6,17 +6,20 @@
 import Foundation
 import SwiftData
 
+/// A SwiftData model representing a single scan of a mole.
 @Model
 final class MoleScan {
+    /// Unique identifier for this scan.
     @Attribute(.unique) var id: UUID = UUID()
+    /// JPEG image data stored externally on disk.
     @Attribute(.externalStorage) var imageData: Data?
-    
+    /// The date the scan image was captured.
     var captureDate: Date = Date()
-    
+    /// The measured diameter of the mole in millimetres.
     var diameter: Float
+    /// The measured area of the mole in square millimetres.
     var area: Float
-    
-    // The inverse relationships back to the mole the scan belongs to
+    /// The mole this scan belongs to.
     var mole: Mole?
     
     /// Creates a new MoleScan record.
