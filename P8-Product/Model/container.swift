@@ -12,7 +12,7 @@ import UIKit
 /// initialization failures.
 @MainActor
 class DataController {
-    
+
     /// The singleton shared instance of `DataController`.
     static let shared: DataController = DataController()
 
@@ -53,7 +53,7 @@ class DataController {
             print("Failed to erase all data: \(error)")
         }
     }
-    
+
     /// Checks if the database is empty and populates it with sample data if necessary.
     /// Typically called only once during the first launch or after a store reset.
     private func checkAndSeed() {

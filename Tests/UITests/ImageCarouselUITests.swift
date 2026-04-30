@@ -17,7 +17,6 @@
 
 import XCTest
 
-
 /// UI tests for the ImageCarousel view, verifying measurement labels and swipe navigation.
 final class ImageCarouselUITests: XCTestCase {
 

@@ -12,7 +12,7 @@ final class Helpers {
 		app.tabBars.buttons["Overview"].tap()
 		XCTAssertTrue(app.staticTexts["Mole Overview"].waitForExistence(timeout: 3), file: file, line: line)
 	}
-    
+
     /// Opens the Overview tab when a detail or evolution page is already open, accepting either the overview headline or the detail page picker as success.
     static func openOverviewTabWhenDetailOrEvolutionIsOpen(
 		in app: XCUIApplication,
@@ -157,7 +157,7 @@ final class Helpers {
 		app.buttons["Delete"].tap()
 		app.alerts.buttons["Delete"].tap()
 	}
-    
+
     /// Long-presses a person cell and renames the person from `oldName` to `newName` via the Edit Name alert.
     static func switchNameOfPerson(from oldName: String, to newName: String, in app: XCUIApplication) {
 		let personCell = app.staticTexts[oldName]

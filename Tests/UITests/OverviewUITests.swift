@@ -223,7 +223,7 @@ final class OverviewUITests: XCTestCase {
 
         XCTAssertTrue(app.staticTexts["Alex"].waitForExistence(timeout: 3), "Selection should fall back after deleting selected person")
     }
-    
+
     /// Verifies deleting a person also removes all of their associated moles.
     func testDeletePersonWithMolesDeletesPersonAndMoles() {
         Helpers.openOverviewTab(in: app)
@@ -271,7 +271,7 @@ final class OverviewUITests: XCTestCase {
         )
     }
     // MARK: - Mole Management
-    
+
     /// Verifies canceling the delete-mole alert keeps the mole in the overview list.
     func testCancelDeleteMoleFromOverviewKeepsMole() {
         Helpers.openOverviewTab(in: app)

@@ -103,7 +103,7 @@ final class CameraViewUITests: XCTestCase {
     // argument is consumed by ContentView, which decodes the payload into a
     // UIImage and hands it to `CameraView(preloadedImage:)`. That triggers
     // the same `onChange` path a real capture would
-    
+
     /// Verifies the segmentation view is not shown when no image has been injected or captured.
     func testSegmentationViewIsNotShownWithoutCapturedImage() {
         // Without an injected image on the simulator there's no way to

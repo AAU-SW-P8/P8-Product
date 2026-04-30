@@ -64,7 +64,7 @@ final class ReminderViewUITests: XCTestCase {
         }
         return button
     }
-    
+
     /// Returns the per-mole frequency picker element for Left Arm Mole.
 	private func firstMoleFrequencyButton() -> XCUIElement {
 		leftArmMoleFrequencyControl
