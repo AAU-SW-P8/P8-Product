@@ -17,36 +17,42 @@ import Foundation
 /// `<|endoftext|>`. Remaining slots are filled with padding tokens.
 final class SAM3TextPromptEncoder {
 
-    // CLIP tokenizer vocabulary IDs.
-    private static let startOfTextToken: Int32 = 49406  // <|startoftext|>
-    private static let moleToken:        Int32 = 23529  // "mole"
-    //private static let moleToken:        Int32 = 4170  // "coin"
-    private static let endOfTextToken:   Int32 = 49407  // <|endoftext|>
-    private static let paddingToken:     Int32 = 0
-    private static let sequenceLength:   Int = 32
+  // CLIP tokenizer vocabulary IDs.
+  /// The start of text token ID.
+  private static let startOfTextToken: Int32 = 49406  // <|startoftext|>
+  /// The mole token ID.
+  private static let moleToken: Int32 = 23529  // "mole"
+  // private static let moleToken:        Int32 = 4170  // "coin"
+  /// The end of text token ID.
+  private static let endOfTextToken: Int32 = 49407  // <|endoftext|>
+  /// The padding token ID.
+  private static let paddingToken: Int32 = 0
+  /// The sequence length for the text encoder.
+  private static let sequenceLength: Int = 32
 
-    /// The pre-computed text encoder output, ready to be passed to the decoder.
-    let features: MLFeatureProvider
+  /// The pre-computed text encoder output, ready to be passed to the decoder.
+  let features: MLFeatureProvider
 
-    /// Tokenizes "mole" and runs the text encoder once. Throws if the encoder
-    /// rejects the input or if the output cannot be constructed.
-    init(encoder: MLModel) throws {
-        let promptTokens: [Int32] = [Self.startOfTextToken, Self.moleToken, Self.endOfTextToken]
-        let paddingCount: Int = Self.sequenceLength - promptTokens.count
-        let tokenIds: [Int32] = promptTokens + Array(repeating: Self.paddingToken, count: paddingCount)
+  /// Tokenizes "mole" and runs the text encoder once. Throws if the encoder
+  /// rejects the input or if the output cannot be constructed.
+  init(encoder: MLModel) throws {
+    let promptTokens: [Int32] = [Self.startOfTextToken, Self.moleToken, Self.endOfTextToken]
+    let paddingCount: Int = Self.sequenceLength - promptTokens.count
+    let tokenIds: [Int32] = promptTokens + Array(repeating: Self.paddingToken, count: paddingCount)
 
-        let inputIds: MLMultiArray = try MLMultiArray(shape: [1, NSNumber(value: Self.sequenceLength)], dataType: .int32)
-        for i: Int in 0..<Self.sequenceLength {
-            inputIds[[0, i] as [NSNumber]] = NSNumber(value: tokenIds[i])
-        }
-
-        let input: MLDictionaryFeatureProvider = try MLDictionaryFeatureProvider(dictionary: [
-            SAM3FeatureNames.TextEncoder.tokenIdsInput: MLFeatureValue(multiArray: inputIds)
-        ])
-
-        print("Encoding text prompt 'mole'…")
-        let output: MLFeatureProvider = try encoder.prediction(from: input)
-        print("Text encoder output features: \(output.featureNames.joined(separator: ", "))")
-        self.features = output
+    let inputIds: MLMultiArray = try MLMultiArray(
+      shape: [1, NSNumber(value: Self.sequenceLength)], dataType: .int32)
+    for i: Int in 0..<Self.sequenceLength {
+      inputIds[[0, i] as [NSNumber]] = NSNumber(value: tokenIds[i])
     }
+
+    let input: MLDictionaryFeatureProvider = try MLDictionaryFeatureProvider(dictionary: [
+      SAM3FeatureNames.TextEncoder.tokenIdsInput: MLFeatureValue(multiArray: inputIds)
+    ])
+
+    print("Encoding text prompt 'mole'…")
+    let output: MLFeatureProvider = try encoder.prediction(from: input)
+    print("Text encoder output features: \(output.featureNames.joined(separator: ", "))")
+    self.features = output
+  }
 }
