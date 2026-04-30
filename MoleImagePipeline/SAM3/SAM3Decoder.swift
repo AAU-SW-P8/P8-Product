@@ -42,8 +42,7 @@ final class SAM3Decoder {
   /// - Throws: `PipelineError.unexpectedModelOutput` if any expected feature is missing
   ///   or the returned tensors don't have the expected shapes.
   func run(visionFeatures: MLFeatureProvider, textFeatures: MLFeatureProvider) throws
-    -> SAM3DecoderOutput
-  {
+    -> SAM3DecoderOutput {
     let input = try buildInput(visionFeatures: visionFeatures, textFeatures: textFeatures)
 
     print("Running decoder…")
@@ -77,8 +76,7 @@ final class SAM3Decoder {
   /// - Returns: A dictionary feature provider combining all inputs needed by the decoder model.
   /// - Throws: `PipelineError.unexpectedModelOutput` if any expected feature is missing.
   private func buildInput(visionFeatures: MLFeatureProvider, textFeatures: MLFeatureProvider) throws
-    -> MLDictionaryFeatureProvider
-  {
+    -> MLDictionaryFeatureProvider {
     guard
       let fpnFeat0: MLFeatureValue = visionFeatures.featureValue(
         for: SAM3FeatureNames.VisionEncoder.fpnFeat0),
@@ -123,8 +121,7 @@ final class SAM3Decoder {
   ///   - boxes: Per-detection bounding boxes, expected shape `[1, N, 4]`.
   ///   - masks: Per-detection mask logits, expected shape `[1, N, H, W]`.
   /// - Throws: `PipelineError.unexpectedModelOutput` if shapes are invalid or inconsistent.
-  private func validateShapes(scores: MLMultiArray, boxes: MLMultiArray, masks: MLMultiArray) throws
-  {
+  private func validateShapes(scores: MLMultiArray, boxes: MLMultiArray, masks: MLMultiArray) throws {
     guard scores.shape.count == 2,
       boxes.shape.count == 3,
       masks.shape.count == 4,

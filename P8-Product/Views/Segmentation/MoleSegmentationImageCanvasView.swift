@@ -135,8 +135,7 @@ struct MoleSegmentationImageCanvasView: View {
   }
 
   private func clampedPan(_ current: CGSize, _ accumulated: CGSize, for size: CGSize, zoom: Double)
-    -> CGSize
-  {
+    -> CGSize {
     guard zoom > 1.0 else { return .zero }
 
     let maxX: CGFloat = (size.width * (zoom - 1.0)) / 2.0

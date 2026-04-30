@@ -110,8 +110,7 @@ struct ImageCarousel: View {
     width: CGFloat
   ) -> some View {
     if let imageData = item.scan.imageData,
-      let uiImage = UIImage(data: imageData)
-    {
+      let uiImage = UIImage(data: imageData) {
       Image(uiImage: uiImage)
         .resizable()
         .scaledToFit()

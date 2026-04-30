@@ -53,8 +53,7 @@ struct SAM3Models {
   /// Resolves a CoreML model URL from the app bundle, preferring the
   /// compiled `.mlmodelc` form and falling back to `.mlpackage`.
   private static func loadModel(named name: String, configuration: MLModelConfiguration)
-    async throws -> MLModel
-  {
+    async throws -> MLModel {
     guard
       let url: URL = Bundle.main.url(forResource: name, withExtension: "mlmodelc")
         ?? Bundle.main.url(forResource: name, withExtension: "mlpackage")

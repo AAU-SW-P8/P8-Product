@@ -420,8 +420,7 @@ final class ARCameraViewController: UIViewController, ARSessionDelegate {
       for x in stride(from: 0, to: width, by: step) {
         let depth = rowPtr[x]
         if depth > ARCameraConstants.Measurement.minValidDepth
-          && depth < ARCameraConstants.Measurement.maxValidDepth
-        {
+          && depth < ARCameraConstants.Measurement.maxValidDepth {
           let vx = CGFloat(x) / CGFloat(width) * viewSize.width
           let vy = CGFloat(y) / CGFloat(height) * viewSize.height
           dotPath.append(
@@ -581,8 +580,7 @@ final class ARCameraViewController: UIViewController, ARSessionDelegate {
   /// - Returns: The matching image orientation, defaulting to `.right`
   ///   (portrait) for unknown values.
   private static func imageOrientation(for interfaceOrientation: UIInterfaceOrientation)
-    -> UIImage.Orientation
-  {
+    -> UIImage.Orientation {
     switch interfaceOrientation {
     case .portrait: return .right
     case .portraitUpsideDown: return .left

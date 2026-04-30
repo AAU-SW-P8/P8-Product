@@ -60,8 +60,7 @@ enum SAM3Detection {
   /// - Note: An `iouThreshold` of `1.0` is effectively a no-op (IoU never
   ///   strictly exceeds 1), which matches the historical default in this
   ///   pipeline. Use `~0.5` if you want actual deduplication.
-  static func nonMaxSuppression(_ detections: [RawDetection], iouThreshold: Float) -> [RawDetection]
-  {
+  static func nonMaxSuppression(_ detections: [RawDetection], iouThreshold: Float) -> [RawDetection] {
     let sorted: [RawDetection] = detections.sorted { $0.prob > $1.prob }
     var kept: [RawDetection] = []
     for det: RawDetection in sorted {

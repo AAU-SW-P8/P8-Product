@@ -214,8 +214,7 @@ struct CalculatorLinearTests {
 
   /// Creates a `CVPixelBuffer` in `DepthFloat32` format filled with the provided depth `values`.
   private func makeDepthPixelBuffer(width: Int, height: Int, values: [Float32]) throws
-    -> CVPixelBuffer
-  {
+    -> CVPixelBuffer {
     precondition(values.count == width * height)
 
     let attrs: CFDictionary =

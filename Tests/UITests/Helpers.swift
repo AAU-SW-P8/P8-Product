@@ -168,8 +168,7 @@ final class Helpers {
   }
 
   /// Long-presses a person cell and renames the person from `oldName` to `newName` via the Edit Name alert.
-  static func switchNameOfPerson(from oldName: String, to newName: String, in app: XCUIApplication)
-  {
+  static func switchNameOfPerson(from oldName: String, to newName: String, in app: XCUIApplication) {
     let personCell = app.staticTexts[oldName]
     XCTAssertTrue(
       personCell.waitForExistence(timeout: 3), "Person \(oldName) should exist before renaming")

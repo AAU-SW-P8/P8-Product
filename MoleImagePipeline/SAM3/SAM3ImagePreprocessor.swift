@@ -88,8 +88,7 @@ final class SAM3ImagePreprocessor {
   /// - Returns: A `[1, 3, size, size]` Float16 `MLMultiArray` in RGB channel order, normalized to `[-1, 1]`.
   /// - Throws: `PipelineError.renderFailed` if the pixel buffer's base address is inaccessible.
   private func makeNormalizedTensor(from pixelBuffer: CVPixelBuffer, size: Int) throws
-    -> MLMultiArray
-  {
+    -> MLMultiArray {
     // Create an empty tensor. Shape is [1 image, 3 colors, Height, Width]
     let array: MLMultiArray = try MLMultiArray(
       shape: [1, 3, size as NSNumber, size as NSNumber], dataType: .float16)

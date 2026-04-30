@@ -17,8 +17,7 @@ class CalculatorProjection: Calculator {
   /// Converts sampled points and depths into a physical measurement using the
   /// pinhole projection defined by the camera intrinsics.
   override func measure(from samples: Calculator.MoleSamples, cameraIntrinsics: simd_float3x3?)
-    -> Calculator.MoleMeasurement
-  {
+    -> Calculator.MoleMeasurement {
     guard let cameraIntrinsics = cameraIntrinsics else { return .zero }
     let fx = cameraIntrinsics[0][0]
     let fy = cameraIntrinsics[1][1]
