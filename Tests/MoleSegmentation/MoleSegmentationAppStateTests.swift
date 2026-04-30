@@ -34,6 +34,7 @@ struct MoleSegmentationAppStateTests {
 
   /// Tests that an inline validation message is shown when a duplicate name is entered.
   @Test("inline validation message is shown when a duplicate name is entered")
+  @MainActor
   func duplicateNameProducesInlineValidation() {
     let person = makePersonWithMole(named: "Back Mole")
     let state = MoleSegmentationAppState(dataController: .shared)
@@ -47,6 +48,7 @@ struct MoleSegmentationAppStateTests {
 
   /// Tests that save stays blocked for duplicate name without triggering alert.
   @Test("save stays blocked for duplicate name without triggering alert")
+  @MainActor
   func duplicateNameBlocksSaveWithoutAlert() {
     let person = makePersonWithMole(named: "Back Mole")
     let state = MoleSegmentationAppState(dataController: .shared)
