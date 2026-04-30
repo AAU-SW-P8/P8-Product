@@ -2,6 +2,7 @@ import Testing
 @testable import P8_Product
 
 @Suite("DotPagination")
+/// Tests for `ImageCarousel` dot-pagination logic and scan-selection helpers.
 struct DotPaginationTests {
 
     

@@ -4,6 +4,7 @@ import UIKit
 @testable import P8_Product
 
 @Suite("SAM3ImagePreprocessor")
+/// Tests for `SAM3ImagePreprocessor`, covering input size, tensor shape/type, and pixel normalisation.
 struct SAM3ImagePreprocessorTests {
 
     @Test func inputSize_is1008() {
@@ -55,6 +56,7 @@ struct SAM3ImagePreprocessorTests {
 
     // MARK: - Helpers
 
+    /// Creates a solid-colour `UIImage` of the given dimensions for use in preprocessor tests.
     private func makeTestImage(width: Int, height: Int, color: UIColor) -> UIImage {
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: width, height: height))
         return renderer.image { ctx in

@@ -5,6 +5,7 @@ import UIKit
 @testable import P8_Product
 
 @Suite("DistanceLookup")
+/// Tests for `DistanceLookup`, covering exact lookups, linear interpolation, out-of-range clamping, and sort-on-init.
 struct DistanceLookupTests {
 
     @Test func mmPerPixel_exactEntry_returnsEntryValue() {
@@ -67,7 +68,9 @@ struct DistanceLookupTests {
 struct CalculatorLinearTests {
 
     // Exact entries from DistanceLookup.default used below.
+    /// The mm-per-pixel scale factor at 30 cm taken from `DistanceLookup.default`.
     private let mmPerPixelAt30cm = 0.2121
+    /// The mm-per-pixel scale factor at 20 cm taken from `DistanceLookup.default`.
     private let mmPerPixelAt20cm = 0.1396
 
     @Test func calculateArea_singlePixel_usesLookupValueAtMedianDepth() throws {
@@ -163,6 +166,7 @@ struct CalculatorLinearTests {
 
     // MARK: - Test helpers
 
+    /// Creates a `UIImage` mask where each pixel's RGBA channels are set to the corresponding value in `alphaByPixel`.
     private func makeMaskImage(width: Int, height: Int, alphaByPixel: [UInt8]) -> UIImage {
         precondition(alphaByPixel.count == width * height)
 
@@ -198,6 +202,7 @@ struct CalculatorLinearTests {
         return UIImage(cgImage: cgImage, scale: 1.0, orientation: .up)
     }
 
+    /// Creates a `CVPixelBuffer` in `DepthFloat32` format filled with the provided depth `values`.
     private func makeDepthPixelBuffer(width: Int, height: Int, values: [Float32]) throws -> CVPixelBuffer {
         precondition(values.count == width * height)
 

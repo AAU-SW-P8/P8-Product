@@ -2,6 +2,7 @@ import Testing
 @testable import P8_Product
 
 @Suite("SAM3FeatureNames")
+/// Tests for `SAM3FeatureNames`, verifying that all model I/O feature name constants are non-empty and unique.
 struct SAM3FeatureNamesTests {
 
     @Test func visionEncoder_constantsAreNonEmptyAndUnique() {

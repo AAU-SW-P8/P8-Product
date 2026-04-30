@@ -5,6 +5,7 @@ import SwiftUI
 
 @MainActor
 @Suite("ReminderAppState direct behavior")
+/// Tests for `ReminderAppState`, exercising reminder-mode bindings, frequency updates, and person-selection side effects.
 struct ReminderAppStateDirectTests {
 
     @Test("setDefaultReminderEnabled writes to selected person")
