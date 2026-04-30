@@ -451,7 +451,8 @@ struct CalculatorTests {
 
   /// Creates a test confidence pixel buffer.
   private func makeConfidencePixelBuffer(width: Int, height: Int, values: [UInt8]) throws
-    -> CVPixelBuffer {
+    -> CVPixelBuffer
+  {
     precondition(values.count == width * height)
 
     var pixelBuffer: CVPixelBuffer?
@@ -488,7 +489,8 @@ struct CalculatorTests {
 
   /// Creates a test depth pixel buffer.
   private func makeDepthPixelBuffer(width: Int, height: Int, values: [Float32]) throws
-    -> CVPixelBuffer {
+    -> CVPixelBuffer
+  {
     precondition(values.count == width * height)
 
     let attrs: CFDictionary =

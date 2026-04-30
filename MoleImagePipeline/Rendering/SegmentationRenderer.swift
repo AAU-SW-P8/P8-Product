@@ -164,7 +164,8 @@ final class SegmentationRenderer {
 
   /// Wraps a tinted RGBA byte buffer in a `CGImage` so UIKit can scale it.
   private func makeCGImage(from buffer: [UInt8], width: Int, height: Int, bytesPerRow: Int)
-    -> CGImage? {
+    -> CGImage?
+  {
     let data = Data(buffer)
     guard let provider = CGDataProvider(data: data as CFData) else { return nil }
     let colorSpace = CGColorSpaceCreateDeviceRGB()

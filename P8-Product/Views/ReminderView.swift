@@ -77,7 +77,8 @@ struct ReminderView: View {
                       HStack {
                         Text("Reminder Enabled")
                           .font(.subheadline.weight(.semibold))
-                        Picker("Reminder Mode", selection: appState.reminderModeBinding(for: mole)) {
+                        Picker("Reminder Mode", selection: appState.reminderModeBinding(for: mole))
+                        {
                           Text("Default").tag("Default")
                           Text("Enabled").tag("Enabled")
                           Text("Disabled").tag("Disabled")
@@ -202,7 +203,8 @@ struct ReminderView: View {
   }
 
   private func sectionContainer<Content: View>(title: String, @ViewBuilder content: () -> Content)
-    -> some View {
+    -> some View
+  {
     VStack(alignment: .leading, spacing: 12) {
       Text(title)
         .font(.headline)

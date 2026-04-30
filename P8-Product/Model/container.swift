@@ -225,7 +225,8 @@ class DataController {
   ///   - person: The person whose mole list is searched.
   ///   - excludedMole: An optional mole to skip during the check (useful when renaming).
   func hasMole(named candidateName: String, for person: Person, excluding excludedMole: Mole? = nil)
-    -> Bool {
+    -> Bool
+  {
     let normalizedCandidate: String = normalizedMoleName(candidateName)
     guard !normalizedCandidate.isEmpty else { return false }
 

@@ -24,7 +24,8 @@ struct MoleSegmentationGuidanceStep {
 
   /// Creates a guidance step based on the current state of the segmentation process.
   static func make(isProcessing: Bool, hasDetections: Bool, hasAttemptedSegmentation: Bool = false)
-    -> MoleSegmentationGuidanceStep {
+    -> MoleSegmentationGuidanceStep
+  {
     if isProcessing {
       return MoleSegmentationGuidanceStep(
         index: 2,

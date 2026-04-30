@@ -92,7 +92,8 @@ struct OverviewFilterPopupView: View {
 
   @ViewBuilder
   private func filterOptionRow(title: String, isSelected: Bool, action: @escaping () -> Void)
-    -> some View {
+    -> some View
+  {
     Button(action: action) {
       HStack(spacing: 12) {
         Text(title)

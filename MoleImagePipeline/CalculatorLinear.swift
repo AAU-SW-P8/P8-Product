@@ -14,7 +14,8 @@ class CalculatorLinear: Calculator {
   // MARK: - Measurement
 
   override func measure(from samples: Calculator.MoleSamples, cameraIntrinsics: simd_float3x3?)
-    -> Calculator.MoleMeasurement {
+    -> Calculator.MoleMeasurement
+  {
     let medianDepth = CalculatorHelper.median(of: samples.depths)
     let mmPerPixel = distanceLookup.mmPerPixel(atDistance: medianDepth)
     return Calculator.MoleMeasurement(
@@ -24,7 +25,8 @@ class CalculatorLinear: Calculator {
   }
 
   /// Computes area in mm² using the linear mm-per-pixel factor.
-  private func computeAreaMM2(from samples: Calculator.MoleSamples, _ mmPerPixel: Double) -> CGFloat {
+  private func computeAreaMM2(from samples: Calculator.MoleSamples, _ mmPerPixel: Double) -> CGFloat
+  {
     let weightedPixelCount = samples.weights.reduce(0, +)
     guard weightedPixelCount > 0 else { return 0.0 }
 
@@ -35,7 +37,8 @@ class CalculatorLinear: Calculator {
 
   /// Computes Feret-style diameter in mm using the linear mm-per-pixel factor.
   private func computeDiameterMM(from samples: Calculator.MoleSamples, _ mmPerPixel: Double)
-    -> CGFloat {
+    -> CGFloat
+  {
     guard samples.points.count >= LesionSizingConstants.minimumDiameterPointCount else {
       return 0.0
     }

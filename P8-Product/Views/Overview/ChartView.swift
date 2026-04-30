@@ -207,7 +207,8 @@ struct ChartView: View {
   ///   - safeBottomIndex: Clamped index from the bottom carousel.
   /// - Returns: The marker kind for the point, or `nil` when it is not selected.
   static func calculateMarkerKind(pointIndex: Int, safeTopIndex: Int, safeBottomIndex: Int)
-    -> SelectedMarkerKind? {
+    -> SelectedMarkerKind?
+  {
     let isTopSelected = pointIndex == safeTopIndex
     let isBottomSelected = pointIndex == safeBottomIndex
 

@@ -65,7 +65,8 @@ class MoleSegmentor {
   ///   detections passed the confidence threshold or if overlay or mask-only
   ///   rendering fails.
   func segment(image: UIImage, confidenceThreshold: Float = 0.3, nmsThreshold: Float = 1.0) throws
-    -> (UIImage, [CGRect], UIImage)? {
+    -> (UIImage, [CGRect], UIImage)?
+  {
     let clock = ContinuousClock()
 
     // Normalize orientation so that cgImage pixels match the visual orientation.
