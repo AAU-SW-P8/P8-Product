@@ -122,8 +122,8 @@ class ReminderAppState {
   /// Updates a mole's reminder configuration and recalculates next due date.
   ///
   /// - Parameters:
-  /// - mole: The mole being updated.
-  /// - frequencyLabel: The selected frequency label (`Default`, `Weekly`, `Monthly`, or `Quarterly`).
+  ///   - mole: The mole being updated.
+  ///   - frequencyLabel: The selected frequency label (`Default`, `Weekly`, `Monthly`, or `Quarterly`).
   func updateReminder(for mole: Mole, frequencyLabel: String) {
     if frequencyLabel == "Default" {
       mole.followDefault = true

@@ -7,9 +7,9 @@ import SwiftUI
 
 /// A view that displays a list of moles for a selected person in the overview screen. Each mole is shown with its name, body part, and a thumbnail image from the latest scan. The view also indicates if a reminder is active for each mole and allows navigation to the mole's detail view. Swipe actions are provided for deleting moles, with confirmation alerts managed by the parent view state.
 /// - Parameters:
-///     - appState: A binding to the OverviewAppState, which manages the selected mole
-///     - person: The Person object whose moles are being displayed.
-///     - moles: An array of Mole objects representing the moles associated with the selected person
+///   - appState: A binding to the OverviewAppState, which manages the selected mole
+///   - person: The Person object whose moles are being displayed.
+///   - moles: An array of Mole objects representing the moles associated with the selected person
 struct OverviewMoleListView: View {
   // Properties
   @Bindable var appState: OverviewAppState

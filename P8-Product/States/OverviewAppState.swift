@@ -251,9 +251,9 @@ class OverviewAppState {
 
   /// Returns moles filtered by selected body parts and sorted by the chosen strategy.
   /// - Parameters:
-  /// - person: The person whose moles are displayed.
-  /// - selectedBodyParts: Active body-part filters; empty means no filtering.
-  /// - sortOption: Sorting strategy applied after filtering.
+  ///   - person: The person whose moles are displayed.
+  ///   - selectedBodyParts: Active body-part filters; empty means no filtering.
+  ///   - sortOption: Sorting strategy applied after filtering.
   /// - Returns: Filtered and sorted moles.
   func displayedMoles(
     for person: Person,

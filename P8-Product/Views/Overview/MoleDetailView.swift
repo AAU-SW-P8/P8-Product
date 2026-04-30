@@ -7,8 +7,8 @@ import SwiftUI
 
 /// A view that displays detailed information about a specific mole, including its scans and evolution over time. The view allows users to switch between a detail view showing individual scans and an evolution view comparing multiple scans. It also provides functionality for deleting scans and selecting different moles for the same person. The view is designed to handle various states, such as when there are no scans available, and includes accessibility features for better user experience.
 /// - Parameters:
-///     - appState: The state object that manages the data and logic for the mole detail view, including the selected mole, its scans, and user interactions such as deleting scans or switching between different moles. The app state is initialized with the specific mole to be displayed and is responsible for handling all related actions and data updates within the view.
-///     - dismiss: An environment variable that allows the view to dismiss itself when certain conditions are met, such as when the selected person changes or when the user confirms the deletion of a scan. This provides a way for the view to navigate back to the previous screen in response to user actions or state changes.
+///   - appState: The state object that manages the data and logic for the mole detail view, including the selected mole, its scans, and user interactions such as deleting scans or switching between different moles. The app state is initialized with the specific mole to be displayed and is responsible for handling all related actions and data updates within the view.
+///   - dismiss: An environment variable that allows the view to dismiss itself when certain conditions are met, such as when the selected person changes or when the user confirms the deletion of a scan. This provides a way for the view to navigate back to the previous screen in response to user actions or state changes.
 struct MoleDetailView: View {
   @State private var appState: MoleDetailAppState
   @Environment(\.dismiss) private var dismiss

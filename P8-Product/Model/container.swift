@@ -225,7 +225,8 @@ class DataController {
   ///   - person: The person whose mole list is searched.
   ///   - excludedMole: An optional mole to skip during the check (useful when renaming).
   func hasMole(named candidateName: String, for person: Person, excluding excludedMole: Mole? = nil)
-    -> Bool {
+    -> Bool
+  {
     let normalizedCandidate: String = normalizedMoleName(candidateName)
     guard !normalizedCandidate.isEmpty else { return false }
 
@@ -257,8 +258,8 @@ class DataController {
 
   /// Adds a new scan to an existing mole by creating a new `MoleScan`.
   /// - Parameters:
-  /// - mole: The existing `Mole` to which the new scan will be linked.
-  /// - image: The `UIImage` representing the new scan to be added.
+  ///   - mole: The existing `Mole` to which the new scan will be linked.
+  ///   - image: The `UIImage` representing the new scan to be added.
   func addToExistingMole(mole: Mole, image: UIImage, area: Float = 0, diameter: Float = 0) {
     let context: ModelContext = container.mainContext
 

@@ -9,11 +9,11 @@ import SwiftUI
 /// The popup includes a sort picker, a dropdown for selecting body parts to filter by, and buttons to reset filters or confirm selections. It dynamically updates its content based on the available body parts and
 /// the user's current selections, providing an intuitive interface for managing the overview display settings.
 /// - Parameters:
-///     - sortOption: A binding to the current sorting option selected by the user.
-///     - selectedBodyParts: A binding to the set of body parts currently selected for filtering.
-///     - availableBodyParts: An array of body parts that can be selected for filtering, based on the data available in the app.
-///     - onToggleBodyPart: A closure that updates the set of selected body parts when the user selects or deselects a body part.
-///     - onReset: A closure that resets all filters to their default values.
+///   - sortOption: A binding to the current sorting option selected by the user.
+///   - selectedBodyParts: A binding to the set of body parts currently selected for filtering.
+///   - availableBodyParts: An array of body parts that can be selected for filtering, based on the data available in the app.
+///   - onToggleBodyPart: A closure that updates the set of selected body parts when the user selects or deselects a body part.
+///   - onReset: A closure that resets all filters to their default values.
 struct OverviewFilterPopupView: View {
   @Binding var sortOption: OverviewAppState.MoleSortOption
   @Binding var selectedBodyParts: Set<String>
@@ -92,7 +92,8 @@ struct OverviewFilterPopupView: View {
 
   @ViewBuilder
   private func filterOptionRow(title: String, isSelected: Bool, action: @escaping () -> Void)
-    -> some View {
+    -> some View
+  {
     Button(action: action) {
       HStack(spacing: 12) {
         Text(title)

@@ -350,8 +350,8 @@ class MoleSegmentationAppState {
   /// Uses `UIGraphicsImageRenderer` for efficient cropping while maintaining the original image's scale.
   /// Returns the cropped image or nil if cropping fails.
   /// - Parameters:
-  /// - image: The original UIImage to be cropped.
-  /// - box: The CGRect defining the area to crop, in the coordinate space of the original image.
+  ///   - image: The original UIImage to be cropped.
+  ///   - box: The CGRect defining the area to crop, in the coordinate space of the original image.
   /// - Returns: A new UIImage that is cropped to the specified box, or nil if cropping fails.
   private func cropImage(_ image: UIImage, to box: CGRect) -> UIImage? {
     let padding: CGFloat = 20.0

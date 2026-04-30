@@ -24,7 +24,8 @@ struct MoleSegmentationGuidanceStep {
 
   /// Creates a guidance step based on the current state of the segmentation process.
   static func make(isProcessing: Bool, hasDetections: Bool, hasAttemptedSegmentation: Bool = false)
-    -> MoleSegmentationGuidanceStep {
+    -> MoleSegmentationGuidanceStep
+  {
     if isProcessing {
       return MoleSegmentationGuidanceStep(
         index: 2,
@@ -64,7 +65,7 @@ struct MoleSegmentationGuidanceStep {
 /// A view that displays a guidance card for mole segmentation, showing different instructions based on the current step in the process.
 /// The card adapts its content dynamically as the user progresses through the steps of scanning an image and selecting a detected mole, providing clear instructions at each stage.
 /// - Parameters:
-///    - step: The current step in the mole segmentation guidance process, containing the index, total steps, title, and description to be displayed on the card.
+///   - step: The current step in the mole segmentation guidance process, containing the index, total steps, title, and description to be displayed on the card.
 
 struct MoleSegmentationGuidanceCard: View {
   let step: MoleSegmentationGuidanceStep
