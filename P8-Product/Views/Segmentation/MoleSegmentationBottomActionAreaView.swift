@@ -1,43 +1,48 @@
 import SwiftUI
 
+/// The `MoleSegmentationBottomActionAreaView` type.
 struct MoleSegmentationBottomActionAreaView: View {
-    let isProcessing: Bool
-    let primaryButtonTitle: String
-    let onPrimaryAction: () -> Void
+  /// The `isProcessing` property.
+  let isProcessing: Bool
+  /// The `primaryButtonTitle` property.
+  let primaryButtonTitle: String
+  /// The `onPrimaryAction` property.
+  let onPrimaryAction: () -> Void
 
-    var body: some View {
-        VStack(spacing: 8) {
-            Button {
-                onPrimaryAction()
-            } label: {
-                HStack(spacing: 10) {
-                    if isProcessing {
-                        ProgressView()
-                            .tint(.white)
-                    }
+  /// The `body` property.
+  var body: some View {
+    VStack(spacing: 8) {
+      Button {
+        onPrimaryAction()
+      } label: {
+        HStack(spacing: 10) {
+          if isProcessing {
+            ProgressView()
+              .tint(.white)
+          }
 
-                    Text(primaryButtonTitle)
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                }
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .background(Color.blue)
-                .clipShape(Capsule())
-            }
-            .buttonStyle(.plain)
-            .disabled(isProcessing)
-            .accessibilityIdentifier("moleSegmentationPrimaryActionButton")
-
-            Text("Your photos never leave your device")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+          Text(primaryButtonTitle)
+            .font(.title3)
+            .fontWeight(.semibold)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 10)
-        .padding(.bottom, 8)
-        .background(.ultraThinMaterial)
-        .accessibilityIdentifier("moleSegmentationBottomActionArea")
+        .foregroundStyle(.white)
+        .frame(maxWidth: .infinity)
+        .frame(height: 56)
+        .background(Color.blue)
+        .clipShape(Capsule())
+      }
+      .buttonStyle(.plain)
+      .disabled(isProcessing)
+      .accessibilityIdentifier("moleSegmentationPrimaryActionButton")
+
+      Text("Your photos never leave your device")
+        .font(.footnote)
+        .foregroundStyle(.secondary)
     }
+    .padding(.horizontal, 16)
+    .padding(.top, 10)
+    .padding(.bottom, 8)
+    .background(.ultraThinMaterial)
+    .accessibilityIdentifier("moleSegmentationBottomActionArea")
+  }
 }

@@ -1,0 +1,30 @@
+disabled_rules:
+  - file_length
+  - identifier_name
+  - type_body_length
+  - function_body_length
+  - line_length
+  - large_tuple
+  - type_name
+  - trailing_comma
+  - opening_brace
+  - closure_parameter_position
+
+opt_in_rules:  
+- missing_docs
+
+missing_docs:
+  excludes_extensions: false
+  excludes_inherited_types: false
+  excludes_trivial_init: false
+  evaluate_effective_access_control_level: true
+  error:    
+  - open    
+  - public    
+  - internal    
+  - fileprivate    
+  - private    
+
+allow_zero_lintable_files: true
+
+reporter: "github-actions-logging"
