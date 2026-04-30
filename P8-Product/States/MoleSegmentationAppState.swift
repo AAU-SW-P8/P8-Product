@@ -3,43 +3,74 @@ import SwiftUI
 import UIKit
 import simd
 
+/// App state for mole segmentation.
 @MainActor
 @Observable
 class MoleSegmentationAppState {
   // MARK: - Machine Learning State
+  /// Test image.
   var testImage: UIImage? = UIImage(named: "test_mole_image")
+  /// Mask overlay.
   var maskOverlay: UIImage?
+  /// Mask only image.
   var maskOnlyImage: UIImage?
+  /// Detected boxes.
   var detectedBoxes: [CGRect] = []
+  /// Depth map.
   var depthMap: CVPixelBuffer?
+  /// Confidence map.
   var confidenceMap: CVPixelBuffer?
+  /// Camera intrinsics.
   var cameraIntrinsics: simd_float3x3?
+  /// Captured image orientation.
   var capturedImageOrientation: UIImage.Orientation = .up
 
+  /// Is processing flag.
   var isProcessing: Bool = false
+  /// Status message.
   var statusMessage: String = "Ready"
+  /// Has attempted segmentation flag.
   var hasAttemptedSegmentation: Bool = false
+  /// Confidence threshold.
   var confidenceThreshold: Float = 0.3
+  /// NMS threshold.
   var nmsThreshold: Float = 1.0
 
   // MARK: - UI Flow Flags
+
+  /// Show settings flag.
   var showSettings: Bool = false
+  /// Show person picker flag.
   var showPersonPicker: Bool = false
+  /// Show mole action dialog flag.
   var showMoleActionDialog: Bool = false
+  /// Show existing body part picker flag.
   var showExistingBodyPartPicker: Bool = false
+  /// Show existing mole picker flag.
   var showExistingMolePicker: Bool = false
+  /// Show new mole metadata sheet flag.
   var showNewMoleMetadataSheet: Bool = false
+  /// Show select mole panel flag.
   var showSelectMolePanel: Bool = false
 
   // MARK: - Selection State
+
+  /// The selected person for scan.
   var selectedPersonForScan: Person?
+  /// The selected box for mole.
   var selectedBoxForMole: CGRect?
+  /// The active alert.
   var activeAlert: AlertState?
+  /// Pending success toast.
   var pendingSuccessToast: String?
+  /// New mole name.
   var newMoleName: String = ""
+  /// Selected body part.
   var selectedBodyPart: BodyPart = .unassigned
+  /// Selected existing body part.
   var selectedExistingBodyPart: String?
 
+  /// New mole name validation message.
   var newMoleNameValidationMessage: String? {
     guard let person: Person = selectedPersonForScan else { return nil }
     let trimmedName: String = newMoleName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -49,16 +80,23 @@ class MoleSegmentationAppState {
     return "A mole named \"\(trimmedName)\" already exists for \(person.name)."
   }
 
+  /// Returns whether a new mole can be saved.
   var canSaveNewMole: Bool {
     newMoleNameValidationMessage == nil
   }
 
-  // Dependencies
+  // MARK: - Dependencies
+
+  /// Data controller.
   private let dataController: DataController
+  /// SAM3 model loader.
   private let modelLoader: SAM3ModelLoader = SAM3ModelLoader.shared
+  /// Calculator for metrics.
   private let calculator = Calculator()
+  /// Linear calculator.
   private let calclinear = CalculatorLinear()
 
+  /// Initializes the app state with the given data controller.
   init(dataController: DataController) {
     self.dataController = dataController
   }
@@ -191,6 +229,7 @@ class MoleSegmentationAppState {
     showExistingBodyPartPicker = true
   }
 
+  /// Returns existing body parts for the selected person.
   func existingBodyPartsForSelectedPerson() -> [String] {
     guard let person: Person = selectedPersonForScan else { return [] }
     let uniqueParts: Set<String> = Set(person.moles.map { $0.bodyPart })
@@ -199,6 +238,7 @@ class MoleSegmentationAppState {
     }
   }
 
+  /// Returns existing moles for the selected body part.
   func existingMolesForSelectedBodyPart() -> [Mole] {
     guard let person: Person = selectedPersonForScan else { return [] }
 
@@ -214,6 +254,7 @@ class MoleSegmentationAppState {
     }
   }
 
+  /// Sets the selected existing body part.
   func chooseExistingBodyPart(_ bodyPart: String) {
     selectedExistingBodyPart = bodyPart
     showExistingMolePicker = true
