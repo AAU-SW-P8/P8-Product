@@ -17,6 +17,7 @@ missing_docs:
   excludes_extensions: false
   excludes_inherited_types: false
   excludes_trivial_init: false
+  evaluate_effective_access_control_level: true
   error:    
   - open    
   - public    
