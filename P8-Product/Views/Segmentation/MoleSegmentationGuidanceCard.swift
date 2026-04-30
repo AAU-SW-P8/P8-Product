@@ -68,8 +68,10 @@ struct MoleSegmentationGuidanceStep {
 ///   - step: The current step in the mole segmentation guidance process, containing the index, total steps, title, and description to be displayed on the card.
 
 struct MoleSegmentationGuidanceCard: View {
+  /// The `step` property.
   let step: MoleSegmentationGuidanceStep
 
+  /// The `body` property.
   var body: some View {
     HStack(alignment: .top, spacing: 10) {
       Text("\(step.index)")

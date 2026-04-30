@@ -10,9 +10,12 @@ import SwiftUI
 ///   - appState: The state object that manages the data and logic for the mole detail view, including the selected mole, its scans, and user interactions such as deleting scans or switching between different moles. The app state is initialized with the specific mole to be displayed and is responsible for handling all related actions and data updates within the view.
 ///   - dismiss: An environment variable that allows the view to dismiss itself when certain conditions are met, such as when the selected person changes or when the user confirms the deletion of a scan. This provides a way for the view to navigate back to the previous screen in response to user actions or state changes.
 struct MoleDetailView: View {
+  /// The `appState` property.
   @State private var appState: MoleDetailAppState
+  /// The `dismiss` property.
   @Environment(\.dismiss) private var dismiss
 
+  /// Initializes a new instance.
   @MainActor
   init(mole: Mole) {
     _appState = State(
@@ -25,6 +28,7 @@ struct MoleDetailView: View {
   }
 
   // MARK: - View Body
+  /// The `body` property.
   var body: some View {
     @Bindable var appState = appState
 
@@ -276,6 +280,7 @@ struct MoleDetailView: View {
 
   // MARK: - Helpers
 
+  /// The `nextDueDateSummary` function.
   private func nextDueDateSummary(for mole: Mole) -> Text? {
     guard let nextDueDate = mole.nextDueDate else { return nil }
     let calendar = Calendar.current

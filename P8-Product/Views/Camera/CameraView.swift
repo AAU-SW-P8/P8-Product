@@ -45,6 +45,7 @@ struct CameraView: View {
   /// Whether a physical camera is available (false in Simulator).
   private let hasPhysicalCamera = UIImagePickerController.isSourceTypeAvailable(.camera)
 
+  /// The `body` property.
   var body: some View {
     NavigationStack {
       placeholder

@@ -23,19 +23,30 @@ final class ARCameraViewController: UIViewController, ARSessionDelegate {
 
   // MARK: - Callbacks
 
+  /// The `onCapture` property.
   var onCapture: ((UIImage, CVPixelBuffer?, CVPixelBuffer?, simd_float3x3?) -> Void)?
+  /// The `onCancel` property.
   var onCancel: (() -> Void)?
 
   // MARK: - Subviews
 
+  /// The `arView` property.
   private var arView: ARView!
+  /// The `captureButton` property.
   private var captureButton: UIButton!
+  /// The `measurementDisplay` property.
   private var measurementDisplay: UIView!
+  /// The `displayLabel` property.
   private var displayLabel: UILabel!
+  /// The `confidenceLabel` property.
   private var confidenceLabel: UILabel!
+  /// The `cancelButton` property.
   private var cancelButton: UIButton!
+  /// The `lidarPointsLayer` property.
   private var lidarPointsLayer: CAShapeLayer!
+  /// The `flashlightButton` property.
   private var flashlightButton: UIButton!
+  /// The `centerCrosshair` property.
   private var centerCrosshair: UIView!
 
   // MARK: - State
@@ -43,7 +54,9 @@ final class ARCameraViewController: UIViewController, ARSessionDelegate {
   /// Most recent subject distance in meters, seeded to a large value so the
   /// capture button starts disabled.
   private var currentDistance: Float = ARCameraConstants.Measurement.initialDistance
+  /// The `currentConfidence` property.
   private var currentConfidence: ARConfidenceLevel?
+  /// The `isFlashlightOn` property.
   private var isFlashlightOn: Bool = false
 
   // MARK: - Lifecycle

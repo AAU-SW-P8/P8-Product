@@ -9,11 +9,15 @@ import SwiftUI
 /// ChartMetric defines the types of measurements that can be visualized in the ChartView, such as area and diameter.
 /// It provides properties for the display title and unit of measurement for each metric.
 enum ChartMetric: String, CaseIterable, Identifiable {
+  /// The `area` case.
   case area
+  /// The `diameter` case.
   case diameter
 
+  /// The `id` property.
   var id: Self { self }
 
+  /// The `title` property.
   var title: String {
     switch self {
     case .area:
@@ -23,6 +27,7 @@ enum ChartMetric: String, CaseIterable, Identifiable {
     }
   }
 
+  /// The `unit` property.
   var unit: String {
     switch self {
     case .area:
@@ -42,9 +47,13 @@ struct ChartView: View {
   /// DataPoint represents a single measurement of the mole at a specific date.
   /// It conforms to Identifiable for use in ForEach and Equatable for testing purposes.
   struct DataPoint: Identifiable, Equatable {
+    /// The `id` property.
     let id = UUID()
+    /// The `index` property.
     let index: Int
+    /// The `date` property.
     let date: Date
+    /// The `value` property.
     let value: Double
 
     /// Compares two chart points by content, ignoring generated identifier values.
@@ -53,22 +62,33 @@ struct ChartView: View {
     }
   }
 
+  /// The `SelectedMarkerKind` type.
   enum SelectedMarkerKind {
+    /// The `left` case.
     case left
+    /// The `right` case.
     case right
+    /// The `both` case.
     case both
   }
 
+  /// The `mole` property.
   let mole: Mole
+  /// The `metric` property.
   let metric: ChartMetric
+  /// The `scans` property.
   let scans: [MoleScan]
+  /// The `topSelectedIndex` property.
   let topSelectedIndex: Int
+  /// The `bottomSelectedIndex` property.
   let bottomSelectedIndex: Int
 
+  /// The `safeTopIndex` property.
   private var safeTopIndex: Int {
     ImageCarousel.safeIndex(for: scans, requested: topSelectedIndex)
   }
 
+  /// The `safeBottomIndex` property.
   private var safeBottomIndex: Int {
     ImageCarousel.safeIndex(for: scans, requested: bottomSelectedIndex)
   }
@@ -113,6 +133,7 @@ struct ChartView: View {
     Self.makeChartData(for: mole, metric: metric, scans: scans)
   }
 
+  /// The `yScaleDomain` property.
   private var yScaleDomain: ClosedRange<Double> {
     Self.yScaleDomain(for: chartData)
   }
@@ -135,6 +156,7 @@ struct ChartView: View {
     return (minValue - padding)...(maxValue + padding)
   }
 
+  /// The `dateRange` property.
   private var dateRange: ClosedRange<Date> {
     Self.dateRange(for: chartData)
   }
@@ -247,6 +269,7 @@ struct ChartView: View {
     }
   }
 
+  /// The `body` property.
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       HStack(spacing: 10) {

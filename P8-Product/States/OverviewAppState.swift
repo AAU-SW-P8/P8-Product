@@ -8,11 +8,16 @@ import simd
 @MainActor
 @Observable
 class OverviewAppState {
+  /// The `MoleSortOption` type.
   enum MoleSortOption: String, CaseIterable, Identifiable {
+    /// The `recent` case.
     case recent = "Recent"
+    /// The `alphabetical` case.
     case alphabetical = "A-Z"
+    /// The `nextDueDate` case.
     case nextDueDate = "Next Due Date"
 
+    /// The `id` property.
     var id: String { rawValue }
   }
 

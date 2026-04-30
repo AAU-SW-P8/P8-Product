@@ -7,9 +7,12 @@ import SwiftData
 import SwiftUI
 import UIKit
 
+/// The `ContentView` type.
 struct ContentView: View {
+  /// The `modelLoader` property.
   @StateObject private var modelLoader = SAM3ModelLoader.shared
 
+  /// The `skipModelLoading` property.
   private var skipModelLoading: Bool {
     ProcessInfo.processInfo.arguments.contains("-SkipModelLoading")
   }
@@ -28,6 +31,7 @@ struct ContentView: View {
     return UIImage(data: data)
   }
 
+  /// The `body` property.
   var body: some View {
     Group {
       if skipModelLoading {
@@ -46,6 +50,7 @@ struct ContentView: View {
     }
   }
 
+  /// The `mainTabView` property.
   private var mainTabView: some View {
     TabView {
       OverviewView()
@@ -65,6 +70,7 @@ struct ContentView: View {
     }
   }
 
+  /// The `loadingView` property.
   private var loadingView: some View {
     VStack(spacing: 20) {
       Image(systemName: "brain.head.profile")
@@ -86,6 +92,7 @@ struct ContentView: View {
     .background(Color(.systemBackground))
   }
 
+  /// The `errorView` function.
   private func errorView(_ error: Error) -> some View {
     VStack(spacing: 20) {
       Image(systemName: "exclamationmark.triangle.fill")

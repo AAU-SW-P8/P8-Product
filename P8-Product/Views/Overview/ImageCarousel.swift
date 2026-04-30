@@ -17,24 +17,35 @@ import SwiftUI
 ///    - selectedIndex: A binding to the currently selected index.
 ///    - height: The height of the carousel images.
 struct ImageCarousel: View {
+  /// The `scans` property.
   let scans: [MoleScan]
+  /// The `mole` property.
   var mole: Mole?
+  /// The `selectedIndex` property.
   @Binding var selectedIndex: Int
+  /// The `scrollPositionID` property.
   @State private var scrollPositionID: UUID?
+  /// The `onDeleteSelectedScan` property.
   var onDeleteSelectedScan: (() -> Void)?
+  /// The `height` property.
   var height: CGFloat = 200
 
+  /// The `side` property.
   var side: CarouselSide = .both
+  /// The `otherSelectedIndex` property.
   var otherSelectedIndex: Int?
 
+  /// The `safeIndex` property.
   private var safeIndex: Int {
     Self.safeIndex(for: scans, requested: selectedIndex)
   }
 
+  /// The `selectedScan` property.
   private var selectedScan: MoleScan? {
     Self.selectedScan(in: scans, at: selectedIndex, for: mole)
   }
 
+  /// The `displayedScans` property.
   private var displayedScans: [(displayIndex: Int, originalIndex: Int, scan: MoleScan)] {
     let indexed = Array(scans.enumerated()).map { (originalIndex: $0.offset, scan: $0.element) }
     let ordered = (side == .left || side == .right) ? Array(indexed.reversed()) : indexed
@@ -48,11 +59,13 @@ struct ImageCarousel: View {
     }
   }
 
+  /// The `selectedScanID` property.
   private var selectedScanID: UUID? {
     guard !scans.isEmpty else { return nil }
     return scans[safeIndex].id
   }
 
+  /// The `body` property.
   var body: some View {
     VStack(spacing: 4) {
       carouselSection
@@ -75,6 +88,7 @@ struct ImageCarousel: View {
     }
   }
 
+  /// The `carouselSection` property.
   private var carouselSection: some View {
     GeometryReader { geometry in
       ScrollView(.horizontal, showsIndicators: false) {
@@ -104,6 +118,7 @@ struct ImageCarousel: View {
     .frame(height: height)
   }
 
+  /// The `carouselImageView` function.
   @ViewBuilder
   private func carouselImageView(
     for item: (displayIndex: Int, originalIndex: Int, scan: MoleScan),
@@ -135,6 +150,7 @@ struct ImageCarousel: View {
     }
   }
 
+  /// The `selectedInfoSection` property.
   @ViewBuilder
   private var selectedInfoSection: some View {
     if let selectedScan = selectedScan {
@@ -216,22 +232,28 @@ struct ImageCarousel: View {
     return scan
   }
 
+  /// The `DotItem` type.
   enum DotItem: Hashable {
+    /// The `index` case.
     case index(Int)
+    /// The `ellipsis` case.
     case ellipsis
   }
 
+  /// The `safeOtherSelectedIndex` property.
   private var safeOtherSelectedIndex: Int? {
     guard let otherSelectedIndex, !scans.isEmpty else { return nil }
     return Self.safeIndex(for: scans, requested: otherSelectedIndex)
   }
 
   // 2. Delegate the property to your new static testable function
+  /// The `visibleDotItems` property.
   private var visibleDotItems: [DotItem] {
     Self.calculateDotItems(count: scans.count, safeIndex: safeIndex, side: side)
   }
 
   // 3. Add this pure function to your Selection helpers
+  /// The `calculateDotItems` function.
   static func calculateDotItems(count: Int, safeIndex: Int, side: CarouselSide) -> [DotItem] {
     guard count > 0 else { return [] }
 

@@ -1,17 +1,29 @@
 import SwiftUI
 
+/// The `SelectMolePanelView` type.
 struct SelectMolePanelView: View {
+  /// The `isChoosingAction` property.
   let isChoosingAction: Bool
+  /// The `personName` property.
   let personName: String
+  /// The `bodyParts` property.
   let bodyParts: [String]
+  /// The `selectedBodyPart` property.
   @Binding var selectedBodyPart: String?
+  /// The `existingMoles` property.
   let existingMoles: [Mole]
+  /// The `moleSubtitle` property.
   let moleSubtitle: (Mole) -> String
+  /// The `onChooseExisting` property.
   let onChooseExisting: () -> Void
+  /// The `onChooseNewMole` property.
   let onChooseNewMole: () -> Void
+  /// The `onSelectExistingMole` property.
   let onSelectExistingMole: (Mole) -> Void
+  /// The `onCancel` property.
   let onCancel: () -> Void
 
+  /// The `body` property.
   var body: some View {
     VStack(spacing: 14) {
       if isChoosingAction {
@@ -36,6 +48,7 @@ struct SelectMolePanelView: View {
     .ignoresSafeArea(edges: .bottom)
   }
 
+  /// The `panelActionChooser` property.
   private var panelActionChooser: some View {
     VStack(alignment: .leading, spacing: 12) {
       Text("CHOOSE AN ACTION")
@@ -52,6 +65,7 @@ struct SelectMolePanelView: View {
     .padding(.bottom, 4)
   }
 
+  /// The `panelExistingSection` property.
   private var panelExistingSection: some View {
     VStack(alignment: .leading, spacing: 8) {
       panelHeaderCard
@@ -73,6 +87,7 @@ struct SelectMolePanelView: View {
     .padding(.bottom, 6)
   }
 
+  /// The `panelHeaderCard` property.
   private var panelHeaderCard: some View {
     HStack(alignment: .center, spacing: 10) {
       Text(personName)
@@ -105,6 +120,7 @@ struct SelectMolePanelView: View {
     )
   }
 
+  /// The `panelMoleRows` property.
   @ViewBuilder
   private var panelMoleRows: some View {
     if existingMoles.isEmpty {
@@ -124,6 +140,7 @@ struct SelectMolePanelView: View {
     }
   }
 
+  /// The `panelOrDivider` property.
   private var panelOrDivider: some View {
     HStack(spacing: 12) {
       Rectangle().fill(.white.opacity(0.12)).frame(height: 1)
@@ -135,6 +152,7 @@ struct SelectMolePanelView: View {
     .padding(.horizontal, 16)
   }
 
+  /// The `panelExistingMoleButton` property.
   private var panelExistingMoleButton: some View {
     Button {
       onChooseExisting()
@@ -160,6 +178,7 @@ struct SelectMolePanelView: View {
     .accessibilityIdentifier("segmentationChooseExistingMoleButton")
   }
 
+  /// The `panelNewMoleButton` property.
   private var panelNewMoleButton: some View {
     Button {
       onChooseNewMole()
@@ -189,6 +208,7 @@ struct SelectMolePanelView: View {
     .accessibilityIdentifier("segmentationChooseNewMoleButton")
   }
 
+  /// The `panelCancelButton` property.
   private var panelCancelButton: some View {
     Button("Cancel") {
       onCancel()
@@ -199,6 +219,7 @@ struct SelectMolePanelView: View {
     .accessibilityIdentifier("segmentationSelectMoleCancelButton")
   }
 
+  /// The `existingMoleRow` function.
   @ViewBuilder
   private func existingMoleRow(mole: Mole) -> some View {
     Button {

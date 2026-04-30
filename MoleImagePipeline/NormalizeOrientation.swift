@@ -9,6 +9,7 @@
 
 import UIKit
 
+/// The `UIImage` type.
 extension UIImage {
   /// Bakes the receiver's EXIF `imageOrientation` into its pixel buffer so
   /// that `cgImage` matches what gets rendered on screen.

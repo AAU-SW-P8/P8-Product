@@ -51,6 +51,7 @@ struct BasicCameraView: UIViewControllerRepresentable {
   /// Delegate bridge between `UIImagePickerController`'s UIKit callbacks and
   /// the SwiftUI bindings owned by `BasicCameraView`.
   class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+    /// The `parent` property.
     let parent: BasicCameraView
 
     /// Creates a coordinator bound to the given view.

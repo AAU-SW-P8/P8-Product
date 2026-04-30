@@ -1,6 +1,8 @@
 import SwiftUI
 
+/// The `MoleSegmentationNoImagePlaceholderView` type.
 struct MoleSegmentationNoImagePlaceholderView: View {
+  /// The `body` property.
   var body: some View {
     VStack(spacing: 20) {
       Image(systemName: "photo")

@@ -9,7 +9,9 @@ import SwiftUI
 /// Including adding, editing, and deleting people and moles.
 /// It binds to the OverviewAppState to control the visibility and content of each alert based on user interactions.
 struct OverviewAlertsModifier: ViewModifier {
+  /// The `appState` property.
   @Bindable var appState: OverviewAppState
+  /// The `people` property.
   let people: [Person]
 
   /// Configures the view to present alerts for adding, editing, and deleting people and moles.
@@ -44,10 +46,12 @@ struct OverviewAlertsModifier: ViewModifier {
       }
   }
 
+  /// The `deletePersonMessage` property.
   private var deletePersonMessage: String {
     "Are you sure you want to delete \(appState.personToDelete?.name ?? "this person")?"
   }
 
+  /// The `deleteMoleMessage` property.
   private var deleteMoleMessage: String {
     "Are you sure you want to delete \(appState.moleToDelete?.name ?? "this mole")?"
   }

@@ -11,13 +11,18 @@ import simd
 /// Displays a image, allows the user to run segmentation, and shows the results with interactive bounding boxes.
 /// Provides controls for adjusting detection parameters and handles the flow of selecting a person and adding new moles or scans based on the segmentation results.
 struct MoleSegmentationView: View {
+  /// The `SelectMolePanelStep` type.
   private enum SelectMolePanelStep {
+    /// The `chooseAction` case.
     case chooseAction
+    /// The `existing` case.
     case existing
   }
 
+  /// The `people` property.
   @Query(sort: \Person.createdAt)
   private var people: [Person]
+  /// The `appState` property.
   @State private var appState: MoleSegmentationAppState
 
   // MARK: - Init
@@ -47,12 +52,18 @@ struct MoleSegmentationView: View {
   }
 
   // UI-Only State (Gestures)
+  /// The `bottomSheetDragOffset` property.
   @State private var bottomSheetDragOffset: CGFloat = 0
+  /// The `selectMolePanelStep` property.
   @State private var selectMolePanelStep: SelectMolePanelStep = .chooseAction
+  /// The `shouldResegmentAfterPersonDismiss` property.
   @State private var shouldResegmentAfterPersonDismiss: Bool = false
+  /// The `toastMessage` property.
   @State private var toastMessage: String?
+  /// The `toastDismissTask` property.
   @State private var toastDismissTask: Task<Void, Never>?
 
+  /// The `guidanceStep` property.
   private var guidanceStep: MoleSegmentationGuidanceStep {
     MoleSegmentationGuidanceStep.make(
       isProcessing: appState.isProcessing,
@@ -61,19 +72,23 @@ struct MoleSegmentationView: View {
     )
   }
 
+  /// The `hasSegmentationResult` property.
   private var hasSegmentationResult: Bool {
     appState.maskOverlay != nil || !appState.detectedBoxes.isEmpty
   }
 
+  /// The `allowsUITestMockSelection` property.
   private var allowsUITestMockSelection: Bool {
     ProcessInfo.processInfo.arguments.contains("-UITest_MockSegmentationResult")
   }
 
+  /// The `isChooseActionPanelPresented` property.
   private var isChooseActionPanelPresented: Bool {
     appState.showSelectMolePanel && selectMolePanelStep == .chooseAction
   }
 
   // MARK: - View Body
+  /// The `body` property.
   var body: some View {
     ZStack {
       if let image: UIImage = appState.testImage {
@@ -190,6 +205,7 @@ struct MoleSegmentationView: View {
   }
 
   // MARK: - Supporting views
+  /// The `bottomSheetBackdropAndPanel` property.
   private var bottomSheetBackdropAndPanel: some View {
     ZStack(alignment: .bottom) {
       Rectangle()
@@ -226,6 +242,7 @@ struct MoleSegmentationView: View {
     .animation(.spring(response: 0.3, dampingFraction: 0.85), value: appState.showSelectMolePanel)
   }
 
+  /// The `selectMolePanel` property.
   private var selectMolePanel: some View {
     SelectMolePanelView(
       isChoosingAction: selectMolePanelStep == .chooseAction,
@@ -293,6 +310,7 @@ struct MoleSegmentationView: View {
     }
   }
 
+  /// The `presentSelectionFlow` function.
   private func presentSelectionFlow(for box: CGRect) {
     appState.selectedBoxForMole = box
 
@@ -315,6 +333,7 @@ struct MoleSegmentationView: View {
     }
   }
 
+  /// The `successToastView` function.
   private func successToastView(message: String) -> some View {
     Text(message)
       .font(.subheadline)
@@ -348,6 +367,7 @@ struct MoleSegmentationView: View {
     }
   }
 
+  /// The `injectUITestSegmentationResultIfNeeded` function.
   private func injectUITestSegmentationResultIfNeeded() {
     let arguments = ProcessInfo.processInfo.arguments
     guard arguments.contains("-UITest_MockSegmentationResult"),
@@ -384,6 +404,7 @@ struct MoleSegmentationView: View {
     }
   }
 
+  /// The `bottomActionArea` property.
   private var bottomActionArea: some View {
     MoleSegmentationBottomActionAreaView(
       isProcessing: appState.isProcessing,

@@ -15,15 +15,22 @@ import SwiftUI
 ///   - onToggleBodyPart: A closure that updates the set of selected body parts when the user selects or deselects a body part.
 ///   - onReset: A closure that resets all filters to their default values.
 struct OverviewFilterPopupView: View {
+  /// The `sortOption` property.
   @Binding var sortOption: OverviewAppState.MoleSortOption
+  /// The `selectedBodyParts` property.
   @Binding var selectedBodyParts: Set<String>
 
+  /// The `availableBodyParts` property.
   let availableBodyParts: [String]
+  /// The `onToggleBodyPart` property.
   let onToggleBodyPart: (String) -> Void
+  /// The `onReset` property.
   let onReset: () -> Void
 
+  /// The `dismiss` property.
   @Environment(\.dismiss) var dismiss
 
+  /// The `body` property.
   var body: some View {
     NavigationStack {
       List {
@@ -90,6 +97,7 @@ struct OverviewFilterPopupView: View {
     }
   }
 
+  /// The `filterOptionRow` function.
   @ViewBuilder
   private func filterOptionRow(title: String, isSelected: Bool, action: @escaping () -> Void)
     -> some View

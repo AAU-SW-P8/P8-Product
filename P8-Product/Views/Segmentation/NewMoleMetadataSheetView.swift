@@ -1,13 +1,21 @@
 import SwiftUI
 
+/// The `NewMoleMetadataSheetView` type.
 struct NewMoleMetadataSheetView: View {
+  /// The `showSheet` property.
   @Binding var showSheet: Bool
+  /// The `selectedBodyPart` property.
   @Binding var selectedBodyPart: BodyPart
+  /// The `newMoleName` property.
   @Binding var newMoleName: String
+  /// The `validationMessage` property.
   let validationMessage: String?
+  /// The `canSave` property.
   let canSave: Bool
+  /// The `onSave` property.
   let onSave: () -> Void
 
+  /// The `body` property.
   var body: some View {
     NavigationStack {
       Form {

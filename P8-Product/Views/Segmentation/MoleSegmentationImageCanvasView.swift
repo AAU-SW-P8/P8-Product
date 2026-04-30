@@ -1,20 +1,31 @@
 import SwiftUI
 
+/// The `MoleSegmentationImageCanvasView` type.
 struct MoleSegmentationImageCanvasView: View {
+  /// The `sourceImage` property.
   let sourceImage: UIImage
+  /// The `maskOverlay` property.
   let maskOverlay: UIImage?
+  /// The `detectedBoxes` property.
   let detectedBoxes: [CGRect]
+  /// The `onLongPressDetectedBox` property.
   let onLongPressDetectedBox: (CGRect) -> Void
 
+  /// The `allowsUITestImageLongPress` property.
   private var allowsUITestImageLongPress: Bool {
     ProcessInfo.processInfo.arguments.contains("-UITest_MockSegmentationResult")
   }
 
+  /// The `currentZoom` property.
   @State private var currentZoom: Double = 0.0
+  /// The `totalZoom` property.
   @State private var totalZoom: Double = 1.0
+  /// The `currentPan` property.
   @State private var currentPan: CGSize = .zero
+  /// The `accumulatedPan` property.
   @State private var accumulatedPan: CGSize = .zero
 
+  /// The `body` property.
   var body: some View {
     GeometryReader { geometry in
       let displayedImage: UIImage = maskOverlay ?? sourceImage
@@ -130,10 +141,12 @@ struct MoleSegmentationImageCanvasView: View {
     }
   }
 
+  /// The `clampedZoom` function.
   private func clampedZoom(_ value: Double) -> Double {
     min(max(value, 1.0), 5.0)
   }
 
+  /// The `clampedPan` function.
   private func clampedPan(_ current: CGSize, _ accumulated: CGSize, for size: CGSize, zoom: Double)
     -> CGSize
   {

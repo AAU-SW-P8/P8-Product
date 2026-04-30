@@ -5,12 +5,18 @@
 
 import Foundation
 
+/// The `PipelineError` type.
 enum PipelineError: LocalizedError {
+  /// The `modelNotFound` case.
   case modelNotFound(name: String)
+  /// The `invalidImage` case.
   case invalidImage
+  /// The `renderFailed` case.
   case renderFailed
+  /// The `unexpectedModelOutput` case.
   case unexpectedModelOutput
 
+  /// The `errorDescription` property.
   var errorDescription: String? {
     switch self {
     case .modelNotFound(let name):

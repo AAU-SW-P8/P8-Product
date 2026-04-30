@@ -12,11 +12,15 @@ import SwiftUI
 ///   - onAddPersonTap: A closure that is called when the add person button is tapped,
 struct OverviewHeaderView: View {
   // Properties
+  /// The `showingFilters` property.
   let showingFilters: Bool
+  /// The `onFilterTap` property.
   let onFilterTap: () -> Void
+  /// The `onAddPersonTap` property.
   let onAddPersonTap: () -> Void
 
   // MARK: - View Body
+  /// The `body` property.
   var body: some View {
     HStack {
       Text("Mole Overview")

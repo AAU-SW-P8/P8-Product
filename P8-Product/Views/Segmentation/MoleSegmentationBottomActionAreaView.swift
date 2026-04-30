@@ -1,10 +1,15 @@
 import SwiftUI
 
+/// The `MoleSegmentationBottomActionAreaView` type.
 struct MoleSegmentationBottomActionAreaView: View {
+  /// The `isProcessing` property.
   let isProcessing: Bool
+  /// The `primaryButtonTitle` property.
   let primaryButtonTitle: String
+  /// The `onPrimaryAction` property.
   let onPrimaryAction: () -> Void
 
+  /// The `body` property.
   var body: some View {
     VStack(spacing: 8) {
       Button {

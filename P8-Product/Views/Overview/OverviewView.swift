@@ -9,12 +9,16 @@ import UIKit
 
 /// The `OverviewView` is the main interface for displaying and managing people, their moles, and associated scans. It provides navigation between people, a list of their moles, and actions to add/edit/delete people and moles. The view relies on `OverviewAppState` for managing its state and interactions with the data layer.
 public struct OverviewView: View {
+  /// The `people` property.
   @Query(sort: \Person.createdAt) private var people: [Person]
 
+  /// The `appState` property.
   @State private var appState = OverviewAppState(dataController: .shared)
 
+  /// Initializes a new instance.
   public init() {}
 
+  /// The `body` property.
   public var body: some View {
     OverviewContentView(appState: appState, people: people)
   }
@@ -26,20 +30,29 @@ public struct OverviewView: View {
 ///   - people: The list of people fetched from the data store, which is passed down to child views for display and interaction.
 private struct OverviewContentView: View {
   // Constants for layout and sizing
+  /// The `bodyPartRowHeight` property.
   private let bodyPartRowHeight: CGFloat = 34
+  /// The `bodyPartMaxVisibleRows` property.
   private let bodyPartMaxVisibleRows: CGFloat = 5
 
   // Declared at the top of the struct, so ALL subviews below can see it!
+  /// The `appState` property.
   @Bindable var appState: OverviewAppState
+  /// The `people` property.
   var people: [Person]
 
   // State for filter popup, lifted up to this level so it can be shared between the header and the popup view.
+  /// The `selectedBodyParts` property.
   @State private var selectedBodyParts: Set<String> = []
+  /// The `sortOption` property.
   @State private var sortOption: OverviewAppState.MoleSortOption = .recent
+  /// The `showingFilters` property.
   @State private var showingFilters: Bool = false
+  /// The `showingBodyPartDropdown` property.
   @State private var showingBodyPartDropdown: Bool = false
 
   // MARK: - View Body
+  /// The `body` property.
   var body: some View {
     navigationContent
       .modifier(OverviewAlertsModifier(appState: appState, people: people))
@@ -99,6 +112,7 @@ private struct OverviewContentView: View {
     }
   }
 
+  /// The `toggleBodyPart` function.
   private func toggleBodyPart(_ bodyPart: String) {
     if selectedBodyParts.contains(bodyPart) {
       selectedBodyParts.remove(bodyPart)

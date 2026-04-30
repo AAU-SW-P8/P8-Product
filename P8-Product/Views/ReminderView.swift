@@ -6,9 +6,12 @@
 import SwiftData
 import SwiftUI
 
+/// The `ReminderView` type.
 struct ReminderView: View {
 
+  /// The `appState` property.
   @State private var appState = ReminderAppState()
+  /// The `people` property.
   @Query(sort: \Person.createdAt) var people: [Person]
 
   /// The list of moles for the currently selected person, sorted by the next due date with nils at the end.
@@ -19,6 +22,7 @@ struct ReminderView: View {
     }
   }
 
+  /// The `body` property.
   var body: some View {
     NavigationStack {
       VStack(spacing: 0) {
@@ -202,6 +206,7 @@ struct ReminderView: View {
     }
   }
 
+  /// Missing documentation.
   private func sectionContainer<Content: View>(title: String, @ViewBuilder content: () -> Content)
     -> some View
   {

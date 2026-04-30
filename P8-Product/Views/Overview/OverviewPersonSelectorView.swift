@@ -11,10 +11,13 @@ import SwiftUI
 ///   - people: An array of Person objects representing the available people to select from. The view updates its content based on the currently selected person and provides context menu options for editing or deleting the selected person.
 struct OverviewPersonSelectorView: View {
   // Properties
+  /// The `appState` property.
   @Bindable var appState: OverviewAppState
+  /// The `people` property.
   let people: [Person]
 
   // MARK: - View Body
+  /// The `body` property.
   var body: some View {
     HStack {
       Button {

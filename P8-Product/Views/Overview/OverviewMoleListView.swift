@@ -12,11 +12,15 @@ import SwiftUI
 ///   - moles: An array of Mole objects representing the moles associated with the selected person
 struct OverviewMoleListView: View {
   // Properties
+  /// The `appState` property.
   @Bindable var appState: OverviewAppState
+  /// The `person` property.
   let person: Person
+  /// The `moles` property.
   let moles: [Mole]
 
   // MARK: - View Body
+  /// The `body` property.
   var body: some View {
     List {
       ForEach(moles, id: \.id) { mole in

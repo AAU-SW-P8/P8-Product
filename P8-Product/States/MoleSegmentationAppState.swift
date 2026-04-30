@@ -376,9 +376,12 @@ class MoleSegmentationAppState {
   /// Provides computed properties for the alert title and message to simplify alert presentation in the UI.
   /// Should be used to represent any user-facing messages that need to be shown as alerts, such as errors during segmentation or confirmations of successful saves.
   enum AlertState: Identifiable {
+    /// The `error` case.
     case error(String)
+    /// The `success` case.
     case success(String)
 
+    /// The `id` property.
     var id: String {
       switch self {
       case .error(let message): return "error:\(message)"
@@ -386,6 +389,7 @@ class MoleSegmentationAppState {
       }
     }
 
+    /// The `title` property.
     var title: String {
       switch self {
       case .error: return "Error"
@@ -393,6 +397,7 @@ class MoleSegmentationAppState {
       }
     }
 
+    /// The `message` property.
     var message: String {
       switch self {
       case .error(let message), .success(let message): return message

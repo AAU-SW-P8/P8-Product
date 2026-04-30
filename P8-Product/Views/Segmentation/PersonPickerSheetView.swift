@@ -1,10 +1,15 @@
 import SwiftUI
 
+/// The `PersonPickerSheetView` type.
 struct PersonPickerSheetView: View {
+  /// The `people` property.
   let people: [Person]
+  /// The `onSelectPerson` property.
   let onSelectPerson: (Person) -> Void
+  /// The `onCancel` property.
   let onCancel: () -> Void
 
+  /// The `body` property.
   var body: some View {
     NavigationStack {
       VStack(alignment: .leading, spacing: 14) {

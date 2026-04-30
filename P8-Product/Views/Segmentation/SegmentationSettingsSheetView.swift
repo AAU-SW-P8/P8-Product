@@ -1,10 +1,15 @@
 import SwiftUI
 
+/// The `SegmentationSettingsSheetView` type.
 struct SegmentationSettingsSheetView: View {
+  /// The `showSettings` property.
   @Binding var showSettings: Bool
+  /// The `confidenceThreshold` property.
   @Binding var confidenceThreshold: Float
+  /// The `nmsThreshold` property.
   @Binding var nmsThreshold: Float
 
+  /// The `body` property.
   var body: some View {
     NavigationStack {
       List {
