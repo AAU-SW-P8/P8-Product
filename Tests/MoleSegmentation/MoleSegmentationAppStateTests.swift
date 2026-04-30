@@ -23,6 +23,7 @@ struct MoleSegmentationAppStateTests {
 
   /// Tests that hasMole uses normalized name matching.
   @Test("hasMole matches names case-insensitively and trims whitespace")
+  @MainActor
   func hasMoleUsesNormalizedNameMatching() {
     let dataController = DataController.shared
     let person = makePersonWithMole(named: "Back Mole")
