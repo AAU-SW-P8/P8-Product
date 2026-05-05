@@ -53,6 +53,9 @@ class MoleSegmentationAppState {
   /// Show select mole panel flag.
   var showSelectMolePanel: Bool = false
 
+  /// URL of the most recent exported segmentation archive (zip in tmp). Setting this presents the share sheet.
+  var exportArchiveURL: ExportArchive?
+
   // MARK: - Selection State
 
   /// The selected person for scan.
@@ -335,7 +338,7 @@ class MoleSegmentationAppState {
       confidenceMap: confidenceMap,
       cameraIntrinsics: cameraIntrinsics,
       imageOrientation: capturedImageOrientation,
-      model: .projection
+      model: .linear
     )
 
     let area =
@@ -366,6 +369,148 @@ class MoleSegmentationAppState {
     return renderer.image { _ in
       image.draw(at: CGPoint(x: -cropRect.origin.x, y: -cropRect.origin.y))
     }
+  }
+
+  // MARK: - Export
+
+  /// Identifiable wrapper around the exported archive URL so it can drive a SwiftUI sheet.
+  struct ExportArchive: Identifiable {
+    /// The `id` property.
+    let id: UUID = UUID()
+    /// Zip file containing the segmentation artifacts.
+    let url: URL
+  }
+
+  /// Bundles the current image, masks, per-detection crops, and box metadata into a zipped folder
+  /// in the temporary directory and stores the resulting URL in `exportArchiveURL` to drive the share sheet.
+  /// Shows an error alert if no image is loaded or the export fails.
+  func exportSegmentationArtifacts() {
+    guard let image: UIImage = testImage else {
+      activeAlert = .error("No image to export.")
+      return
+    }
+
+    do {
+      let folder: URL = try writeExportFolder(image: image)
+      let archive: URL = try zipFolder(folder)
+      exportArchiveURL = ExportArchive(url: archive)
+    } catch {
+      activeAlert = .error("Export failed: \(error.localizedDescription)")
+    }
+  }
+
+  /// Writes all artifacts into a freshly created timestamped folder under the temporary directory.
+  /// - Parameter image: Current source image to export.
+  /// - Returns: URL of the created folder.
+  private func writeExportFolder(image: UIImage) throws -> URL {
+    let formatter: DateFormatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.dateFormat = "yyyyMMdd-HHmmss"
+    let timestamp: String = formatter.string(from: Date())
+    let folderName: String = "segmentation-export-\(timestamp)"
+    let folder: URL = FileManager.default.temporaryDirectory
+      .appendingPathComponent(folderName, isDirectory: true)
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+
+    if let data: Data = image.pngData() {
+      try data.write(to: folder.appendingPathComponent("original.png"))
+    }
+    if let overlay: UIImage = maskOverlay, let data: Data = overlay.pngData() {
+      try data.write(to: folder.appendingPathComponent("mask_overlay.png"))
+    }
+    if let mask: UIImage = maskOnlyImage, let data: Data = mask.pngData() {
+      try data.write(to: folder.appendingPathComponent("mask_only.png"))
+    }
+
+    if !detectedBoxes.isEmpty {
+      let crops: URL = folder.appendingPathComponent("crops", isDirectory: true)
+      try FileManager.default.createDirectory(at: crops, withIntermediateDirectories: true)
+      for (index, box) in detectedBoxes.enumerated() {
+        guard let cropped: UIImage = cropImage(image, to: box),
+          let data: Data = cropped.pngData()
+        else { continue }
+        try data.write(to: crops.appendingPathComponent("mole_\(index).png"))
+      }
+    }
+
+    let metadata: ExportMetadata = ExportMetadata(
+      imageWidth: image.size.width,
+      imageHeight: image.size.height,
+      imageScale: image.scale,
+      imageOrientation: capturedImageOrientation.rawValue,
+      confidenceThreshold: confidenceThreshold,
+      nmsThreshold: nmsThreshold,
+      boxes: detectedBoxes.enumerated().map { index, box in
+        ExportBox(
+          index: index,
+          x: box.origin.x,
+          y: box.origin.y,
+          width: box.size.width,
+          height: box.size.height
+        )
+      }
+    )
+    let encoder: JSONEncoder = JSONEncoder()
+    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+    let json: Data = try encoder.encode(metadata)
+    try json.write(to: folder.appendingPathComponent("boxes.json"))
+
+    return folder
+  }
+
+  /// Zips a folder using `NSFileCoordinator`'s `.forUploading` option and copies the result alongside
+  /// the source folder so the URL remains valid past the coordinator block.
+  /// - Parameter folder: Folder to zip.
+  /// - Returns: URL of the resulting `.zip` file.
+  private func zipFolder(_ folder: URL) throws -> URL {
+    var coordinatorError: NSError?
+    var producedURL: URL?
+    var copyError: Error?
+
+    let coordinator: NSFileCoordinator = NSFileCoordinator()
+    coordinator.coordinate(readingItemAt: folder, options: [.forUploading], error: &coordinatorError) {
+      zippedURL in
+      let destination: URL = folder.deletingLastPathComponent()
+        .appendingPathComponent("\(folder.lastPathComponent).zip")
+      do {
+        if FileManager.default.fileExists(atPath: destination.path) {
+          try FileManager.default.removeItem(at: destination)
+        }
+        try FileManager.default.copyItem(at: zippedURL, to: destination)
+        producedURL = destination
+      } catch {
+        copyError = error
+      }
+    }
+
+    if let coordinatorError { throw coordinatorError }
+    if let copyError { throw copyError }
+    guard let producedURL else {
+      throw NSError(
+        domain: "MoleSegmentationAppState", code: -1,
+        userInfo: [NSLocalizedDescriptionKey: "Failed to produce export archive."])
+    }
+    return producedURL
+  }
+
+  /// Top-level metadata recorded alongside the exported images.
+  private struct ExportMetadata: Encodable {
+    let imageWidth: CGFloat
+    let imageHeight: CGFloat
+    let imageScale: CGFloat
+    let imageOrientation: Int
+    let confidenceThreshold: Float
+    let nmsThreshold: Float
+    let boxes: [ExportBox]
+  }
+
+  /// Per-detection box record in image coordinates.
+  private struct ExportBox: Encodable {
+    let index: Int
+    let x: CGFloat
+    let y: CGFloat
+    let width: CGFloat
+    let height: CGFloat
   }
 
   // MARK: - Alert State Helper

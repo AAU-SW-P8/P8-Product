@@ -147,6 +147,9 @@ struct MoleSegmentationView: View {
         nmsThreshold: $appState.nmsThreshold
       )
     }
+    .sheet(item: $appState.exportArchiveURL) { archive in
+      SegmentationExportShareSheet(url: archive.url)
+    }
     .sheet(isPresented: $appState.showNewMoleMetadataSheet) {
       NewMoleMetadataSheetView(
         showSheet: $appState.showNewMoleMetadataSheet,
@@ -394,6 +397,15 @@ struct MoleSegmentationView: View {
     if !isChooseActionPanelPresented {
       ToolbarItem(placement: .navigationBarTrailing) {
         Button {
+          appState.exportSegmentationArtifacts()
+        } label: {
+          Label("Export", systemImage: "square.and.arrow.up")
+        }
+        .disabled(appState.isProcessing || appState.testImage == nil)
+        .accessibilityIdentifier("segmentationExportButton")
+      }
+      ToolbarItem(placement: .navigationBarTrailing) {
+        Button {
           appState.showSettings = true
         } label: {
           Label("Settings", systemImage: "slider.horizontal.3")
@@ -431,6 +443,22 @@ struct MoleSegmentationView: View {
     }
     return "Scan for Moles"
   }
+}
+
+// MARK: - Share Sheet
+
+/// Presents the system share sheet for the exported segmentation archive.
+private struct SegmentationExportShareSheet: UIViewControllerRepresentable {
+  /// File URL to share.
+  let url: URL
+
+  /// Builds the underlying `UIActivityViewController`.
+  func makeUIViewController(context: Context) -> UIActivityViewController {
+    UIActivityViewController(activityItems: [url], applicationActivities: nil)
+  }
+
+  /// No dynamic updates needed.
+  func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }
 
 // MARK: - Preview
