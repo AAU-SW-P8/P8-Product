@@ -424,12 +424,21 @@ class MoleSegmentationAppState {
 
     if !detectedBoxes.isEmpty {
       let crops: URL = folder.appendingPathComponent("crops", isDirectory: true)
+      let masks: URL = folder.appendingPathComponent("masks", isDirectory: true)
       try FileManager.default.createDirectory(at: crops, withIntermediateDirectories: true)
+      try FileManager.default.createDirectory(at: masks, withIntermediateDirectories: true)
       for (index, box) in detectedBoxes.enumerated() {
-        guard let cropped: UIImage = cropImage(image, to: box),
+        if let cropped: UIImage = cropImage(image, to: box),
           let data: Data = cropped.pngData()
-        else { continue }
-        try data.write(to: crops.appendingPathComponent("mole_\(index).png"))
+        {
+          try data.write(to: crops.appendingPathComponent("mole_\(index).png"))
+        }
+        if let maskFull: UIImage = maskOnlyImage,
+          let maskCropped: UIImage = cropImage(maskFull, to: box),
+          let data: Data = maskCropped.pngData()
+        {
+          try data.write(to: masks.appendingPathComponent("mole_\(index).png"))
+        }
       }
     }
 
