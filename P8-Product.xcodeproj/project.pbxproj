@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9712FC432FA9EC2800D191C2 /* Unittests.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = 97C2DB142F6AB39500454255 /* Unittests.xctestplan */; };
+		9712FC442FA9EC2800D191C2 /* UITests.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = 97BFEFF92F7BC99800C9495F /* UITests.xctestplan */; };
+		9712FC452FA9EC2800D191C2 /* Alltests.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = 97D066402F8657A700FB4C0B /* Alltests.xctestplan */; };
 		97BFEFFA2F7BC99800C9495F /* UITests.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = 97BFEFF92F7BC99800C9495F /* UITests.xctestplan */; };
 		97C2DB152F6AB39500454255 /* Unittests.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = 97C2DB142F6AB39500454255 /* Unittests.xctestplan */; };
 		97D066412F8657A700FB4C0B /* Alltests.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = 97D066402F8657A700FB4C0B /* Alltests.xctestplan */; };
@@ -30,6 +33,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		9712FC492FA9EC2800D191C2 /* P8-Product copy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "P8-Product copy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		972E93A82F7BC67300BB8979 /* P8-ProductUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "P8-ProductUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		97BFEFF92F7BC99800C9495F /* UITests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = UITests.xctestplan; sourceTree = "<group>"; };
 		97C2DB142F6AB39500454255 /* Unittests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = Unittests.xctestplan; sourceTree = "<group>"; };
@@ -53,6 +57,50 @@
 				UITests/TabStateUITests.swift,
 			);
 			target = 972E93A72F7BC67300BB8979 /* P8-ProductUITests */;
+		};
+		9712FC4A2FA9EC2900D191C2 /* Exceptions for "MoleImagePipeline" folder in "P8-Product copy" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"models/sam3.1-coreml-fp16/.gitattributes",
+			);
+			target = 9712FC3F2FA9EC2800D191C2 /* P8-Product copy */;
+		};
+		9712FC4B2FA9EC2900D191C2 /* Exceptions for "P8-Product" folder in "P8-Product copy" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Assets.xcassets,
+			);
+			target = 9712FC3F2FA9EC2800D191C2 /* P8-Product copy */;
+		};
+		9712FC4C2FA9EC2900D191C2 /* Exceptions for "Tests" folder in "P8-Product copy" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				CalculatorLinearTests.swift,
+				CalculatorTests.swift,
+				CarouselTests/CarouselTests.swift,
+				CarouselTests/MarkerTests.swift,
+				ChartViewTest.swift,
+				MoleSegmentation/MoleSegmentationAppStateTests.swift,
+				Overview/OverviewAppStateTests.swift,
+				ReminderOverview/ReminderAppStateDirectTests.swift,
+				ReminderOverview/ReminderOverview.swift,
+				SAMPipelineTests/SAM3DecoderTests.swift,
+				SAMPipelineTests/SAM3DetectionTests.swift,
+				SAMPipelineTests/SAM3FeatureNamesTests.swift,
+				SAMPipelineTests/SAM3ImagePreprocessorTests.swift,
+				SAMPipelineTests/SAM3ModelsTests.swift,
+				SAMPipelineTests/TestHelpers.swift,
+				UITests/CameraViewUITests.swift,
+				UITests/CompareViewUITests.swift,
+				UITests/Helpers.swift,
+				UITests/ImageCarouselUITests.swift,
+				UITests/InjectedPicturesUITests.swift,
+				UITests/OverviewUITests.swift,
+				UITests/ProductUITestsLaunchTests.swift,
+				UITests/ReminderViewUITests.swift,
+				UITests/TabStateUITests.swift,
+			);
+			target = 9712FC3F2FA9EC2800D191C2 /* P8-Product copy */;
 		};
 		97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
@@ -127,6 +175,7 @@
 			exceptions = (
 				97C2DB302F6AB49400454255 /* Exceptions for "MoleImagePipeline" folder in "P8-Product" target */,
 				97C2DB312F6AB49400454255 /* Exceptions for "MoleImagePipeline" folder in "PipelineTests" target */,
+				9712FC4A2FA9EC2900D191C2 /* Exceptions for "MoleImagePipeline" folder in "P8-Product copy" target */,
 			);
 			path = MoleImagePipeline;
 			sourceTree = "<group>";
@@ -137,18 +186,29 @@
 				DB2D85A72F8F8F6B00D8E438 /* Exceptions for "Tests" folder in "P8-Product" target */,
 				97C2DB282F6AB49400454255 /* Exceptions for "Tests" folder in "PipelineTests" target */,
 				7AD89F892F87B66800A2C5F0 /* Exceptions for "Tests" folder in "P8-ProductUITests" target */,
+				9712FC4C2FA9EC2900D191C2 /* Exceptions for "Tests" folder in "P8-Product copy" target */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
 		};
 		F1845EF02F59945F00E27D2B /* P8-Product */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				9712FC4B2FA9EC2900D191C2 /* Exceptions for "P8-Product" folder in "P8-Product copy" target */,
+			);
 			path = "P8-Product";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		9712FC412FA9EC2800D191C2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		972E93A52F7BC67300BB8979 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -192,6 +252,7 @@
 				F1845EEE2F59945F00E27D2B /* P8-Product.app */,
 				97C2DB1A2F6AB3F100454255 /* PipelineTests.xctest */,
 				972E93A82F7BC67300BB8979 /* P8-ProductUITests.xctest */,
+				9712FC492FA9EC2800D191C2 /* P8-Product copy.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -199,6 +260,30 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		9712FC3F2FA9EC2800D191C2 /* P8-Product copy */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9712FC462FA9EC2800D191C2 /* Build configuration list for PBXNativeTarget "P8-Product copy" */;
+			buildPhases = (
+				9712FC402FA9EC2800D191C2 /* Sources */,
+				9712FC412FA9EC2800D191C2 /* Frameworks */,
+				9712FC422FA9EC2800D191C2 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				97C2DAEC2F6AAFA600454255 /* MoleImagePipeline */,
+				97C2DB232F6AB48B00454255 /* Tests */,
+				F1845EF02F59945F00E27D2B /* P8-Product */,
+			);
+			name = "P8-Product copy";
+			packageProductDependencies = (
+			);
+			productName = "P8-Product";
+			productReference = 9712FC492FA9EC2800D191C2 /* P8-Product copy.app */;
+			productType = "com.apple.product-type.application";
+		};
 		972E93A72F7BC67300BB8979 /* P8-ProductUITests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 972E93B02F7BC67300BB8979 /* Build configuration list for PBXNativeTarget "P8-ProductUITests" */;
@@ -303,11 +388,22 @@
 				F1845EED2F59945F00E27D2B /* P8-Product */,
 				97C2DB192F6AB3F100454255 /* PipelineTests */,
 				972E93A72F7BC67300BB8979 /* P8-ProductUITests */,
+				9712FC3F2FA9EC2800D191C2 /* P8-Product copy */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		9712FC422FA9EC2800D191C2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9712FC432FA9EC2800D191C2 /* Unittests.xctestplan in Resources */,
+				9712FC442FA9EC2800D191C2 /* UITests.xctestplan in Resources */,
+				9712FC452FA9EC2800D191C2 /* Alltests.xctestplan in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		972E93A62F7BC67300BB8979 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -335,6 +431,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		9712FC402FA9EC2800D191C2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		972E93A42F7BC67300BB8979 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -372,15 +475,97 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		9712FC472FA9EC2800D191C2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "P8-Product/P8-Product.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = YN4R45KS47;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = SPOT;
+				INFOPLIST_KEY_NSCameraUsageDescription = CAMERA_USAGE_DESCRIPTION;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = arkit;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "swp8.P8-Product-Linear";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		9712FC482FA9EC2800D191C2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "P8-Product/P8-Product.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = YN4R45KS47;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = SPOT;
+				INFOPLIST_KEY_NSCameraUsageDescription = CAMERA_USAGE_DESCRIPTION;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = arkit;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "swp8.P8-Product-Linear";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 		972E93B12F7BC67300BB8979 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = UNU52H7255;
+				DEVELOPMENT_TEAM = YN4R45KS47;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "test.P8-ProductUITests";
+				PRODUCT_BUNDLE_IDENTIFIER = "test.P8-ProductUITests-Sim";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -401,10 +586,10 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = UNU52H7255;
+				DEVELOPMENT_TEAM = YN4R45KS47;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "test.P8-ProductUITests";
+				PRODUCT_BUNDLE_IDENTIFIER = "test.P8-ProductUITests-Sim";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -426,7 +611,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = UNU52H7255;
+				DEVELOPMENT_TEAM = YN4R45KS47;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
 				MACOSX_DEPLOYMENT_TARGET = 26.2;
@@ -453,7 +638,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = UNU52H7255;
+				DEVELOPMENT_TEAM = YN4R45KS47;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
 				MACOSX_DEPLOYMENT_TARGET = 26.2;
@@ -603,7 +788,7 @@
 				CODE_SIGN_ENTITLEMENTS = "P8-Product/P8-Product.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = UNU52H7255;
+				DEVELOPMENT_TEAM = YN4R45KS47;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = SPOT;
@@ -620,7 +805,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "swp8.P8-Product";
+				PRODUCT_BUNDLE_IDENTIFIER = "swp8.P8-Product-Projection";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -644,7 +829,7 @@
 				CODE_SIGN_ENTITLEMENTS = "P8-Product/P8-Product.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = UNU52H7255;
+				DEVELOPMENT_TEAM = YN4R45KS47;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = SPOT;
@@ -661,7 +846,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "swp8.P8-Product";
+				PRODUCT_BUNDLE_IDENTIFIER = "swp8.P8-Product-Projection";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -680,6 +865,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		9712FC462FA9EC2800D191C2 /* Build configuration list for PBXNativeTarget "P8-Product copy" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9712FC472FA9EC2800D191C2 /* Debug */,
+				9712FC482FA9EC2800D191C2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		972E93B02F7BC67300BB8979 /* Build configuration list for PBXNativeTarget "P8-ProductUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
