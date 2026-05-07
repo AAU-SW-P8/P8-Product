@@ -74,7 +74,9 @@ final class OverviewUITests: XCTestCase {
   func testCreatePersonCancelDoesNotAddPerson() {
     Helpers.openOverviewTab(in: app)
 
-    app.buttons["person.fill.badge.plus"].firstMatch.tap()
+    let addPersonButton = app.buttons["person.fill.badge.plus"].firstMatch
+    XCTAssertTrue(addPersonButton.waitForExistence(timeout: 3))
+    addPersonButton.tap()
 
     let addAlert = app.alerts["Add Person"]
     XCTAssertTrue(addAlert.waitForExistence(timeout: 3))
@@ -94,7 +96,9 @@ final class OverviewUITests: XCTestCase {
   func testCreatePersonWithEmptyNameDismissesAlertAndDoesNotCreatePerson() {
     Helpers.openOverviewTab(in: app)
 
-    app.buttons["person.fill.badge.plus"].firstMatch.tap()
+    let addPersonButton = app.buttons["person.fill.badge.plus"].firstMatch
+    XCTAssertTrue(addPersonButton.waitForExistence(timeout: 3))
+    addPersonButton.tap()
 
     let addAlert = app.alerts["Add Person"]
     XCTAssertTrue(addAlert.waitForExistence(timeout: 3))
@@ -113,7 +117,9 @@ final class OverviewUITests: XCTestCase {
   func testCreatePersonWithWhitespaceOnlyNameDoesNotCreatePerson() {
     Helpers.openOverviewTab(in: app)
 
-    app.buttons["person.fill.badge.plus"].firstMatch.tap()
+    let addPersonButton = app.buttons["person.fill.badge.plus"].firstMatch
+    XCTAssertTrue(addPersonButton.waitForExistence(timeout: 3))
+    addPersonButton.tap()
 
     let addAlert = app.alerts["Add Person"]
     XCTAssertTrue(addAlert.waitForExistence(timeout: 3))

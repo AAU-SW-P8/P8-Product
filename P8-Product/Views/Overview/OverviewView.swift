@@ -110,6 +110,13 @@ private struct OverviewContentView: View {
       .onChange(of: appState.selectedPerson?.id) { _, _ in
         selectedBodyParts = []
         sortOption = .recent
+        appState.selectMole(nil)
+      }
+      // RESET LOGIC: Clear navigation path when mole selection is cleared
+      .onChange(of: appState.selectedMole?.id) { _, newId in
+        if newId == nil {
+          appState.selectedMoleNavigationID = nil
+        }
       }
       // NATIVE FILTER SHEET
       .sheet(isPresented: $showingFilters) {
