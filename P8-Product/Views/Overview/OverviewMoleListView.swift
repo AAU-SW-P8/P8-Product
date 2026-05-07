@@ -22,28 +22,47 @@ struct OverviewMoleListView: View {
   // MARK: - View Body
   /// The `body` property.
   var body: some View {
-    List {
-      ForEach(moles, id: \.id) { mole in
-        NavigationLink(
-          destination: MoleDetailView(mole: mole),
-          tag: mole.id,
-          selection: selectedMoleIDBinding(for: person)
-        ) {
-          moleRow(for: mole, person: person)
+    Group {
+      if person.moles.isEmpty {
+        VStack(spacing: 16) {
+          Image(systemName: "camera.viewfinder")
+            .font(.system(size: 60))
+            .foregroundColor(.secondary)
+          Text("No moles found")
+            .font(.title2)
+            .fontWeight(.semibold)
+          Text("Go to the camera and scan a mole to add it.")
+            .font(.body)
+            .foregroundColor(.secondary)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal)
         }
-        .accessibilityIdentifier("overviewMoleRow_\(mole.name)")
-        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-          Button {
-            appState.requestDelete(mole: mole)
-          } label: {
-            Label("Delete", systemImage: "trash.fill")
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+      } else {
+        List {
+          ForEach(moles, id: \.id) { mole in
+            NavigationLink(
+              destination: MoleDetailView(mole: mole),
+              tag: mole.id,
+              selection: selectedMoleIDBinding(for: person)
+            ) {
+              moleRow(for: mole, person: person)
+            }
+            .accessibilityIdentifier("overviewMoleRow_\(mole.name)")
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+              Button {
+                appState.requestDelete(mole: mole)
+              } label: {
+                Label("Delete", systemImage: "trash.fill")
+              }
+              .accessibilityIdentifier("overviewDeleteMoleButton_\(mole.name)")
+              .tint(.red)
+            }
           }
-          .accessibilityIdentifier("overviewDeleteMoleButton_\(mole.name)")
-          .tint(.red)
         }
+        .listStyle(.plain)
       }
     }
-    .listStyle(.plain)
     .id(person.id)
     .transition(
       .asymmetric(
@@ -53,6 +72,7 @@ struct OverviewMoleListView: View {
   }
 
   // MARK: - Subviews and Helpers
+
   /// Creates a binding for the selected mole's ID, allowing the NavigationLink to update the selected mole in the app state when a mole is tapped. This binding checks the current selected mole ID against the IDs of the moles for the selected person and updates the selection accordingly.
   private func selectedMoleIDBinding(for person: Person) -> Binding<UUID?> {
     Binding(
