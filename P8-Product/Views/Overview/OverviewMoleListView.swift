@@ -56,11 +56,7 @@ struct OverviewMoleListView: View {
       } else {
         List {
           ForEach(moles, id: \.id) { mole in
-            NavigationLink(
-              destination: MoleDetailView(mole: mole),
-              tag: mole.id,
-              selection: selectedMoleIDBinding(for: person)
-            ) {
+            NavigationLink(value: mole.id) {
               moleRow(for: mole, person: person)
             }
             .accessibilityIdentifier("overviewMoleRow_\(mole.name)")
@@ -76,6 +72,11 @@ struct OverviewMoleListView: View {
           }
         }
         .listStyle(.plain)
+        .navigationDestination(for: UUID.self) { id in
+          if let mole = person.moles.first(where: { $0.id == id }) {
+            MoleDetailView(mole: mole)
+          }
+        }
       }
     }
     .id(person.id)
@@ -87,17 +88,6 @@ struct OverviewMoleListView: View {
   }
 
   // MARK: - Subviews and Helpers
-
-  /// Creates a binding for the selected mole's ID, allowing the NavigationLink to update the selected mole in the app state when a mole is tapped. This binding checks the current selected mole ID against the IDs of the moles for the selected person and updates the selection accordingly.
-  private func selectedMoleIDBinding(for person: Person) -> Binding<UUID?> {
-    Binding(
-      get: { appState.selectedMoleNavigationID },
-      set: { newID in
-        let selected = person.moles.first { $0.id == newID }
-        appState.selectMole(selected)
-      }
-    )
-  }
 
   /// Creates a view for a single mole row in the list, displaying the mole's name, body part, and a thumbnail image from the latest scan. It also checks if a reminder is active for the mole and shows a bell icon if so. The row is designed to be tappable, allowing navigation to the mole's detail view when selected.
   /// - Parameters:
