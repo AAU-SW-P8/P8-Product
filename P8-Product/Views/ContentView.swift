@@ -129,7 +129,7 @@ struct ContentView: View {
   if let container {
     // Seed preview data
     Task { @MainActor in
-      MockData.insertSampleData(into: container.mainContext)
+      MockDataUsabilityTest.insertSampleData(into: container.mainContext)
     }
     return AnyView(ContentView().modelContainer(container))
   } else {

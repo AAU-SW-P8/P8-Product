@@ -68,7 +68,7 @@ class DataController {
 
     // Only insert if the database is empty
     if let existing: [Person] = try? context.fetch(descriptor), existing.isEmpty {
-      MockData.insertSampleData(into: context)
+      MockDataUsabilityTest.insertSampleData(into: context)
       do {
         try context.save()
       } catch {
