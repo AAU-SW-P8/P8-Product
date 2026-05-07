@@ -38,6 +38,21 @@ struct OverviewMoleListView: View {
             .padding(.horizontal)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+      } else if moles.isEmpty {
+        VStack(spacing: 16) {
+          Image(systemName: "line.3.horizontal.decrease.circle")
+            .font(.system(size: 60))
+            .foregroundColor(.secondary)
+          Text("Congratulations, you have found an easter egg!")
+            .font(.title2)
+            .fontWeight(.semibold)
+          Text("You should not be seeing this, but you are.")
+            .font(.body)
+            .foregroundColor(.secondary)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
       } else {
         List {
           ForEach(moles, id: \.id) { mole in
