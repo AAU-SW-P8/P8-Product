@@ -22,28 +22,63 @@ struct OverviewMoleListView: View {
   // MARK: - View Body
   /// The `body` property.
   var body: some View {
-    List {
-      ForEach(moles, id: \.id) { mole in
-        NavigationLink(
-          destination: MoleDetailView(mole: mole),
-          tag: mole.id,
-          selection: selectedMoleIDBinding(for: person)
-        ) {
-          moleRow(for: mole, person: person)
+    Group {
+      if person.moles.isEmpty {
+        VStack(spacing: 16) {
+          Image(systemName: "camera.viewfinder")
+            .font(.system(size: 60))
+            .foregroundColor(.secondary)
+          Text("No moles found")
+            .font(.title2)
+            .fontWeight(.semibold)
+          Text("Go to the camera and scan a mole to add it.")
+            .font(.body)
+            .foregroundColor(.secondary)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal)
         }
-        .accessibilityIdentifier("overviewMoleRow_\(mole.name)")
-        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-          Button {
-            appState.requestDelete(mole: mole)
-          } label: {
-            Label("Delete", systemImage: "trash.fill")
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+      } else if moles.isEmpty {
+        VStack(spacing: 16) {
+          Image(systemName: "line.3.horizontal.decrease.circle")
+            .font(.system(size: 60))
+            .foregroundColor(.secondary)
+          Text("Congratulations, you have found an easter egg!")
+            .font(.title2)
+            .fontWeight(.semibold)
+          Text("You should not be seeing this, but you are.")
+            .font(.body)
+            .foregroundColor(.secondary)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+      } else {
+        List {
+          ForEach(moles, id: \.id) { mole in
+            NavigationLink(value: mole.id) {
+              moleRow(for: mole, person: person)
+            }
+            .accessibilityIdentifier("overviewMoleRow_\(mole.name)")
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+              Button {
+                appState.requestDelete(mole: mole)
+              } label: {
+                Label("Delete", systemImage: "trash.fill")
+              }
+              .accessibilityIdentifier("overviewDeleteMoleButton_\(mole.name)")
+              .tint(.red)
+            }
           }
-          .accessibilityIdentifier("overviewDeleteMoleButton_\(mole.name)")
-          .tint(.red)
+        }
+        .listStyle(.plain)
+        .navigationDestination(for: UUID.self) { id in
+          if let mole = person.moles.first(where: { $0.id == id }) {
+            MoleDetailView(mole: mole)
+          }
         }
       }
     }
-    .listStyle(.plain)
     .id(person.id)
     .transition(
       .asymmetric(
@@ -53,16 +88,6 @@ struct OverviewMoleListView: View {
   }
 
   // MARK: - Subviews and Helpers
-  /// Creates a binding for the selected mole's ID, allowing the NavigationLink to update the selected mole in the app state when a mole is tapped. This binding checks the current selected mole ID against the IDs of the moles for the selected person and updates the selection accordingly.
-  private func selectedMoleIDBinding(for person: Person) -> Binding<UUID?> {
-    Binding(
-      get: { appState.selectedMoleNavigationID },
-      set: { newID in
-        let selected = person.moles.first { $0.id == newID }
-        appState.selectMole(selected)
-      }
-    )
-  }
 
   /// Creates a view for a single mole row in the list, displaying the mole's name, body part, and a thumbnail image from the latest scan. It also checks if a reminder is active for the mole and shows a bell icon if so. The row is designed to be tappable, allowing navigation to the mole's detail view when selected.
   /// - Parameters:

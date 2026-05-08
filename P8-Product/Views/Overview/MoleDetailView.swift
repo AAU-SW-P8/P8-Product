@@ -292,10 +292,8 @@ struct MoleDetailView: View {
     let bellImage: Text = Text(Image(systemName: "bell.fill"))
       .foregroundStyle(.orange)
 
-    return bellImage
-      + Text(
-        " Next due date: \(nextDueDate.formatted(.dateTime.year().month().day())) (in \(daysUntilDue) \(dayLabel))"
-      )
+    return Text(
+      "\(bellImage) Next due date: \(nextDueDate.formatted(.dateTime.year().month().day())) (in \(daysUntilDue) \(dayLabel))"
+    )
   }
-
 }
