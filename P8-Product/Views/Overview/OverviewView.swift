@@ -68,24 +68,27 @@ private struct OverviewContentView: View {
 
   /// Header and navigation content, including the header with filter and add person buttons, the person selector with navigation between people, and the list of moles for the selected person. Also manages the presentation of the filter popup and its interaction with the rest of the UI.
   private var navigationContent: some View {
-    NavigationStack(path: Binding(
-      get: {
-        if let id = appState.selectedMoleNavigationID {
-          return [id]
-        }
-        return []
-      },
-      set: { newPath in
-        if let newID = newPath.last {
-          if let person = appState.selectedPerson,
-             let mole = person.moles.first(where: { $0.id == newID }) {
-            appState.selectMole(mole)
+    NavigationStack(
+      path: Binding(
+        get: {
+          if let id = appState.selectedMoleNavigationID {
+            return [id]
           }
-        } else {
-          appState.selectMole(nil)
+          return []
+        },
+        set: { newPath in
+          if let newID = newPath.last {
+            if let person = appState.selectedPerson,
+              let mole = person.moles.first(where: { $0.id == newID })
+            {
+              appState.selectMole(mole)
+            }
+          } else {
+            appState.selectMole(nil)
+          }
         }
-      }
-    )) {
+      )
+    ) {
       VStack(spacing: 0) {
         OverviewHeaderView(
           showingFilters: showingFilters,
