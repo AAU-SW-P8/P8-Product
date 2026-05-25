@@ -9,21 +9,21 @@
 
 ---
 
-## 📸 Overview
+## Overview
 **SPOT** is designed to empower users to monitor their skin health by logging and analysing moles across different body parts. By leveraging on-device segmentation via SAM 3 (Segment Anything Model 3), the app can calculate mole dimensions, track visual changes over time, and persist this data locally for secure, offline access. 
 
 ---
 
-## ✨ Features
-- 🔍 **AI-Powered Segmentation:** Mole outline detection and isolation using a custom SAM 3 `MoleImagePipeline`.
-- 📏 **Automated Measurement:** Calculates projections and normalises orientations to track mole growth.
-- 🗄️ **Local Data Persistence:** Seamlessly stores users, body parts, and mole scan history using the native `SwiftData` framework.
-- 👤 **Profile Management:** Supports tracking data for multiple individuals within a single app instance.
-- ⚡ **Offline First:** All machine learning inference and data storage happens entirely on-device, preserving user privacy.
+## Features
+- **AI-Powered Segmentation:** Mole outline detection and isolation using a custom SAM 3 `MoleImagePipeline`.
+- **Automated Measurement:** Calculates projections and normalises orientations to track mole growth.
+- **Local Data Persistence:** Seamlessly stores users, body parts, and mole scan history using the native `SwiftData` framework.
+- **Profile Management:** Supports tracking data for multiple individuals within a single app instance.
+- **Offline First:** All machine learning inference and data storage happens entirely on-device, preserving user privacy.
 
 ---
 
-## 🏗 Architecture & Tech Stack
+## Architecture & Tech Stack
 The application is built with modern iOS development paradigms, focusing on performance, safety, and maintainability:
 
 - **UI Framework:** [SwiftUI](https://developer.apple.com/xcode/swiftui/) for a fully declarative, responsive user interface.
@@ -34,14 +34,14 @@ The application is built with modern iOS development paradigms, focusing on perf
 
 ---
 
-## 📋 Requirements
+## Requirements
 - **iOS:** 17.0 or later (Required for `SwiftData`)
 - **Xcode:** 15.0 or later
 - **Swift:** 5.9 or later
 
 ---
 
-## 🚀 Installation & Setup
+## Installation & Setup
 
 1. **Clone the repository and submodules:**
    The Core ML models are hosted externally and linked as a git submodule. To clone the repository and initialise the models at the same time, run:
@@ -68,7 +68,7 @@ The application is built with modern iOS development paradigms, focusing on perf
 
 ---
 
-## 📂 Folder Structure
+## Folder Structure
 
 ```text
 P8-Product/
