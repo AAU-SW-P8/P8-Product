@@ -72,6 +72,7 @@ The application is built with modern iOS development paradigms, focusing on perf
 
 ```text
 P8-Product/
+├── P8-Product.xcodeproj        # Xcode Project Entry Point
 ├── P8-Product/                 # Main Application Target
 │   ├── P8_Product.swift        # App Entry Point & SwiftData Container Initialisation
 │   ├── Model/                  # SwiftData Models (Person, Mole, MoleScan, BodyPart)
