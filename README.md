@@ -46,8 +46,8 @@ The application is built with modern iOS development paradigms, focusing on perf
 1. **Clone the repository and submodules:**
    The Core ML models are hosted externally and linked as a git submodule. To clone the repository and initialise the models at the same time, run:
    ```bash
-   git clone --recurse-submodules https://github.com/AAU-SW-P8/P8-Product.git SPOT
-   cd SPOT
+   git clone --recurse-submodules https://github.com/AAU-SW-P8/P8-Product.git
+   cd P8-Product
    ```
    *If you have already cloned the repository without the submodules, you can fetch the models by running:*
    ```bash
